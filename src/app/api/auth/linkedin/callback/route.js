@@ -1,4 +1,4 @@
-const { publishToLinkedIn } = require('../../../../mastra/agents/publisherTool');
+const { publishToLinkedIn } = require('../../../../../mastra/agents/publisherTool');
 
 async function GET(request) {
   const url = new URL(request.url);

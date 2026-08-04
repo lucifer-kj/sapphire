@@ -1,4 +1,4 @@
-const { resumeWorkflow } = require('../../../../mastra/workflows/ideaToDraft');
+const { resumeWorkflow } = require('../../../mastra/workflows/ideaToDraft');
 
 async function POST(request) {
   try {

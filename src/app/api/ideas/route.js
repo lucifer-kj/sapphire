@@ -1,4 +1,4 @@
-const { executeIdeaToDraftWorkflow } = require('../../../mastra/workflows/ideaToDraft');
+const { executeIdeaToDraftWorkflow, getAllWorkflows } = require('../../../mastra/workflows/ideaToDraft');
 
 async function POST(request) {
   try {
