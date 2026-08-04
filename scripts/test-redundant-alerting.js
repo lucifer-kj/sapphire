@@ -3,6 +3,8 @@ const publishTick = require(path.join(__dirname, '..', 'src', 'app', 'api', 'cro
 const publishTickRedundant = require(path.join(__dirname, '..', 'src', 'app', 'api', 'cron', 'publish-tick-redundant', 'route'));
 const alertRoute = require(path.join(__dirname, '..', 'src', 'app', 'api', 'alert', 'route'));
 
+process.env.CRON_SHARED_SECRET = 'test-secret';
+
 async function testPhase11() {
   console.log('🚀 Testing Phase 11: Redundant Trigger + Alerting\n');
 

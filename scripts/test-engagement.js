@@ -1,6 +1,8 @@
 const path = require('path');
 const engagementTick = require(path.join(__dirname, '..', 'src', 'app', 'api', 'cron', 'engagement-tick', 'route'));
 
+process.env.CRON_SHARED_SECRET = 'test-secret';
+
 async function testEngagementTick() {
   console.log('🚀 Testing Phase 8: Engagement Pull-Back Tick\n');
 

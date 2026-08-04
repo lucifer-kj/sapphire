@@ -1,6 +1,8 @@
 const path = require('path');
 const publishTick = require(path.join(__dirname, '..', 'src', 'app', 'api', 'cron', 'publish-tick', 'route'));
 
+process.env.CRON_SHARED_SECRET = 'test-secret';
+
 async function testSchedulerTick() {
   console.log('🚀 Testing Phase 7: Scheduler Tick (Reliability Core)\n');
 

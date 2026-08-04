@@ -85,10 +85,6 @@ function acquireLock(key) {
 
 function releaseLock(key) {}
 
-function getPublishResult(postId) {
-  return null;
-}
-
 function decryptToken(encrypted) {
   if (encrypted.startsWith('encrypted:')) {
     return encrypted.substring(10);
