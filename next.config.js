@@ -1,9 +1,13 @@
-{},
-  "nextConfig": "{",
-  "experimental": {",
-  "serverComponentsExternalPackages": ["ai"]",},
-  "eslintIgnorePatterns": ["node_modules", ".next"],
-  "allowedDevOrigins": ["*"],
-  "output": "standalone"
-}
-}
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ['ai'],
+  },
+  eslint: {
+    ignorePatterns: ['node_modules', '.next'],
+  },
+  allowedDevOrigins: ['*'],
+  output: 'standalone',
+};
+
+module.exports = nextConfig;
