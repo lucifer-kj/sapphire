@@ -7,7 +7,6 @@ const nextConfig = {
     ignorePatterns: ['node_modules', '.next'],
   },
   allowedDevOrigins: ['*'],
-  output: 'standalone',
 };
 
 module.exports = nextConfig;
