@@ -29,7 +29,7 @@ export default function ApprovalPage() {
     setLoading(true);
 
     try {
-      const body = { runId, decision: action };
+      const body: { runId: string; decision: string; editedText?: string } = { runId, decision: action };
       if (action === 'edit' && editedText) {
         body.editedText = editedText;
       }
