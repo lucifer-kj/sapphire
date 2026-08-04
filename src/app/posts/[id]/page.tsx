@@ -1,11 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Header } from '@/components/layout/Header';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Separator } from '@/components/ui/Separator';
+import { useToast } from '@/components/ui/Toast';
+
+const statusMap = {
+  draft: { label: 'Draft', variant: 'neutral' },
+  scheduled: { label: 'Scheduled', variant: 'warning' },
+  publishing: { label: 'Publishing', variant: 'warning' },
+  published: { label: 'Published', variant: 'success' },
+  failed: { label: 'Failed', variant: 'error' },
+  cancelled: { label: 'Cancelled', variant: 'neutral' },
+};
 
 export default function PostDetailPage({ params }) {
+  const { toast } = useToast();
   const [post, setPost] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     async function fetchPost() {
@@ -26,94 +43,155 @@ export default function PostDetailPage({ params }) {
     fetchPost();
   }, [params.id]);
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      const response = await fetch(`/api/posts/${params.id}/retry`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to retry');
+      toast({ type: 'success', title: 'Retrying', description: 'Post retry initiated.' });
+      window.location.reload();
+    } catch (err) {
+      toast({ type: 'error', title: 'Error', description: err.message });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   if (loading) {
-    return <div className="text-zinc-500">Loading post...</div>;
+    return (
+      <div className="min-h-screen bg-bg">
+        <Header />
+        <main className="max-w-4xl mx-auto px-6 py-8">
+          <Card variant="default" padding="default">
+            <CardContent className="py-12 text-center text-text-muted text-sm">Loading post...</CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-400">Error: {error}</div>;
+    return (
+      <div className="min-h-screen bg-bg">
+        <Header />
+        <main className="max-w-4xl mx-auto px-6 py-8">
+          <Card variant="default" padding="default">
+            <CardContent className="py-12 text-center text-error text-sm">Error: {error}</CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
   if (!post) {
-    return <div className="text-zinc-500">Post not found</div>;
+    return (
+      <div className="min-h-screen bg-bg">
+        <Header />
+        <main className="max-w-4xl mx-auto px-6 py-8">
+          <Card variant="default" padding="default">
+            <CardContent className="py-12 text-center text-text-muted text-sm">Post not found</CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
-  const statusColors = {
-    draft: 'badge-gray',
-    scheduled: 'badge-amber',
-    publishing: 'badge-amber',
-    published: 'badge-green',
-    failed: 'badge-red',
-    cancelled: 'badge-cancelled',
-  };
+  const status = statusMap[post.status] || { label: post.status, variant: 'neutral' };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-zinc-100">Post Detail</h2>
-        <span className={`badge ${statusColors[post.status] || 'badge-gray'}`}>
-          {post.status}
-        </span>
-      </div>
-
-      <div className="card">
-        <h3 className="text-lg font-medium text-zinc-200 mb-4">Post Content</h3>
-        <p className="text-zinc-300 draft-text whitespace-pre-wrap">{post.final_text}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card">
-          <h4 className="text-sm font-medium text-zinc-400 mb-2">Status History</h4>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Created</span>
-              <span className="text-zinc-300">{new Date(post.created_at).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Scheduled For</span>
-              <span className="text-zinc-300">
-                {post.scheduled_for ? new Date(post.scheduled_for).toLocaleString() : 'N/A'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Published At</span>
-              <span className="text-zinc-300">
-                {post.published_at ? new Date(post.published_at).toLocaleString() : 'N/A'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">LinkedIn URN</span>
-              <span className="text-zinc-300 text-xs">{post.linkedin_post_urn || 'N/A'}</span>
-            </div>
+    <div className="min-h-screen bg-bg">
+      <Header />
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-text">Post Detail</h1>
+            <p className="mt-1 font-mono text-xs text-text-muted">{post.id}</p>
           </div>
+          <Badge variant={status.variant}>{status.label}</Badge>
         </div>
 
-        <div className="card">
-          <h4 className="text-sm font-medium text-zinc-400 mb-2">Engagement</h4>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Likes</span>
-              <span className="text-zinc-300">{post.likes || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Comments</span>
-              <span className="text-zinc-300">{post.comments || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Reposts</span>
-              <span className="text-zinc-300">{post.reposts || 0}</span>
-            </div>
+        <div className="space-y-6">
+          <Card variant="default" padding="default">
+            <CardHeader>
+              <CardTitle>Post Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-text-muted leading-relaxed whitespace-pre-wrap">{post.final_text}</p>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Card variant="default" padding="default">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Status History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Created</span>
+                    <span className="text-text">{new Date(post.created_at).toLocaleString()}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Scheduled For</span>
+                    <span className="text-text">{post.scheduled_for ? new Date(post.scheduled_for).toLocaleString() : 'N/A'}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Published At</span>
+                    <span className="text-text">{post.published_at ? new Date(post.published_at).toLocaleString() : 'N/A'}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-start gap-4">
+                    <span className="text-text-muted flex-shrink-0">LinkedIn URN</span>
+                    <span className="text-text text-xs text-right break-all">{post.linkedin_post_urn || 'N/A'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card variant="default" padding="default">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Engagement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Likes</span>
+                    <span className="text-text font-medium">{post.likes || 0}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Comments</span>
+                    <span className="text-text font-medium">{post.comments || 0}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Reposts</span>
+                    <span className="text-text font-medium">{post.reposts || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </div>
 
-      {post.status === 'failed' && (
-        <div className="card border-red-900/50">
-          <h4 className="text-sm font-medium text-red-400 mb-2">Failed Post</h4>
-          <p className="text-sm text-zinc-400 mb-3">{post.last_error || 'Unknown error'}</p>
-          <button className="btn-primary text-sm">Retry</button>
+          {post.status === 'failed' && (
+            <Card variant="default" padding="default" className="border-error/30">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-error">Failed Post</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-muted mb-4">{post.last_error || 'Unknown error'}</p>
+                <Button variant="primary" onClick={handleRetry} disabled={retrying}>
+                  {retrying ? 'Retrying...' : 'Retry Publication'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 }

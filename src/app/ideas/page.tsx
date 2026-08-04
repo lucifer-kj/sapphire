@@ -1,95 +1,116 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { Header } from '@/components/layout/Header';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
+import { Separator } from '@/components/ui/Separator';
+import { useToast } from '@/components/ui/Toast';
+import { cn } from '@/lib/utils';
 
 export default function IdeasPage() {
-  const [idea, setIdea] = useState('');
-  const [status, setStatus] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [platform, setPlatform] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setStatus(null);
-
-    if (!idea.trim()) {
-      setError('Idea cannot be empty');
+    if (!title.trim() || !content.trim()) {
+      toast({ type: 'error', title: 'Validation Error', description: 'Title and content are required.' });
       return;
     }
-
-    if (idea.length > 500) {
-      setError('Idea exceeds maximum length of 500 characters');
-      return;
-    }
-
-    setLoading(true);
-
+    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/ideas', {
+      const res = await fetch('/api/ideas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, userId: 'current-user' }),
+        body: JSON.stringify({ title, content, platform: platform || undefined }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create idea');
-      }
-
-      setStatus(data);
-      setIdea('');
-    } catch (err) {
-      setError(err.message);
+      if (!res.ok) throw new Error('Failed to create idea');
+      toast({ type: 'success', title: 'Idea Created', description: 'Your idea has been captured.' });
+      setTitle('');
+      setContent('');
+      setPlatform('');
+    } catch {
+      toast({ type: 'error', title: 'Error', description: 'Failed to create idea. Please try again.' });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-zinc-100">Capture Idea</h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="idea" className="block text-sm font-medium text-zinc-300 mb-2">
-            Your Idea
-          </label>
-          <textarea
-            id="idea"
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            placeholder="Describe your content idea..."
-            maxLength={500}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-accent resize-none"
-            rows={4}
-          />
-          <p className="text-xs text-zinc-500 mt-1">{idea.length}/500 characters</p>
+    <div className="min-h-screen bg-bg">
+      <Header />
+      <main className="max-w-3xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-text">Capture Idea</h1>
+          <p className="mt-1 text-text-muted text-sm">Quickly capture and organize content ideas for your pipeline.</p>
         </div>
 
-        {error && (
-          <div className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-4 py-3">
-            {error}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card variant="default" padding="default">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-text mb-2">Title</label>
+                <Input
+                  id="title"
+                  placeholder="Give your idea a clear, descriptive title"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  maxLength={200}
+                />
+              </div>
+              <div>
+                <label htmlFor="content" className="block text-sm font-medium text-text mb-2">Content</label>
+                <Textarea
+                  id="content"
+                  placeholder="Describe your idea in detail..."
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  rows={6}
+                  maxLength={5000}
+                />
+                <p className="mt-1 text-xs text-text-muted">{content.length}/5000</p>
+              </div>
+              <div>
+                <label htmlFor="platform" className="block text-sm font-medium text-text mb-2">Platform (optional)</label>
+                <Input
+                  id="platform"
+                  placeholder="e.g., LinkedIn, Twitter, Blog"
+                  value={platform}
+                  onChange={e => setPlatform(e.target.value)}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <div className="flex items-center gap-3">
+            <Button type="submit" variant="primary" disabled={isSubmitting || !title.trim() || !content.trim()}>
+              {isSubmitting ? 'Saving...' : 'Save Idea'}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => { setTitle(''); setContent(''); setPlatform(''); }}>
+              Clear
+            </Button>
           </div>
-        )}
+        </form>
 
-        <button
-          type="submit"
-          disabled={loading || !idea.trim()}
-          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Processing...' : 'Capture Idea'}
-        </button>
-      </form>
+        <Separator className="my-8" />
 
-      {status && (
-        <div className="card border-green-900/50">
-          <h3 className="text-green-400 font-medium mb-2">✅ Idea Captured</h3>
-          <p className="text-sm text-zinc-400">Run ID: {status.runId || 'N/A'}</p>
-          <p className="text-sm text-zinc-400">State: {status.state || 'processing'}</p>
+        <div>
+          <h2 className="font-display text-xl font-semibold text-text mb-4">Recent Ideas</h2>
+          <Card variant="default" padding="default">
+            <CardContent>
+              <p className="text-text-muted text-sm">No ideas yet. Capture your first idea above.</p>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </main>
     </div>
   );
 }
