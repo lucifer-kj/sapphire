@@ -46,12 +46,16 @@ export interface DraftVariant {
   variant_index: number;
   text: string;
   score: number;
+  angle_type?: 'CONTROVERSIAL' | 'STORY' | 'FRAMEWORK';
   score_breakdown?: {
     hook_strength?: number;
     length_band?: number;
     cta_presence?: number;
     historical_topic_performance?: number;
-    [key: string]: number | undefined;
+    hook_rationale?: string;
+    cta_rationale?: string;
+    overall_rationale?: string;
+    [key: string]: number | string | undefined;
   };
   policy_flags?: Record<string, unknown>;
   model_used?: string;
@@ -89,7 +93,10 @@ export interface Post {
   likes?: number;
   comments?: number;
   reposts?: number;
+  manually_posted?: boolean;
+  manual_note?: string;
 }
+
 
 export interface SocialAccount {
   id: string;

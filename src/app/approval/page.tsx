@@ -11,12 +11,20 @@ import { cn } from '@/lib/utils';
 import { WorkflowRun, DraftVariant } from '@/types';
 import { approveVariant, regenerateDrafts } from '@/lib/api';
 
+const ANGLE_DESCRIPTIONS: Record<number, { title: string; desc: string }> = {
+  0: { title: 'CONTROVERSIAL', desc: 'Opens with a bold claim to spark debate.' },
+  1: { title: 'STORY', desc: 'Leads with a personal anecdote.' },
+  2: { title: 'FRAMEWORK', desc: 'Structured as a clear, numbered takeaway.' },
+};
+
 export default function ApprovalPage() {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<WorkflowRun[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [activeStepFour, setActiveStepFour] = useState<boolean>(false);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number>(0);
+  const [regenCounts, setRegenCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchWorkflows();
@@ -41,6 +49,7 @@ export default function ApprovalPage() {
     }
 
     setLoading(true);
+    setActiveStepFour(true);
     setError(null);
     try {
       const res = await approveVariant({
@@ -52,8 +61,8 @@ export default function ApprovalPage() {
       if (!res.success) throw new Error('Approval failed');
       toast({
         type: 'success',
-        title: 'Post Approved & Scheduled!',
-        description: 'Gemini Image model generated a visual asset and scheduled the post.',
+        title: 'Step 4 Complete: Asset Prepared!',
+        description: 'Gemini Imagen generated 1:1 image asset & scheduled post-ready package.',
       });
       fetchWorkflows();
     } catch (err: unknown) {
@@ -62,16 +71,29 @@ export default function ApprovalPage() {
       toast({ type: 'error', title: 'Approval Error', description: msg });
     } finally {
       setLoading(false);
+      setActiveStepFour(false);
     }
   }
 
   async function handleRegenerate(workflow: WorkflowRun) {
-    if (!workflow.ideaId) return;
+    const ideaId = workflow.ideaId || workflow.runId;
+    const currentCount = regenCounts[ideaId] || 0;
+    if (currentCount >= 3) {
+      toast({
+        type: 'warning',
+        title: 'Regeneration Limit Reached',
+        description: 'Regeneration limit reached for this idea (3/3 used).',
+      });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await regenerateDrafts({ idea_id: workflow.ideaId });
+      const res = await regenerateDrafts({ idea_id: ideaId });
       if (!res.success) throw new Error('Regeneration failed');
+      
+      setRegenCounts(prev => ({ ...prev, [ideaId]: (prev[ideaId] || 0) + 1 }));
       toast({
         type: 'success',
         title: 'Regeneration Complete',
@@ -96,10 +118,20 @@ export default function ApprovalPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight text-text">Approval Gate</h1>
-            <p className="mt-1 text-text-muted text-sm">Review, refine, and approve AI draft variants before scheduled delivery.</p>
+            <p className="mt-1 text-text-muted text-sm">Review scored draft variants, select your preferred strategic angle, and trigger 1:1 image generation.</p>
           </div>
-          <Badge variant="warning" size="default">{suspendedWorkflows.length} Pending</Badge>
+          <Badge variant="warning" size="default">{suspendedWorkflows.length} Pending Review</Badge>
         </div>
+
+        {activeStepFour && (
+          <div className="mb-6 rounded-xl border border-brand/40 bg-brand-muted/20 p-4 animate-pulse-slow flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-brand animate-ping" />
+            <div>
+              <p className="text-xs font-semibold text-brand uppercase tracking-wider">Step 4/4: Generating Image Asset</p>
+              <p className="text-xs text-text-muted mt-0.5">Gemini Imagen is constructing a structured 1:1 visual asset & uploading to Supabase Storage...</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 rounded-lg border border-error/30 bg-error-muted px-4 py-3 text-sm text-error">
@@ -118,20 +150,24 @@ export default function ApprovalPage() {
               </div>
               <h2 className="text-lg font-medium text-text">No pending approvals</h2>
               <p className="mt-1 text-sm text-text-muted max-w-sm">
-                Ideas will appear here after draft generation. Capture an idea in Content Studio or Ideas to get started.
+                Ideas will appear here after draft generation. Capture an idea on the <strong className="text-text">Ideas</strong> page to get started.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6">
             {suspendedWorkflows.map((workflow) => {
+              const ideaId = workflow.ideaId || workflow.runId;
+              const usedRegens = regenCounts[ideaId] || 0;
+              const remainingRegens = Math.max(0, 3 - usedRegens);
+
               return (
                 <Card key={workflow.runId} variant="default" padding="default">
                   <CardHeader className="flex items-center justify-between">
                     <div>
-                      <p className="font-mono text-xs text-text-muted mb-1">{workflow.runId}</p>
+                      <p className="font-mono text-xs text-text-muted mb-1">Idea Run #{ideaId.substring(0, 8)}</p>
                       <CardTitle className="text-lg">
-                        {workflow.ideaTitle || `Idea ${workflow.ideaId?.substring(0, 8)}`}
+                        {workflow.ideaTitle || `Idea Topic`}
                       </CardTitle>
                     </div>
                     <Badge variant="warning">Pending Review</Badge>
@@ -141,31 +177,45 @@ export default function ApprovalPage() {
                     {workflow.scoredVariants && workflow.scoredVariants.length > 0 && (
                       <div className="space-y-4">
                         <Separator />
-                        <h3 className="text-sm font-medium text-text mb-3">Select Draft Variant:</h3>
+                        <h3 className="text-sm font-semibold text-text mb-3">Select Draft Angle Variant:</h3>
                         {workflow.scoredVariants.map((variant: DraftVariant, index: number) => {
                           const isSelected = selectedVariantIndex === index;
+                          const angleInfo = ANGLE_DESCRIPTIONS[index] || { title: `ANGLE ${index + 1}`, desc: 'Custom strategic approach' };
+
+                          const hookScore = (variant.score_breakdown?.hook_strength ?? 0) * 100;
+                          const ctaScore = (variant.score_breakdown?.cta_presence ?? 0) * 100;
+                          const hookRationale = variant.score_breakdown?.hook_rationale || (hookScore > 60 ? 'Strong opening line' : 'Standard opening line');
+                          const ctaRationale = variant.score_breakdown?.cta_rationale || (ctaScore > 60 ? 'Direct closing CTA question' : 'Standard CTA prompt');
+
                           return (
                             <div
                               key={index}
                               className={cn(
-                                'rounded-xl border p-4 transition-colors cursor-pointer',
-                                isSelected ? 'border-brand bg-brand-muted/40' : 'border-border bg-bg-elevated hover:border-border-muted'
+                                'rounded-xl border p-4 transition-all cursor-pointer',
+                                isSelected ? 'border-brand bg-brand-muted/40 shadow-brand' : 'border-border bg-bg-elevated hover:border-border-muted'
                               )}
                               onClick={() => setSelectedVariantIndex(index)}
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-text">Variant {index + 1}</span>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="brand" size="sm">{((variant.score || 0) * 100).toFixed(0)}% Score</Badge>
-                                  {isSelected && <Badge variant="success" size="sm">Selected</Badge>}
+                              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold font-mono text-brand uppercase tracking-wider">{angleInfo.title}</span>
+                                    <Badge variant="brand" size="sm">{((variant.score || 0) * 100).toFixed(0)}% Score</Badge>
+                                    {isSelected && <Badge variant="success" size="sm">Selected</Badge>}
+                                  </div>
+                                  <p className="text-xs text-text-muted mt-0.5 italic">{angleInfo.desc}</p>
                                 </div>
                               </div>
-                              <p className="text-sm text-text mb-3 leading-relaxed whitespace-pre-wrap">{variant.text}</p>
-                              <div className="flex gap-4 text-xs text-text-muted">
-                                <span>Hook: <span className="text-text">{((variant.score_breakdown?.hook_strength ?? 0) * 100).toFixed(0)}%</span></span>
-                                <span>Length: <span className="text-text">{((variant.score_breakdown?.length_band ?? 0) * 100).toFixed(0)}%</span></span>
-                                <span>CTA: <span className="text-text">{((variant.score_breakdown?.cta_presence ?? 0) * 100).toFixed(0)}%</span></span>
-                                <span>Model: <span className="text-brand">{variant.model_used || 'Mastra Engine'}</span></span>
+
+                              <p className="text-sm text-text my-3 leading-relaxed whitespace-pre-wrap font-sans">{variant.text}</p>
+
+                              <div className="mt-3 pt-3 border-t border-border/60 space-y-1 text-xs text-text-muted">
+                                <div className="flex items-center justify-between">
+                                  <span>Hook Strength: <strong className="text-text">{hookScore.toFixed(0)}%</strong> — <span className="text-text-subtle">{hookRationale}</span></span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span>CTA Presence: <strong className="text-text">{ctaScore.toFixed(0)}%</strong> — <span className="text-text-subtle">{ctaRationale}</span></span>
+                                </div>
                               </div>
                             </div>
                           );
@@ -175,23 +225,31 @@ export default function ApprovalPage() {
 
                     <Separator className="my-6" />
 
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <Button
                         variant="primary"
                         onClick={() => handleApprove(workflow)}
                         disabled={loading}
+                        className="font-semibold"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                        Approve & Generate Image Asset
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                        Approve & Generate Image Asset (Step 4)
                       </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleRegenerate(workflow)}
-                        disabled={loading}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" /></svg>
-                        Regenerate (Max 3)
-                      </Button>
+
+                      {remainingRegens > 0 ? (
+                        <Button
+                          variant="secondary"
+                          onClick={() => handleRegenerate(workflow)}
+                          disabled={loading}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" /></svg>
+                          Regenerate ({remainingRegens} left)
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-warning bg-warning-muted/20 px-3 py-2 rounded-lg border border-warning/30">
+                          Regeneration limit reached for this idea (3/3 used)
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

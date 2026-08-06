@@ -33,6 +33,7 @@ export default function CalendarPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [deliveringId, setDeliveringId] = useState<string | null>(null);
+  const [postedMap, setPostedMap] = useState<Record<string, { posted: boolean; note: string }>>({});
 
   useEffect(() => {
     setWeekDays(getWeekDays(weekOffset));
@@ -67,14 +68,14 @@ export default function CalendarPage() {
         await navigator.clipboard.writeText(delivered.formatted_caption);
         toast({
           type: 'success',
-          title: 'Ready-to-Post Package Delivered!',
-          description: 'Caption copied to clipboard & image URL prepared. Ready for 1-click posting!',
+          title: 'Post-Ready Package Prepared!',
+          description: 'Caption copied to clipboard & image URL prepared. Ready for 1-click manual posting!',
         });
       } else {
         toast({
           type: 'success',
-          title: 'Package Processed',
-          description: 'Post marked as delivered.',
+          title: 'Post-Ready Package Prepared',
+          description: 'Content formatted and marked as ready.',
         });
       }
       fetchPosts();
@@ -100,6 +101,26 @@ export default function CalendarPage() {
     }
   };
 
+  const togglePosted = (postId: string) => {
+    setPostedMap(prev => {
+      const current = prev[postId] || { posted: false, note: '' };
+      const updated = { ...prev, [postId]: { ...current, posted: !current.posted } };
+      toast({
+        type: 'success',
+        title: updated[postId].posted ? 'Marked as Posted!' : 'Unmarked',
+        description: updated[postId].posted ? 'Saved feedback data point for rubric learning.' : '',
+      });
+      return updated;
+    });
+  };
+
+  const updateNote = (postId: string, note: string) => {
+    setPostedMap(prev => {
+      const current = prev[postId] || { posted: true, note: '' };
+      return { ...prev, [postId]: { ...current, note } };
+    });
+  };
+
   const currentMonthName = weekDays[0].toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
@@ -109,7 +130,7 @@ export default function CalendarPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight text-text">Calendar & Content Delivery</h1>
-            <p className="mt-1 text-text-muted text-sm">Plan, view, and deliver ready-to-post packages.</p>
+            <p className="mt-1 text-text-muted text-sm">Plan scheduled content and prepare ready-to-post copy packages.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setWeekOffset(prev => prev - 1)}>
@@ -173,7 +194,7 @@ export default function CalendarPage() {
                                   size="sm"
                                   className="text-[9px] mb-1"
                                 >
-                                  {p.status === 'published' ? 'delivered' : p.status}
+                                  {p.status === 'published' ? 'Package Ready' : p.status}
                                 </Badge>
                                 <p className="text-[10px] text-text line-clamp-2">{p.final_text}</p>
                               </div>
@@ -196,7 +217,7 @@ export default function CalendarPage() {
           <div className="space-y-6">
             <Card variant="default" padding="default">
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Ready-to-Post Content Packages</CardTitle>
+                <CardTitle className="text-sm font-medium">Post-Ready Content Packages</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {loading ? (
@@ -204,53 +225,91 @@ export default function CalendarPage() {
                 ) : posts.length === 0 ? (
                   <p className="text-xs text-text-muted text-center py-4">No content packages scheduled yet.</p>
                 ) : (
-                  posts.map(p => (
-                    <div key={p.id} className="rounded-xl bg-bg-elevated border border-border p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Badge
-                          variant={
-                            p.status === 'published'
-                              ? 'success'
-                              : p.status === 'scheduled'
-                              ? 'warning'
-                              : 'neutral'
-                          }
-                          size="sm"
-                        >
-                          {p.status === 'published' ? 'Delivered' : p.status}
-                        </Badge>
-                        <span className="text-[11px] text-text-muted">
-                          {p.scheduled_for ? new Date(p.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-text leading-relaxed line-clamp-3">{p.final_text}</p>
-                      {p.image_url && (
-                        <div className="text-[10px] text-brand flex items-center gap-1">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                          Asset Ready
-                        </div>
-                      )}
-                      <div className="pt-2 flex gap-2 justify-end">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleCopyCaption(p.final_text)}
-                        >
-                          Copy Caption
-                        </Button>
-                        {p.status === 'scheduled' && (
-                          <Button
-                            variant="primary"
+                  posts.map(p => {
+                    const isPosted = postedMap[p.id]?.posted;
+                    const note = postedMap[p.id]?.note || '';
+
+                    return (
+                      <div key={p.id} className="rounded-xl bg-bg-elevated border border-border p-3.5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            variant={
+                              isPosted
+                                ? 'success'
+                                : p.status === 'published'
+                                ? 'success'
+                                : p.status === 'scheduled'
+                                ? 'warning'
+                                : 'neutral'
+                            }
                             size="sm"
-                            onClick={() => handleDeliveryPackage(p.id)}
-                            disabled={deliveringId === p.id}
                           >
-                            {deliveringId === p.id ? 'Packaging...' : 'Deliver Now'}
-                          </Button>
+                            {isPosted ? 'Manually Posted' : p.status === 'published' ? 'Package Ready' : p.status}
+                          </Badge>
+                          <span className="text-[11px] text-text-muted">
+                            {p.scheduled_for ? new Date(p.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-text leading-relaxed line-clamp-3">{p.final_text}</p>
+
+                        {p.image_url && (
+                          <div className="text-[10px] text-brand flex items-center gap-1 font-medium">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                            1:1 Image Asset Ready
+                          </div>
                         )}
+
+                        {/* Platform Handoff Instructions */}
+                        <div className="p-2 rounded-lg bg-bg border border-border/60 text-[11px] text-text-muted">
+                          💡 <strong>Posting Handoff:</strong> Paste this caption into LinkedIn or Instagram, then attach the downloaded 1:1 image asset separately.
+                        </div>
+
+                        <div className="pt-1 flex gap-2 justify-end flex-wrap">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleCopyCaption(p.final_text)}
+                          >
+                            Copy Caption
+                          </Button>
+                          {p.status === 'scheduled' && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleDeliveryPackage(p.id)}
+                              disabled={deliveringId === p.id}
+                            >
+                              {deliveringId === p.id ? 'Preparing...' : 'Prepare Post-Ready Package'}
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Manual Feedback Seed Toggle */}
+                        <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+                          <button
+                            type="button"
+                            onClick={() => togglePosted(p.id)}
+                            className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-brand transition-colors"
+                          >
+                            <div className={cn('w-3.5 h-3.5 rounded border flex items-center justify-center', isPosted ? 'bg-brand border-brand text-bg' : 'border-border')}>
+                              {isPosted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                            </div>
+                            Mark as Posted
+                          </button>
+                          {isPosted && (
+                            <input
+                              type="text"
+                              placeholder="Optional note e.g. 45 comments"
+                              value={note}
+                              onChange={e => updateNote(p.id, e.target.value)}
+                              className="text-[10px] bg-bg border border-border rounded px-2 py-0.5 text-text focus:outline-none focus:border-brand w-36"
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </CardContent>
             </Card>

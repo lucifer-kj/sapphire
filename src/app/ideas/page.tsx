@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/Separator';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import { BrandProfile } from '@/types';
 
 type GenerationStep = 'idle' | 'submitting' | 'strategy' | 'drafting' | 'scoring' | 'complete' | 'error';
 
@@ -19,7 +20,23 @@ export default function IdeasPage() {
   const [content, setContent] = useState('');
   const [platform, setPlatform] = useState('linkedin');
   const [step, setStep] = useState<GenerationStep>('idle');
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+
+  useEffect(() => {
+    fetchBrandProfile();
+  }, []);
+
+  async function fetchBrandProfile() {
+    try {
+      const res = await fetch('/api/brand');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile) setBrandProfile(data.profile);
+      }
+    } catch {
+      // Fallback silent
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,12 +59,12 @@ export default function IdeasPage() {
       const ideaData = await res.json();
       const ideaId = ideaData.runId || crypto.randomUUID();
 
-      // Simulate live AI agent progression steps for UX delight
+      // Step 1: Strategy Agent
       setStep('strategy');
       await new Promise(r => setTimeout(r, 600));
 
+      // Step 2: Draft Generator
       setStep('drafting');
-      // 2. Trigger AI Engine / Webhook integration
       const n8nRes = await fetch('/api/content/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,19 +82,17 @@ export default function IdeasPage() {
           title: 'Idea Saved with Warning',
           description: errorData.error || 'Webhook trigger returned a non-200 response.',
         });
-      } else {
-        const n8nData = await n8nRes.json();
-        setActiveJobId(n8nData.jobId);
       }
 
+      // Step 3: Editor & Scorer
       setStep('scoring');
       await new Promise(r => setTimeout(r, 700));
 
       setStep('complete');
       toast({
         type: 'success',
-        title: 'Content OS Pipeline Complete!',
-        description: 'Idea processed. Strategic angles & 3 scored variants are ready in the Approval Gate!',
+        title: 'Draft Variants Generated!',
+        description: 'Idea processed into 3 scored variants. Review and approve to trigger Step 4 (Image Generation).',
       });
 
       setTitle('');
@@ -93,6 +108,7 @@ export default function IdeasPage() {
     { id: 'strategy', label: '1. Strategy Agent', desc: 'Framing 3 strategic content angles' },
     { id: 'drafting', label: '2. Draft Generator', desc: 'Running Groq / Gemini multi-LLM chain' },
     { id: 'scoring', label: '3. Editor & Scorer', desc: 'Anti-AI pass & dynamic rubric scoring' },
+    { id: 'image_pending', label: '4. Image Generation', desc: 'Triggers automatically upon variant approval in Approval Gate' },
   ];
 
   return (
@@ -100,12 +116,20 @@ export default function IdeasPage() {
       <Header />
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-muted border border-brand/20 text-brand text-xs font-semibold uppercase tracking-wider mb-3">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            Mastra Content Pipeline
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-muted border border-brand/20 text-brand text-xs font-semibold uppercase tracking-wider">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Mastra Content Pipeline
+            </div>
+            {brandProfile && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-bg-elevated border border-border text-xs text-text-muted">
+                <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                Brand profile active: <strong className="text-text">{brandProfile.persona || 'Thought Leader'}</strong> ({brandProfile.tone || 'Professional'})
+              </div>
+            )}
           </div>
           <h1 className="font-display text-4xl font-bold tracking-tight text-text">Capture Raw Idea</h1>
-          <p className="mt-2 text-text-muted text-base">Drop in any article link, rough thought, or topic. AI agents will turn it into 3 scored variants.</p>
+          <p className="mt-2 text-text-muted text-base">Drop in any article link, rough thought, or topic. AI agents turn it into 3 scored variants.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -150,8 +174,7 @@ export default function IdeasPage() {
                       className="w-full bg-bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-brand"
                     >
                       <option value="linkedin">LinkedIn (Professional Post)</option>
-                      <option value="twitter">Twitter / X (Thread or Post)</option>
-                      <option value="instagram">Instagram (Caption & Carousel)</option>
+                      <option value="instagram">Instagram (Caption & 1:1 Image)</option>
                     </select>
                   </div>
                 </div>
@@ -184,13 +207,13 @@ export default function IdeasPage() {
               <CardHeader>
                 <CardTitle className="text-sm font-semibold text-text flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-brand animate-pulse-slow" />
-                  Live Pipeline Monitor
+                  Live Pipeline Monitor (4 Steps)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {step === 'idle' ? (
                   <div className="py-6 text-center text-xs text-text-muted">
-                    <p>Enter your idea and click <strong className="text-text">Generate</strong> to launch the AI agent pipeline.</p>
+                    <p>Enter your idea and click <strong className="text-text">Generate 3 Scored Variants</strong> to start the pipeline.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -198,7 +221,7 @@ export default function IdeasPage() {
                       const isActive = step === s.id;
                       const isPast = (step === 'drafting' && s.id === 'strategy') ||
                                      (step === 'scoring' && (s.id === 'strategy' || s.id === 'drafting')) ||
-                                     step === 'complete';
+                                     (step === 'complete' && s.id !== 'image_pending');
 
                       return (
                         <div
@@ -230,7 +253,7 @@ export default function IdeasPage() {
                       <div className="pt-2 animate-fade-in">
                         <Link href="/approval">
                           <Button variant="primary" size="sm" className="w-full">
-                            Go to Approval Gate →
+                            Go to Approval Gate (Step 4) →
                           </Button>
                         </Link>
                       </div>

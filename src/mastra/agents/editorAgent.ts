@@ -24,30 +24,59 @@ export function stripAIBuzzwords(text: string): string {
   return cleaned.replace(/\s+/g, ' ').trim();
 }
 
-export function calculateHookScore(text: string): number {
+export function calculateHookScore(text: string): { score: number; rationale: string } {
   const firstLine = text.split('\n')[0] || text;
   const hasQuestion = /\?/.test(firstLine);
   const hasNumbers = /\d+/.test(firstLine);
   const hasPowerWords = /(how|why|mistake|stop|proven|framework|step|rule|secret|strategy)/i.test(firstLine);
 
   let score = 0.3;
-  if (hasQuestion) score += 0.3;
-  if (hasNumbers) score += 0.2;
-  if (hasPowerWords) score += 0.2;
+  const reasons: string[] = [];
 
-  return Math.min(score, 1.0);
+  if (hasQuestion) {
+    score += 0.3;
+    reasons.push('opens with an engaging question');
+  }
+  if (hasNumbers) {
+    score += 0.2;
+    reasons.push('uses specific quantitative figures');
+  }
+  if (hasPowerWords) {
+    score += 0.2;
+    reasons.push('includes strong high-converting trigger words');
+  }
+
+  const finalScore = Math.min(score, 1.0);
+  const rationale = reasons.length > 0
+    ? `Strong opening hook: ${reasons.join(', ')}.`
+    : 'Standard opening line; consider adding numbers or a provocative question for higher engagement.';
+
+  return { score: finalScore, rationale };
 }
 
-export function calculateCTAScore(text: string): number {
+export function calculateCTAScore(text: string): { score: number; rationale: string } {
   const lastLines = text.split('\n').slice(-3).join(' ');
   const hasQuestion = /\?/.test(lastLines);
   const hasAction = /(comment|share|thoughts\?|what do you think|agree\?|let me know)/i.test(lastLines);
 
   let score = 0.2;
-  if (hasQuestion) score += 0.4;
-  if (hasAction) score += 0.4;
+  const reasons: string[] = [];
 
-  return Math.min(score, 1.0);
+  if (hasQuestion) {
+    score += 0.4;
+    reasons.push('asks a direct question');
+  }
+  if (hasAction) {
+    score += 0.4;
+    reasons.push('prompts explicit audience response (comments/shares)');
+  }
+
+  const finalScore = Math.min(score, 1.0);
+  const rationale = reasons.length > 0
+    ? `Clear call to action: ${reasons.join(' and ')}.`
+    : 'Weak closing CTA; add an explicit question or comment prompt to drive post comments.';
+
+  return { score: finalScore, rationale };
 }
 
 export function calculateLengthScore(text: string): number {
@@ -82,7 +111,6 @@ export async function scoreAndEditVariant(
       .eq('workspace_id', workspaceId);
 
     if (data && data.length > 0) {
-      // Aggregate weights array or single row
       const hookRow = data.find(r => r.factor_name === 'hook_strength');
       const lengthRow = data.find(r => r.factor_name === 'length_band');
       const ctaRow = data.find(r => r.factor_name === 'cta_presence');
@@ -97,17 +125,19 @@ export async function scoreAndEditVariant(
     console.warn('Could not fetch dynamic rubric weights, using defaults:', err);
   }
 
-  // 3. Compute real content scores
-  const hookScore = calculateHookScore(cleanedText);
+  // 3. Compute content scores & rationale
+  const { score: hookScore, rationale: hookRationale } = calculateHookScore(cleanedText);
   const lengthScore = calculateLengthScore(cleanedText);
-  const ctaScore = calculateCTAScore(cleanedText);
-  const topicScore = 0.8; // Baseline structural quality
+  const { score: ctaScore, rationale: ctaRationale } = calculateCTAScore(cleanedText);
+  const topicScore = 0.8;
 
   const totalScore =
     hookScore * weights.hook_weight +
     lengthScore * weights.length_weight +
     ctaScore * weights.cta_weight +
     topicScore * weights.topic_weight;
+
+  const overallRationale = `${hookRationale} ${ctaRationale}`;
 
   return {
     ...variant,
@@ -118,6 +148,9 @@ export async function scoreAndEditVariant(
       length_band: Number(lengthScore.toFixed(2)),
       cta_presence: Number(ctaScore.toFixed(2)),
       topic_quality: Number(topicScore.toFixed(2)),
+      hook_rationale: hookRationale,
+      cta_rationale: ctaRationale,
+      overall_rationale: overallRationale,
     },
   };
 }
