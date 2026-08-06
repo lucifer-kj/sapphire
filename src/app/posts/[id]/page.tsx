@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Separator } from '@/components/ui/Separator';
 import { useToast } from '@/components/ui/Toast';
 
-const statusMap = {
+import { Post } from '@/types';
+
+const statusMap: Record<string, { label: string; variant: 'neutral' | 'warning' | 'success' | 'error' }> = {
   draft: { label: 'Draft', variant: 'neutral' },
   scheduled: { label: 'Scheduled', variant: 'warning' },
   publishing: { label: 'Publishing', variant: 'warning' },
@@ -17,10 +19,10 @@ const statusMap = {
   cancelled: { label: 'Cancelled', variant: 'neutral' },
 };
 
-export default function PostDetailPage({ params }) {
+export default function PostDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
-  const [post, setPost] = useState(null);
-  const [error, setError] = useState(null);
+  const [post, setPost] = useState<Post | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
 
@@ -33,8 +35,8 @@ export default function PostDetailPage({ params }) {
         }
         const data = await response.json();
         setPost(data);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -52,8 +54,9 @@ export default function PostDetailPage({ params }) {
       if (!response.ok) throw new Error('Failed to retry');
       toast({ type: 'success', title: 'Retrying', description: 'Post retry initiated.' });
       window.location.reload();
-    } catch (err) {
-      toast({ type: 'error', title: 'Error', description: err.message });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to retry publication';
+      toast({ type: 'error', title: 'Error', description: errorMessage });
     } finally {
       setRetrying(false);
     }

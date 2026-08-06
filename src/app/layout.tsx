@@ -6,7 +6,7 @@ export const metadata = {
   description: 'Agentic operating system for professional content',
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="bg-bg text-text antialiased">

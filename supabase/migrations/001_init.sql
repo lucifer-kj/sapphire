@@ -1,56 +1,94 @@
--- AI Social Content OS — Database Schema (Phase 2)
--- Created with Row-Level Security (RLS) enabled on all tables from day one
--- Matches PRD §10 exactly
+-- AI Social Content OS — Multi-Tenant Database Schema (v2 Production)
+-- RLS Security Enabled with auth.uid() workspace-level isolation
 
--- 1. ideas table
--- Stores raw and normalized ideas with status tracking
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 1. workspaces table
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    owner_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. workspace_members table
+CREATE TABLE workspace_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(workspace_id, user_id)
+);
+
+-- 3. brand_profiles table
+CREATE TABLE brand_profiles (
+    workspace_id UUID PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
+    company_name TEXT,
+    persona TEXT NOT NULL DEFAULT 'Professional Thought Leader',
+    tone TEXT NOT NULL DEFAULT 'Informative, engaging, approachable',
+    topics TEXT[] DEFAULT '{}',
+    example_posts TEXT[] DEFAULT '{}',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. ideas table
 CREATE TABLE ideas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL,
     raw_content TEXT NOT NULL,
     normalized_content TEXT,
-    language TEXT,
+    image_url TEXT,
+    language TEXT DEFAULT 'en',
     status TEXT NOT NULL CHECK (status IN ('new', 'processing', 'drafted', 'discarded')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. workflow_runs table
--- Mirrors Mastra's persisted workflow runs
-CREATE TABLE workflow_runs (
+-- 5. content_jobs table (tracks async n8n pipeline runs)
+CREATE TABLE content_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    idea_id UUID NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
-    mastra_run_id TEXT NOT NULL UNIQUE,
-    state TEXT NOT NULL CHECK (state IN ('running', 'suspended', 'completed', 'failed')),
-    suspended_at TIMESTAMP WITH TIME ZONE,
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    idea_id UUID REFERENCES ideas(id) ON DELETE CASCADE,
+    n8n_job_id TEXT,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    result_data JSONB DEFAULT '{}',
+    error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (idea_id, state)  -- Ensure one active workflow per idea at a time
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. drafts table
--- Stores AI-generated draft variants with scoring
+-- 6. drafts table
 CREATE TABLE drafts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     idea_id UUID NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL DEFAULT 'linkedin',
     variant_index INTEGER NOT NULL,
     text TEXT NOT NULL,
     score NUMERIC,
-    score_breakdown JSONB,
-    policy_flags JSONB,
+    score_breakdown JSONB DEFAULT '{}',
+    policy_flags JSONB DEFAULT '{}',
     model_used TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (idea_id, variant_index)  -- Prevent duplicate variants per idea
+    UNIQUE (idea_id, platform, variant_index)
 );
 
--- 4. posts table
--- Tracks scheduled and published LinkedIn posts with strict status machine
+-- 7. posts table
 CREATE TABLE posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    draft_id UUID REFERENCES drafts(id),  -- Nullable for hand-written posts
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    draft_id UUID REFERENCES drafts(id),
+    platform TEXT NOT NULL DEFAULT 'linkedin',
     final_text TEXT NOT NULL,
+    image_url TEXT,
     status TEXT NOT NULL CHECK (status IN ('draft', 'scheduled', 'publishing', 'published', 'failed', 'cancelled')),
     scheduled_for TIMESTAMP WITH TIME ZONE,
     published_at TIMESTAMP WITH TIME ZONE,
-    linkedin_post_urn TEXT,
+    external_post_urn TEXT,
     retry_count INTEGER DEFAULT 0,
     last_error TEXT,
     version INTEGER DEFAULT 0,
@@ -58,23 +96,25 @@ CREATE TABLE posts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. accounts table
--- Stores LinkedIn OAuth tokens (encrypted at rest)
-CREATE TABLE accounts (
+-- 8. social_accounts table (encrypted OAuth tokens per workspace)
+CREATE TABLE social_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,  -- Will be the authenticated user ID from auth system
-    linkedin_access_token TEXT NOT NULL,
-    linkedin_refresh_token TEXT NOT NULL,
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    platform TEXT NOT NULL CHECK (platform IN ('linkedin', 'instagram', 'twitter')),
+    account_name TEXT,
+    encrypted_access_token TEXT NOT NULL,
+    encrypted_refresh_token TEXT,
     token_expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     scopes TEXT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(workspace_id, platform)
 );
 
--- 6. engagement_snapshots table
--- Append-only LinkedIn engagement data
+-- 9. engagement_snapshots table
 CREATE TABLE engagement_snapshots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     likes INTEGER DEFAULT 0,
     comments INTEGER DEFAULT 0,
@@ -82,103 +122,77 @@ CREATE TABLE engagement_snapshots (
     fetched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. voice_profiles table
--- Compact summary of edit patterns for voice adaptation
+-- 10. voice_profiles table
 CREATE TABLE voice_profiles (
-    user_id TEXT PRIMARY KEY,
+    workspace_id UUID PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
     summary JSONB DEFAULT '{}',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 8. rubric_weights table
--- Learned scoring weights for ranking
+-- 11. rubric_weights table
 CREATE TABLE rubric_weights (
-    factor_name TEXT PRIMARY KEY,
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    factor_name TEXT NOT NULL,
     weight NUMERIC NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (workspace_id, factor_name)
 );
 
--- Row-Level Security (RLS) Policies
--- Every table has RLS enabled from day one (PRD §10, §14)
+-- Helper function to check workspace membership in RLS policies
+CREATE OR REPLACE FUNCTION is_workspace_member(ws_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM workspace_members
+        WHERE workspace_id = ws_id AND user_id = auth.uid()
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Ideas RLS
+-- Enable Row Level Security (RLS) on all tables
+ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brand_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ideas ENABLE ROW LEVEL SECURITY;
-CREATE POLICY ideas_user_select ON ideas FOR SELECT USING (true);
-CREATE POLICY ideas_user_insert ON ideas FOR INSERT WITH CHECK (true);
-CREATE POLICY ideas_user_update ON ideas FOR UPDATE USING (true);
-CREATE POLICY ideas_user_delete ON ideas FOR DELETE USING (true);
-
--- Workflow Runs RLS
-ALTER TABLE workflow_runs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY workflow_runs_user_select ON workflow_runs FOR SELECT USING (true);
-CREATE POLICY workflow_runs_user_insert ON workflow_runs FOR INSERT WITH CHECK (true);
-CREATE POLICY workflow_runs_user_update ON workflow_runs FOR UPDATE USING (true);
-CREATE POLICY workflow_runs_user_delete ON workflow_runs FOR DELETE USING (true);
-
--- Drafts RLS
+ALTER TABLE content_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drafts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY drafts_user_select ON drafts FOR SELECT USING (true);
-CREATE POLICY drafts_user_insert ON drafts FOR INSERT WITH CHECK (true);
-CREATE POLICY drafts_user_update ON drafts FOR UPDATE USING (true);
-CREATE POLICY drafts_user_delete ON drafts FOR DELETE USING (true);
-
--- Posts RLS
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY posts_user_select ON posts FOR SELECT USING (true);
-CREATE POLICY posts_user_insert ON posts FOR INSERT WITH CHECK (true);
-CREATE POLICY posts_user_update ON posts FOR UPDATE USING (true);
-CREATE POLICY posts_user_delete ON posts FOR DELETE USING (true);
-
--- Accounts RLS
-ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY accounts_user_select ON accounts FOR SELECT USING (true);
-CREATE POLICY accounts_user_insert ON accounts FOR INSERT WITH CHECK (true);
-CREATE POLICY accounts_user_update ON accounts FOR UPDATE USING (true);
-CREATE POLICY accounts_user_delete ON accounts FOR DELETE USING (true);
-
--- Engagement Snapshots RLS
+ALTER TABLE social_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE engagement_snapshots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY engagement_snapshots_user_select ON engagement_snapshots FOR SELECT USING (true);
-CREATE POLICY engagement_snapshots_user_insert ON engagement_snapshots FOR INSERT WITH CHECK (true);
-CREATE POLICY engagement_snapshots_user_update ON engagement_snapshots FOR UPDATE USING (true);
-CREATE POLICY engagement_snapshots_user_delete ON engagement_snapshots FOR DELETE USING (true);
-
--- Voice Profiles RLS
 ALTER TABLE voice_profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY voice_profiles_user_select ON voice_profiles FOR SELECT USING (true);
-CREATE POLICY voice_profiles_user_insert ON voice_profiles FOR INSERT WITH CHECK (true);
-CREATE POLICY voice_profiles_user_update ON voice_profiles FOR UPDATE USING (true);
-CREATE POLICY voice_profiles_user_delete ON voice_profiles FOR DELETE USING (true);
-
--- Rubric Weights RLS
 ALTER TABLE rubric_weights ENABLE ROW LEVEL SECURITY;
-CREATE POLICY rubric_weights_user_select ON rubric_weights FOR SELECT USING (true);
-CREATE POLICY rubric_weights_user_insert ON rubric_weights FOR INSERT WITH CHECK (true);
-CREATE POLICY rubric_weights_user_update ON rubric_weights FOR UPDATE USING (true);
-CREATE POLICY rubric_weights_user_delete ON rubric_weights FOR DELETE USING (true);
 
--- Function to automatically update timestamps
+-- Workspaces Policies
+CREATE POLICY workspaces_select ON workspaces FOR SELECT USING (is_workspace_member(id) OR owner_id = auth.uid());
+CREATE POLICY workspaces_insert ON workspaces FOR INSERT WITH CHECK (owner_id = auth.uid());
+CREATE POLICY workspaces_update ON workspaces FOR UPDATE USING (owner_id = auth.uid());
+
+-- Workspace Members Policies
+CREATE POLICY members_select ON workspace_members FOR SELECT USING (is_workspace_member(workspace_id));
+CREATE POLICY members_insert ON workspace_members FOR INSERT WITH CHECK (is_workspace_member(workspace_id));
+
+-- Workspace-Isolated Resource Policies
+CREATE POLICY brand_profiles_all ON brand_profiles FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY ideas_all ON ideas FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY content_jobs_all ON content_jobs FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY drafts_all ON drafts FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY posts_all ON posts FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY social_accounts_all ON social_accounts FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY engagement_snapshots_all ON engagement_snapshots FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY voice_profiles_all ON voice_profiles FOR ALL USING (is_workspace_member(workspace_id));
+CREATE POLICY rubric_weights_all ON rubric_weights FOR ALL USING (is_workspace_member(workspace_id));
+
+-- Auto-update timestamps triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Triggers to auto-update timestamps
-CREATE TRIGGER update_ideas_updated_at BEFORE UPDATE ON ideas
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Seed data for rubric_weights (cold start heuristic defaults)
-INSERT INTO rubric_weights (factor_name, weight) VALUES
-    ('hook_strength', 0.4),
-    ('length_band', 0.2),
-    ('cta_presence', 0.2),
-    ('historical_topic_performance', 0.2);
+CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON workspaces FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_ideas_updated_at BEFORE UPDATE ON ideas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_content_jobs_updated_at BEFORE UPDATE ON content_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_social_accounts_updated_at BEFORE UPDATE ON social_accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

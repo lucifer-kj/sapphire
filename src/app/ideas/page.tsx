@@ -27,18 +27,50 @@ export default function IdeasPage() {
     }
     setIsSubmitting(true);
     try {
+      // 1. Save local idea record
       const res = await fetch('/api/ideas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, platform: platform || undefined }),
       });
       if (!res.ok) throw new Error('Failed to create idea');
-      toast({ type: 'success', title: 'Idea Created', description: 'Your idea has been captured.' });
+      
+      const ideaData = await res.json();
+      const ideaId = ideaData.runId || crypto.randomUUID();
+
+      // 2. Trigger n8n webhook integration
+      const n8nRes = await fetch('/api/content/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ideaId,
+          rawContent: `${title}: ${content}`,
+          platform: platform || 'linkedin',
+        }),
+      });
+
+      if (!n8nRes.ok) {
+        const errorData = await n8nRes.json();
+        toast({
+          type: 'warning',
+          title: 'Idea Saved (n8n Webhook Warning)',
+          description: errorData.error || 'Failed to dispatch to n8n webhook.',
+        });
+      } else {
+        const n8nData = await n8nRes.json();
+        toast({
+          type: 'success',
+          title: 'Idea Saved & n8n Webhook Triggered!',
+          description: `Dispatched to n8n webhook (Job ID: ${n8nData.jobId.substring(0, 8)}...)`,
+        });
+      }
+
       setTitle('');
       setContent('');
       setPlatform('');
-    } catch {
-      toast({ type: 'error', title: 'Error', description: 'Failed to create idea. Please try again.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to save idea';
+      toast({ type: 'error', title: 'Error', description: msg });
     } finally {
       setIsSubmitting(false);
     }
