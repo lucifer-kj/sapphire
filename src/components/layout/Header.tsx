@@ -24,19 +24,19 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-bg/85 backdrop-blur-xl">
       <div className="flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand group-hover:scale-105 transition-transform">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-bg">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="font-display font-semibold text-text tracking-tight">Content OS</span>
-          <Badge variant="brand" size="sm" className="hidden sm:inline-flex">Beta</Badge>
-        </div>
+          <span className="font-display font-bold text-text text-lg tracking-tight">Sapphire <span className="text-brand">OS</span></span>
+          <Badge variant="brand" size="sm" className="hidden sm:inline-flex text-[10px] uppercase font-mono">v2.1</Badge>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {navItems.map(item => {
@@ -46,9 +46,9 @@ export const Header = () => {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
+                  'flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-200',
                   isActive
-                    ? 'text-brand bg-brand-muted'
+                    ? 'text-brand bg-brand-muted/40 border border-brand/20'
                     : 'text-text-muted hover:text-text hover:bg-bg-elevated'
                 )}
               >
@@ -60,18 +60,12 @@ export const Header = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            Search
-          </Button>
-          <Button variant="primary" size="sm" className="hidden sm:flex">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Idea
-          </Button>
+          <Link href="/ideas">
+            <Button variant="primary" size="sm" className="hidden sm:flex items-center gap-1.5 font-medium shadow-brand">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              New Idea
+            </Button>
+          </Link>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-text-muted hover:text-text hover:bg-bg-elevated transition-colors"
@@ -93,7 +87,7 @@ export const Header = () => {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-bg-elevated animate-slide-down">
+        <div className="md:hidden border-t border-border bg-bg-elevated/95 backdrop-blur-xl animate-slide-down">
           <nav className="px-4 py-3 space-y-1" aria-label="Mobile navigation">
             {navItems.map(item => {
               const isActive = pathname === item.href;
@@ -105,7 +99,7 @@ export const Header = () => {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
                     isActive
-                      ? 'text-brand bg-brand-muted'
+                      ? 'text-brand bg-brand-muted/40'
                       : 'text-text-muted hover:text-text hover:bg-bg-hover'
                   )}
                 >
@@ -115,9 +109,12 @@ export const Header = () => {
               );
             })}
             <Separator className="my-2" />
-            <div className="flex gap-2 px-3 py-2">
-              <Button variant="ghost" size="sm" className="flex-1">Search</Button>
-              <Button variant="primary" size="sm" className="flex-1">New Idea</Button>
+            <div className="px-3 py-2">
+              <Link href="/ideas" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="primary" size="sm" className="w-full">
+                  + New Idea
+                </Button>
+              </Link>
             </div>
           </nav>
         </div>

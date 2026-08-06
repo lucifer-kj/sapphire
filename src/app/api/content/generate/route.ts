@@ -14,6 +14,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'N8N_WEBHOOK_URL environment variable is not configured' }, { status: 500 });
     }
 
+    const secret = process.env.N8N_WEBHOOK_SECRET || 'sapphire_n8n_secret_2026';
+    const basicAuthHeader = 'Basic ' + Buffer.from(`sapphire:${secret}`).toString('base64');
     const jobId = crypto.randomUUID();
 
     const n8nPayload = {
@@ -28,16 +30,17 @@ export async function POST(request: Request) {
         tone: 'Professional & Engaging',
         topics: ['AI', 'Productivity', 'Business'],
       },
-      secret: process.env.N8N_WEBHOOK_SECRET || '',
+      secret,
       submittedAt: new Date().toISOString(),
     };
 
-    // 1. Try POST request first (recommended for n8n webhook nodes receiving JSON)
+    // 1. Try POST request with Basic Auth & X-Sapphire-Secret headers
     let n8nResponse = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Sapphire-Secret': process.env.N8N_WEBHOOK_SECRET || '',
+        'Authorization': basicAuthHeader,
+        'X-Sapphire-Secret': secret,
       },
       body: JSON.stringify(n8nPayload),
     });
@@ -58,7 +61,8 @@ export async function POST(request: Request) {
         n8nResponse = await fetch(getUrl, {
           method: 'GET',
           headers: {
-            'X-Sapphire-Secret': process.env.N8N_WEBHOOK_SECRET || '',
+            'Authorization': basicAuthHeader,
+            'X-Sapphire-Secret': secret,
           },
         });
       }

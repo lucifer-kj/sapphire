@@ -363,7 +363,38 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
   letter-spacing: -0.02em;
   color: var(--color-text);
+  text-wrap: balance;
 }
+
+p {
+  text-wrap: pretty;
+}
+
+textarea {
+  field-sizing: content;
+}
+
+/* Scrollbar Native Modern API */
+* {
+  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
+}
+
+/* Glassmorphic Cards */
+.glass-panel {
+  background: rgba(19, 19, 21, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.text-gradient {
+  background: linear-[#eab308, #fef08a];
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 
 h1 { font-size: clamp(32px, 5vw, 48px); }
 h2 { font-size: clamp(26px, 4vw, 36px); }
