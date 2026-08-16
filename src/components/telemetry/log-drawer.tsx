@@ -80,10 +80,18 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
           </span>
         );
       case "Pollinations AI":
+      case "Pollinations AI (Flux)":
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-purple-50 text-purple-700 border border-purple-200">
             <Terminal className="w-3 h-3" />
             Pollinations (Flux)
+          </span>
+        );
+      case "Puter.js":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <Sparkles className="w-3 h-3" />
+            Puter.js ({model})
           </span>
         );
       default:

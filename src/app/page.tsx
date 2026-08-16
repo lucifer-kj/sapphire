@@ -1077,7 +1077,7 @@ export default function SapphireWorkspace() {
                             Artwork Rendering Timeout
                           </p>
                           <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
-                            Image provider timed out or returned an unrendered state.
+                            Google API returned an unrendered state or rate limit.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("A")}
@@ -1086,6 +1086,24 @@ export default function SapphireWorkspace() {
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
                             <span>{isRegeneratingA ? "Regenerating..." : "Retry Image Generation"}</span>
+                          </button>
+                        </div>
+                      ) : brief ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-50/40 border border-amber-200/60 rounded-lg space-y-2.5">
+                          <Sparkles className="w-8 h-8 text-amber-600 stroke-1" />
+                          <p className="text-text-xs font-semibold text-stone-900">
+                            Nano Banana 2 Prompt Ready
+                          </p>
+                          <p className="text-[11px] text-stone-600 max-w-[220px] leading-tight">
+                            Google AI Studio requires a linked Cloud Billing account for image quota (limit: 0 on free tier).
+                          </p>
+                          <button
+                            onClick={() => handleRegenerateImage("A")}
+                            disabled={isRegeneratingA}
+                            className="px-3 py-1.5 bg-sapphire-dark text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
+                            <span>{isRegeneratingA ? "Connecting..." : "Generate Nano Banana Image"}</span>
                           </button>
                         </div>
                       ) : (
@@ -1306,7 +1324,7 @@ export default function SapphireWorkspace() {
                             Artwork Rendering Timeout
                           </p>
                           <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
-                            Image provider timed out or returned an unrendered state.
+                            Google API returned an unrendered state or rate limit.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("B")}
@@ -1315,6 +1333,24 @@ export default function SapphireWorkspace() {
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
                             <span>{isRegeneratingB ? "Regenerating..." : "Retry Image Generation"}</span>
+                          </button>
+                        </div>
+                      ) : brief ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-50/40 border border-amber-200/60 rounded-lg space-y-2.5">
+                          <Sparkles className="w-8 h-8 text-amber-600 stroke-1" />
+                          <p className="text-text-xs font-semibold text-stone-900">
+                            Nano Banana 2 Prompt Ready
+                          </p>
+                          <p className="text-[11px] text-stone-600 max-w-[220px] leading-tight">
+                            Google AI Studio requires a linked Cloud Billing account for image quota (limit: 0 on free tier).
+                          </p>
+                          <button
+                            onClick={() => handleRegenerateImage("B")}
+                            disabled={isRegeneratingB}
+                            className="px-3 py-1.5 bg-sapphire-dark text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
+                            <span>{isRegeneratingB ? "Connecting..." : "Generate Nano Banana Image"}</span>
                           </button>
                         </div>
                       ) : (

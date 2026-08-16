@@ -174,12 +174,12 @@ export class CampaignWorkflow {
       model: imgResultA.model,
       status: imgResultA.status,
       durationMs: imgResultA.durationMs,
-      summary: `Concept A artwork synthesized via ${imgResultA.provider} (${imgResultA.model}). Status: ${imgResultA.status}.`,
+      summary: `Concept A artwork rendered via ${imgResultA.provider} (${imgResultA.model}) in ${imgResultA.durationMs}ms.`,
       details: {
         layers: promptEngineeredA.layers,
         blendedPrompt: promptEngineeredA.optimized_image_prompt,
         negativePrompt: promptEngineeredA.negative_prompt,
-        url: imgResultA.url,
+        url: imgResultA.url ? `${imgResultA.url.slice(0, 50)}...` : undefined,
       },
     });
 
@@ -197,12 +197,12 @@ export class CampaignWorkflow {
       model: imgResultB.model,
       status: imgResultB.status,
       durationMs: imgResultB.durationMs,
-      summary: `Concept B artwork synthesized via ${imgResultB.provider} (${imgResultB.model}). Status: ${imgResultB.status}.`,
+      summary: `Concept B artwork rendered via ${imgResultB.provider} (${imgResultB.model}) in ${imgResultB.durationMs}ms.`,
       details: {
         layers: promptEngineeredB.layers,
         blendedPrompt: promptEngineeredB.optimized_image_prompt,
         negativePrompt: promptEngineeredB.negative_prompt,
-        url: imgResultB.url,
+        url: imgResultB.url ? `${imgResultB.url.slice(0, 50)}...` : undefined,
       },
     });
 
