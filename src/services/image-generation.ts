@@ -7,8 +7,8 @@ export interface ImageGenResult {
 }
 
 /**
- * Image Generation Service integrating Nano Banana 2 (Gemini 3.1 Flash Image)
- * as primary with Pollinations AI (Flux) as secondary/fallback.
+ * Multi-Layer Image Generation Service integrating Nano Banana 2 (Gemini 3.1 Flash Image)
+ * with multimodal reference conditioning and Pollinations AI (Flux) as secondary/fallback.
  */
 export class ImageGenerationService {
   /**
@@ -18,7 +18,8 @@ export class ImageGenerationService {
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
     styleOverride?: string,
-    negativePrompt?: string
+    negativePrompt?: string,
+    referenceImageDataUrl?: string | null
   ): Promise<ImageGenResult> {
     const start = performance.now();
     const fullPrompt = styleOverride ? `${styleOverride}, ${prompt}` : prompt;
@@ -27,7 +28,11 @@ export class ImageGenerationService {
     const googleKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (googleKey) {
       try {
-        const nanoBananaUrl = await this.generateWithNanoBanana(fullPrompt, googleKey);
+        const nanoBananaUrl = await this.generateWithNanoBanana(
+          fullPrompt,
+          googleKey,
+          referenceImageDataUrl
+        );
         if (nanoBananaUrl) {
           const durationMs = Math.round(performance.now() - start);
           return {
@@ -68,13 +73,30 @@ export class ImageGenerationService {
   }
 
   /**
-   * Generates an image using Google's Nano Banana 2 (gemini-3.1-flash-image) model.
+   * Generates or edits an image using Google's Nano Banana 2 (gemini-3.1-flash-image) model,
+   * supporting multimodal image conditioning when a reference image is attached.
    */
   private static async generateWithNanoBanana(
     prompt: string,
-    apiKey: string
+    apiKey: string,
+    referenceImageDataUrl?: string | null
   ): Promise<string | null> {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+
+    const parts: any[] = [{ text: prompt }];
+
+    // If reference image provided, pass as multimodal conditioning
+    if (referenceImageDataUrl && referenceImageDataUrl.startsWith("data:")) {
+      const match = referenceImageDataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      if (match) {
+        parts.push({
+          inlineData: {
+            mimeType: match[1],
+            data: match[2],
+          },
+        });
+      }
+    }
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -84,7 +106,7 @@ export class ImageGenerationService {
       body: JSON.stringify({
         contents: [
           {
-            parts: [{ text: prompt }],
+            parts,
           },
         ],
         generationConfig: {
@@ -110,7 +132,7 @@ export class ImageGenerationService {
 
   /**
    * Fallback generation with Pollinations AI (Flux model).
-   * Formats prompt with high photographic fidelity parameters.
+   * Formats prompt with high photographic fidelity parameters up to 700 characters.
    */
   static generateWithPollinations(
     prompt: string,
@@ -119,7 +141,6 @@ export class ImageGenerationService {
   ): string {
     const apiKey = process.env.POLLINATIONS_API_KEY || "";
 
-    // Clean prompt while preserving full descriptive details up to 700 chars
     let cleanPrompt = prompt
       .replace(/["'#]/g, "")
       .replace(/\s+/g, " ")

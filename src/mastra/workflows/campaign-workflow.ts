@@ -26,14 +26,14 @@ export interface WorkflowResult {
 
 export class CampaignWorkflow {
   /**
-   * Executes end-to-end agent workflow with 6-stage prompt engineering & live telemetry:
+   * Executes end-to-end agent workflow with Multi-Layer Visual Decomposition & live telemetry:
    * 1. Brand Context & DNA
    * 2. Intent Parsing (Gemini 3.1 Flash Lite)
    * 3. Multimodal Vision (Gemini 3.7 Flash)
    * 4. Research & Trends (Gemini 3.7 Flash / Groq)
    * 5. Creative Brief A/B (Gemini 3.7 Flash / Groq)
-   * 6. Prompt Engineering (Gemini 3.7 Flash - 6-stage photographic prompts)
-   * 7. Image Generation (Nano Banana 2 / Pollinations Flux)
+   * 6. Multi-Layer Visual Decomposition (Gemini 3.7 Flash - Background, Subject, Lighting, Composite)
+   * 7. Image Generation & Blending (Nano Banana 2 with multimodal conditioning / Pollinations Flux)
    * 8. Critic Brand Guard (Groq 70B / Gemini 3.7 Flash)
    * 9. Supabase Durable Persistence
    */
@@ -107,9 +107,9 @@ export class CampaignWorkflow {
       (b) => `Generated dual concepts: "${b.concept_a.label}" & "${b.concept_b.label}".`
     );
 
-    // 6. Stage 6 Prompt Engineering: Synthesize high-fidelity 6-stage prompts for Concept A and Concept B
+    // 6. Multi-Layer Visual Decomposition & Prompt Engineering for Concept A and Concept B
     const promptEngineeredA = await logger.track(
-      "PromptEngineerAgent (Concept A)",
+      "VisualDecomposition (Concept A)",
       "Google Gemini",
       "gemini-3.7-flash",
       () =>
@@ -120,11 +120,11 @@ export class CampaignWorkflow {
           research,
           referenceAnalysis
         ),
-      (pe) => `Engineered 6-stage prompt for Concept A (${pe.camera_specs}).`
+      (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept A.`
     );
 
     const promptEngineeredB = await logger.track(
-      "PromptEngineerAgent (Concept B)",
+      "VisualDecomposition (Concept B)",
       "Google Gemini",
       "gemini-3.7-flash",
       () =>
@@ -135,7 +135,7 @@ export class CampaignWorkflow {
           research,
           referenceAnalysis
         ),
-      (pe) => `Engineered 6-stage prompt for Concept B (${pe.camera_specs}).`
+      (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept B.`
     );
 
     // 7. Run Critic Agent on both Concept A and Concept B
@@ -155,7 +155,7 @@ export class CampaignWorkflow {
       (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
     );
 
-    // 8. Generate AI Images using the 6-stage engineered prompts (Nano Banana 2 primary, Pollinations Flux fallback)
+    // 8. Multi-Layer Image Generation & Multimodal Blending (Nano Banana 2 primary, Pollinations Flux fallback)
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
@@ -164,7 +164,8 @@ export class CampaignWorkflow {
       promptEngineeredA.optimized_image_prompt,
       seedA,
       refStyle,
-      promptEngineeredA.negative_prompt
+      promptEngineeredA.negative_prompt,
+      referenceImage
     );
     brief.concept_a.image_url = imgResultA.url;
     logger.log({
@@ -175,7 +176,8 @@ export class CampaignWorkflow {
       durationMs: imgResultA.durationMs,
       summary: `Concept A artwork synthesized via ${imgResultA.provider} (${imgResultA.model}). Status: ${imgResultA.status}.`,
       details: {
-        prompt: promptEngineeredA.optimized_image_prompt,
+        layers: promptEngineeredA.layers,
+        blendedPrompt: promptEngineeredA.optimized_image_prompt,
         negativePrompt: promptEngineeredA.negative_prompt,
         url: imgResultA.url,
       },
@@ -185,7 +187,8 @@ export class CampaignWorkflow {
       promptEngineeredB.optimized_image_prompt,
       seedB,
       refStyle,
-      promptEngineeredB.negative_prompt
+      promptEngineeredB.negative_prompt,
+      referenceImage
     );
     brief.concept_b.image_url = imgResultB.url;
     logger.log({
@@ -196,7 +199,8 @@ export class CampaignWorkflow {
       durationMs: imgResultB.durationMs,
       summary: `Concept B artwork synthesized via ${imgResultB.provider} (${imgResultB.model}). Status: ${imgResultB.status}.`,
       details: {
-        prompt: promptEngineeredB.optimized_image_prompt,
+        layers: promptEngineeredB.layers,
+        blendedPrompt: promptEngineeredB.optimized_image_prompt,
         negativePrompt: promptEngineeredB.negative_prompt,
         url: imgResultB.url,
       },
