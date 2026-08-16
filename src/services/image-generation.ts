@@ -1,16 +1,25 @@
+export interface ImageGenResult {
+  url: string;
+  provider: "Nano Banana" | "Pollinations AI";
+  model: string;
+  durationMs: number;
+  status: "success" | "fallback";
+}
+
 /**
  * Image Generation Service integrating Nano Banana (Gemini 2.5 Flash Image)
  * as primary with Pollinations AI (Flux) as secondary/fallback.
  */
 export class ImageGenerationService {
   /**
-   * Generates an image URL (either data:image base64 from Nano Banana or Pollinations Flux URL).
+   * Generates an image URL and returns execution metadata.
    */
-  static async generateImageUrl(
+  static async generateImageUrlWithMeta(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
     styleOverride?: string
-  ): Promise<string> {
+  ): Promise<ImageGenResult> {
+    const start = performance.now();
     const fullPrompt = styleOverride ? `${styleOverride}, ${prompt}` : prompt;
 
     // 1. Try Nano Banana (Gemini 2.5 Flash Image) if Google API key exists
@@ -19,7 +28,14 @@ export class ImageGenerationService {
       try {
         const nanoBananaUrl = await this.generateWithNanoBanana(fullPrompt, googleKey);
         if (nanoBananaUrl) {
-          return nanoBananaUrl;
+          const durationMs = Math.round(performance.now() - start);
+          return {
+            url: nanoBananaUrl,
+            provider: "Nano Banana",
+            model: "gemini-2.5-flash-image",
+            durationMs,
+            status: "success",
+          };
         }
       } catch (err) {
         console.warn("Nano Banana generation error, falling back to Pollinations:", err);
@@ -27,7 +43,27 @@ export class ImageGenerationService {
     }
 
     // 2. Fallback to Pollinations AI
-    return this.generateWithPollinations(fullPrompt, seed);
+    const url = this.generateWithPollinations(fullPrompt, seed);
+    const durationMs = Math.round(performance.now() - start);
+    return {
+      url,
+      provider: "Pollinations AI",
+      model: "flux",
+      durationMs,
+      status: "fallback",
+    };
+  }
+
+  /**
+   * Legacy string-returning helper for quick compatibility.
+   */
+  static async generateImageUrl(
+    prompt: string,
+    seed: number = Math.floor(Math.random() * 1000000),
+    styleOverride?: string
+  ): Promise<string> {
+    const res = await this.generateImageUrlWithMeta(prompt, seed, styleOverride);
+    return res.url;
   }
 
   /**

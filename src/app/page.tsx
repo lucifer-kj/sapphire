@@ -34,10 +34,15 @@ import {
   BrainCircuit,
   Mail,
   CheckCheck,
+  Activity,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { CreativeBrief, ResearchContext, UserIntent, ConceptItem } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
+import { WorkflowLogEntry } from "@/lib/schema/telemetry";
+import { LogDrawer } from "@/components/telemetry/log-drawer";
 
 interface ConceptVersionHistory {
   versionNumber: number;
@@ -52,6 +57,16 @@ export default function SapphireWorkspace() {
   const [activeBrand, setActiveBrand] = useState("Vagabond Travel Agency");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Dedicated Telemetry Logs State
+  const [workflowLogs, setWorkflowLogs] = useState<WorkflowLogEntry[]>([]);
+  const [isLogsOpen, setIsLogsOpen] = useState(false);
+
+  // Image load error & retry states
+  const [imageErrorA, setImageErrorA] = useState(false);
+  const [imageErrorB, setImageErrorB] = useState(false);
+  const [isRegeneratingA, setIsRegeneratingA] = useState(false);
+  const [isRegeneratingB, setIsRegeneratingB] = useState(false);
 
   // Reference Image Upload State
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
@@ -130,6 +145,61 @@ export default function SapphireWorkspace() {
     }
   };
 
+  const handleRegenerateImage = async (conceptType: "A" | "B") => {
+    if (!brief) return;
+    const targetConcept = conceptType === "A" ? brief.concept_a : brief.concept_b;
+    if (conceptType === "A") setIsRegeneratingA(true);
+    else setIsRegeneratingB(true);
+
+    try {
+      const res = await fetch("/api/regenerate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: targetConcept.image_prompt,
+          styleOverride: referenceAnalysis ? referenceAnalysis.photography_style : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        if (conceptType === "A") {
+          setImageErrorA(false);
+          setBrief((prev) =>
+            prev ? { ...prev, concept_a: { ...prev.concept_a, image_url: data.imageUrl } } : prev
+          );
+        } else {
+          setImageErrorB(false);
+          setBrief((prev) =>
+            prev ? { ...prev, concept_b: { ...prev.concept_b, image_url: data.imageUrl } } : prev
+          );
+        }
+
+        if (data.meta) {
+          setWorkflowLogs((prev) => [
+            ...prev,
+            {
+              id: `log-regen-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              agent: `ImageGenerationService (Concept ${conceptType} Retry)`,
+              provider: data.meta.provider,
+              model: data.meta.model,
+              status: data.meta.status,
+              durationMs: data.meta.durationMs,
+              summary: `Regenerated Concept ${conceptType} artwork via ${data.meta.provider} (${data.meta.model}).`,
+              details: data.meta,
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error("Error regenerating artwork:", err);
+    } finally {
+      if (conceptType === "A") setIsRegeneratingA(false);
+      else setIsRegeneratingB(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isLoading) return;
@@ -141,6 +211,8 @@ export default function SapphireWorkspace() {
     setIsLoading(true);
     setPreferenceSaved(false);
     setDeliverySuccess(null);
+    setImageErrorA(false);
+    setImageErrorB(false);
 
     setMessages((prev) => [
       ...prev,
@@ -167,6 +239,10 @@ export default function SapphireWorkspace() {
         setBrief(data.brief);
         setCritiqueA(data.critiqueA || null);
         setCritiqueB(data.critiqueB || null);
+
+        if (data.logs && Array.isArray(data.logs)) {
+          setWorkflowLogs(data.logs);
+        }
 
         setHistoryConceptA([
           { versionNumber: 1, conceptItem: data.brief.concept_a, userInstruction: "Initial Generation" },
@@ -520,6 +596,20 @@ export default function SapphireWorkspace() {
             </span>
           </div>
 
+          <button
+            onClick={() => setIsLogsOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark"
+            title="Open Live Agent Telemetry & Logs"
+          >
+            <Activity className="w-3.5 h-3.5 text-sapphire-terracotta" />
+            <span className="hidden sm:inline">Telemetry Logs</span>
+            {workflowLogs.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-sapphire-dark text-sapphire-surface font-semibold">
+                {workflowLogs.length}
+              </span>
+            )}
+          </button>
+
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
           <button
@@ -535,6 +625,8 @@ export default function SapphireWorkspace() {
               setDeliverySuccess(null);
               setHistoryConceptA([]);
               setHistoryConceptB([]);
+              setImageErrorA(false);
+              setImageErrorB(false);
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-dark text-sapphire-surface hover:bg-opacity-90 transition-colors"
           >
@@ -942,12 +1034,13 @@ export default function SapphireWorkspace() {
 
                     {/* Image Preview Container */}
                     <div className="relative aspect-[4/5] rounded-lg bg-sapphire-bg border border-sapphire-border overflow-hidden group">
-                      {brief?.concept_a.image_url ? (
+                      {brief?.concept_a.image_url && !imageErrorA ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={brief.concept_a.image_url}
                             alt="Concept A AI Generated Visual"
+                            onError={() => setImageErrorA(true)}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -957,6 +1050,14 @@ export default function SapphireWorkspace() {
                               title="Enlarge Image Preview"
                             >
                               <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRegenerateImage("A")}
+                              disabled={isRegeneratingA}
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              title="Regenerate Artwork"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${isRegeneratingA ? "animate-spin" : ""}`} />
                             </button>
                             <a
                               href={brief.concept_a.image_url}
@@ -969,6 +1070,24 @@ export default function SapphireWorkspace() {
                             </a>
                           </div>
                         </>
+                      ) : imageErrorA ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-50/50 border border-rose-200 rounded-lg space-y-2.5">
+                          <AlertCircle className="w-8 h-8 text-rose-500 stroke-1" />
+                          <p className="text-text-xs font-semibold text-rose-900">
+                            Artwork Rendering Timeout
+                          </p>
+                          <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
+                            Image provider timed out or returned an unrendered state.
+                          </p>
+                          <button
+                            onClick={() => handleRegenerateImage("A")}
+                            disabled={isRegeneratingA}
+                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
+                            <span>{isRegeneratingA ? "Regenerating..." : "Retry Image Generation"}</span>
+                          </button>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
                           <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
@@ -1144,12 +1263,13 @@ export default function SapphireWorkspace() {
 
                     {/* Image Preview Container */}
                     <div className="relative aspect-[4/5] rounded-lg bg-sapphire-bg border border-sapphire-border overflow-hidden group">
-                      {brief?.concept_b.image_url ? (
+                      {brief?.concept_b.image_url && !imageErrorB ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={brief.concept_b.image_url}
                             alt="Concept B AI Generated Visual"
+                            onError={() => setImageErrorB(true)}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -1159,6 +1279,14 @@ export default function SapphireWorkspace() {
                               title="Enlarge Image Preview"
                             >
                               <Maximize2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRegenerateImage("B")}
+                              disabled={isRegeneratingB}
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              title="Regenerate Artwork"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${isRegeneratingB ? "animate-spin" : ""}`} />
                             </button>
                             <a
                               href={brief.concept_b.image_url}
@@ -1171,6 +1299,24 @@ export default function SapphireWorkspace() {
                             </a>
                           </div>
                         </>
+                      ) : imageErrorB ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-50/50 border border-rose-200 rounded-lg space-y-2.5">
+                          <AlertCircle className="w-8 h-8 text-rose-500 stroke-1" />
+                          <p className="text-text-xs font-semibold text-rose-900">
+                            Artwork Rendering Timeout
+                          </p>
+                          <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
+                            Image provider timed out or returned an unrendered state.
+                          </p>
+                          <button
+                            onClick={() => handleRegenerateImage("B")}
+                            disabled={isRegeneratingB}
+                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
+                            <span>{isRegeneratingB ? "Regenerating..." : "Retry Image Generation"}</span>
+                          </button>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
                           <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
@@ -1291,6 +1437,13 @@ export default function SapphireWorkspace() {
           </div>
         </aside>
       </div>
+
+      {/* Dedicated Agent Telemetry & Logs Drawer */}
+      <LogDrawer
+        isOpen={isLogsOpen}
+        onClose={() => setIsLogsOpen(false)}
+        logs={workflowLogs}
+      />
     </div>
   );
 }

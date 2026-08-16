@@ -9,6 +9,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { UserIntent, ResearchContext, CreativeBrief } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
+import { WorkflowLogEntry } from "@/lib/schema/telemetry";
+import { ExecutionLogger } from "@/services/telemetry";
 
 export interface WorkflowResult {
   campaignId: string;
@@ -18,64 +20,144 @@ export interface WorkflowResult {
   brief: CreativeBrief;
   critiqueA: CriticResult;
   critiqueB: CriticResult;
+  logs: WorkflowLogEntry[];
 }
 
 export class CampaignWorkflow {
   /**
-   * Executes end-to-end agent workflow:
-   * Intent Parsing (Gemini Flash) -> Multimodal Vision (Gemini Flash) ->
-   * Research (Groq 70B) -> Creative Brief (Groq 70B) -> Critic Audit (Groq 70B) ->
-   * Image Generation (Nano Banana primary, Pollinations secondary) -> Supabase.
+   * Executes end-to-end agent workflow with telemetry logging:
+   * 1. Brand Context
+   * 2. Intent Parsing (Gemini Flash)
+   * 3. Multimodal Vision (Gemini Flash)
+   * 4. Research & Trends (Groq 70B)
+   * 5. Creative Brief A/B (Groq 70B)
+   * 6. Critic Brand Guard (Groq 70B)
+   * 7. Image Generation (Nano Banana / Pollinations)
+   * 8. Supabase Durable Persistence
    */
   static async run(
     prompt: string,
     brandId?: string,
     referenceImage?: string | null
   ): Promise<WorkflowResult> {
+    const logger = new ExecutionLogger();
+
     // 1. Fetch Brand Context
-    const brand = await BrandBrainService.getBrandById(brandId);
+    const brand = await logger.track(
+      "BrandBrainService",
+      "System",
+      "supabase-profile",
+      () => BrandBrainService.getBrandById(brandId),
+      (b) => `Loaded brand guidelines for "${b.name}" (${b.industry}).`
+    );
 
     // 2. Parse User Intent using Light Model (Gemini Flash)
-    const intent = await IntentAgent.parseIntent(prompt, brand);
+    const intent = await logger.track(
+      "IntentAgent",
+      "Google Gemini",
+      "gemini-2.5-flash",
+      () => IntentAgent.parseIntent(prompt, brand),
+      (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}".`
+    );
 
     // 3. Analyze Reference Image using Gemini Multimodal (if provided)
     let referenceAnalysis: ReferenceImageAnalysis | null = null;
     if (referenceImage) {
-      referenceAnalysis = await MultimodalAgent.analyzeReferenceImage(referenceImage);
+      referenceAnalysis = await logger.track(
+        "MultimodalAgent",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        () => MultimodalAgent.analyzeReferenceImage(referenceImage),
+        (ref) => `Analyzed visual reference: Style="${ref.photography_style}", Mood="${ref.mood}".`
+      );
+    } else {
+      logger.log({
+        agent: "MultimodalAgent",
+        provider: "System",
+        model: "none",
+        status: "info",
+        durationMs: 0,
+        summary: "No reference image provided. Proceeded with text-only creative synthesis.",
+      });
     }
 
     // 4. Synthesize Research & Trends using Reasoning Model (Groq Llama 3.3 70B)
-    const research = await ResearchAgent.synthesizeResearch(intent, brand);
-
-    // 5. Develop A/B Creative Brief using Reasoning Model (Groq Llama 3.3 70B)
-    const brief = await CreativeDirectorAgent.developCreativeBrief(
-      intent,
-      research,
-      brand,
-      referenceAnalysis
+    const research = await logger.track(
+      "ResearchAgent",
+      "Groq",
+      "llama-3.3-70b-versatile",
+      () => ResearchAgent.synthesizeResearch(intent, brand),
+      (r) => `Synthesized ${r.key_trends.length} winning trends & identified ${r.overused_patterns_to_avoid.length} clichés to avoid.`
     );
 
-    // 6. Run Critic Agent (Brand Guard Audit) on both Concept A and Concept B (Groq 70B)
-    const critiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand);
-    const critiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand);
+    // 5. Develop A/B Creative Brief using Reasoning Model (Groq Llama 3.3 70B)
+    const brief = await logger.track(
+      "CreativeDirectorAgent",
+      "Groq",
+      "llama-3.3-70b-versatile",
+      () =>
+        CreativeDirectorAgent.developCreativeBrief(
+          intent,
+          research,
+          brand,
+          referenceAnalysis
+        ),
+      (b) => `Generated dual concepts: "${b.concept_a.label}" & "${b.concept_b.label}".`
+    );
+
+    // 6. Run Critic Agent on both Concept A and Concept B (Groq 70B)
+    const critiqueA = await logger.track(
+      "CriticAgent (Concept A)",
+      "Groq",
+      "llama-3.3-70b-versatile",
+      () => CriticAgent.evaluateConcept(brief.concept_a, brand),
+      (c) => `Concept A Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
+    );
+
+    const critiqueB = await logger.track(
+      "CriticAgent (Concept B)",
+      "Groq",
+      "llama-3.3-70b-versatile",
+      () => CriticAgent.evaluateConcept(brief.concept_b, brand),
+      (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
+    );
 
     // 7. Generate AI Images (Nano Banana primary, Pollinations AI fallback)
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
-
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
 
-    brief.concept_a.image_url = await ImageGenerationService.generateImageUrl(
+    const imgResultA = await ImageGenerationService.generateImageUrlWithMeta(
       brief.concept_a.image_prompt,
       seedA,
       refStyle
     );
+    brief.concept_a.image_url = imgResultA.url;
+    logger.log({
+      agent: "ImageGenerationService (Concept A)",
+      provider: imgResultA.provider,
+      model: imgResultA.model,
+      status: imgResultA.status,
+      durationMs: imgResultA.durationMs,
+      summary: `Concept A artwork rendered via ${imgResultA.provider} (${imgResultA.model}). Status: ${imgResultA.status}.`,
+      details: { prompt: brief.concept_a.image_prompt, url: imgResultA.url },
+    });
 
-    brief.concept_b.image_url = await ImageGenerationService.generateImageUrl(
+    const imgResultB = await ImageGenerationService.generateImageUrlWithMeta(
       brief.concept_b.image_prompt,
       seedB,
       refStyle
     );
+    brief.concept_b.image_url = imgResultB.url;
+    logger.log({
+      agent: "ImageGenerationService (Concept B)",
+      provider: imgResultB.provider,
+      model: imgResultB.model,
+      status: imgResultB.status,
+      durationMs: imgResultB.durationMs,
+      summary: `Concept B artwork rendered via ${imgResultB.provider} (${imgResultB.model}). Status: ${imgResultB.status}.`,
+      details: { prompt: brief.concept_b.image_prompt, url: imgResultB.url },
+    });
 
     // 8. Persist Campaign, Concepts, Critiques & Versions in Supabase
     let campaignId = "local-campaign-" + Date.now();
@@ -158,9 +240,26 @@ export class CampaignWorkflow {
             caption_linkedin: brief.concept_b.caption_linkedin,
           });
         }
+
+        logger.log({
+          agent: "SupabasePersistence",
+          provider: "System",
+          model: "supabase-postgres",
+          status: "success",
+          durationMs: 15,
+          summary: `Persisted campaign "${campaignId}" with v1 versions in durable database.`,
+        });
       }
     } catch (err) {
       console.warn("Supabase persistence fallback in campaign workflow:", err);
+      logger.log({
+        agent: "SupabasePersistence",
+        provider: "System",
+        model: "supabase-postgres",
+        status: "fallback",
+        durationMs: 5,
+        summary: "Supabase storage skipped (offline fallback mode active).",
+      });
     }
 
     return {
@@ -171,6 +270,7 @@ export class CampaignWorkflow {
       brief,
       critiqueA,
       critiqueB,
+      logs: logger.getLogs(),
     };
   }
 }

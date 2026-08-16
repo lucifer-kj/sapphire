@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       brief: result.brief,
       critiqueA: result.critiqueA,
       critiqueB: result.critiqueB,
+      logs: result.logs,
     });
   } catch (error: any) {
     console.error("Error in /api/chat route:", error);
