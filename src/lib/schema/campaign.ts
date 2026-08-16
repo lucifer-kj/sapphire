@@ -25,6 +25,8 @@ export const ConceptItemSchema = z.object({
   lighting: z.string(),
   color_palette: z.array(z.string()),
   image_prompt: z.string(),
+  optimized_image_prompt: z.string().optional(),
+  negative_prompt: z.string().optional(),
   image_url: z.string().optional(),
   caption_instagram: z.string(),
   caption_linkedin: z.string(),

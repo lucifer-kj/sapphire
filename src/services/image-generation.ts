@@ -1,13 +1,13 @@
 export interface ImageGenResult {
   url: string;
-  provider: "Nano Banana" | "Pollinations AI";
+  provider: "Nano Banana 2" | "Pollinations AI";
   model: string;
   durationMs: number;
   status: "success" | "fallback";
 }
 
 /**
- * Image Generation Service integrating Nano Banana (Gemini 2.5 Flash Image)
+ * Image Generation Service integrating Nano Banana 2 (Gemini 3.1 Flash Image)
  * as primary with Pollinations AI (Flux) as secondary/fallback.
  */
 export class ImageGenerationService {
@@ -17,12 +17,13 @@ export class ImageGenerationService {
   static async generateImageUrlWithMeta(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
-    styleOverride?: string
+    styleOverride?: string,
+    negativePrompt?: string
   ): Promise<ImageGenResult> {
     const start = performance.now();
     const fullPrompt = styleOverride ? `${styleOverride}, ${prompt}` : prompt;
 
-    // 1. Try Nano Banana (Gemini 2.5 Flash Image) if Google API key exists
+    // 1. Try Nano Banana 2 (Gemini 3.1 Flash Image) if Google API key exists
     const googleKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (googleKey) {
       try {
@@ -31,19 +32,19 @@ export class ImageGenerationService {
           const durationMs = Math.round(performance.now() - start);
           return {
             url: nanoBananaUrl,
-            provider: "Nano Banana",
-            model: "gemini-2.5-flash-image",
+            provider: "Nano Banana 2",
+            model: "gemini-3.1-flash-image",
             durationMs,
             status: "success",
           };
         }
       } catch (err) {
-        console.warn("Nano Banana generation error, falling back to Pollinations:", err);
+        console.warn("Nano Banana 2 generation error, falling back to Pollinations:", err);
       }
     }
 
-    // 2. Fallback to Pollinations AI
-    const url = this.generateWithPollinations(fullPrompt, seed);
+    // 2. Fallback to Pollinations AI Flux
+    const url = this.generateWithPollinations(fullPrompt, seed, negativePrompt);
     const durationMs = Math.round(performance.now() - start);
     return {
       url,
@@ -55,7 +56,7 @@ export class ImageGenerationService {
   }
 
   /**
-   * Legacy string-returning helper for quick compatibility.
+   * String-returning helper for quick compatibility.
    */
   static async generateImageUrl(
     prompt: string,
@@ -67,13 +68,13 @@ export class ImageGenerationService {
   }
 
   /**
-   * Generates an image using Google's Nano Banana (gemini-2.5-flash-image) model.
+   * Generates an image using Google's Nano Banana 2 (gemini-3.1-flash-image) model.
    */
   private static async generateWithNanoBanana(
     prompt: string,
     apiKey: string
   ): Promise<string | null> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -109,18 +110,25 @@ export class ImageGenerationService {
 
   /**
    * Fallback generation with Pollinations AI (Flux model).
+   * Formats prompt with high photographic fidelity parameters.
    */
   static generateWithPollinations(
     prompt: string,
-    seed: number = Math.floor(Math.random() * 1000000)
+    seed: number = Math.floor(Math.random() * 1000000),
+    negativePrompt?: string
   ): string {
     const apiKey = process.env.POLLINATIONS_API_KEY || "";
 
-    const cleanPrompt = prompt
+    // Clean prompt while preserving full descriptive details up to 700 chars
+    let cleanPrompt = prompt
       .replace(/["'#]/g, "")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 450);
+      .slice(0, 700);
+
+    if (negativePrompt) {
+      cleanPrompt += ` (exclude: ${negativePrompt.slice(0, 100)})`;
+    }
 
     const encodedPrompt = encodeURIComponent(cleanPrompt);
 

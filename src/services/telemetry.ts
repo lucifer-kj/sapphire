@@ -18,7 +18,7 @@ export class ExecutionLogger {
 
   async track<T>(
     agent: string,
-    provider: "Groq" | "Google Gemini" | "Pollinations AI" | "System" | "Nano Banana",
+    provider: "Groq" | "Google Gemini" | "Pollinations AI" | "System" | "Nano Banana" | "Nano Banana 2",
     model: string,
     action: () => Promise<T>,
     summaryExtractor?: (result: T) => string

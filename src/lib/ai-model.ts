@@ -10,30 +10,30 @@ export const groq = createGroq({
 });
 
 /**
- * Heavy Reasoning Model (Groq Llama 3.3 70B primary, Gemini Flash fallback)
- * Used for: Creative Director, Research Synthesis, Critic Brand Guard
+ * Flagship Reasoning & Creative Director Model (Gemini 3.7 Flash primary, Groq 70B fallback)
+ * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
-  if (process.env.GROQ_API_KEY) {
-    return groq("llama-3.3-70b-versatile");
-  }
-  return google("gemini-2.5-flash");
-}
-
-export function getReasoningFallbackModel() {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return google("gemini-2.5-flash");
+    return google("gemini-3.7-flash");
   }
   return groq("llama-3.3-70b-versatile");
 }
 
+export function getReasoningFallbackModel() {
+  if (process.env.GROQ_API_KEY) {
+    return groq("llama-3.3-70b-versatile");
+  }
+  return google("gemini-3.7-flash");
+}
+
 /**
- * Light Task Model (Gemini Flash primary, Groq fallback)
- * Used for: Intent Parsing, Fast Refinements
+ * Ultra-Fast Light Task Model (Gemini 3.1 Flash Lite primary, Groq fallback)
+ * Used for: High-Speed Intent Parsing, Fast Concept Refinements
  */
 export function getLightModel() {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return google("gemini-2.5-flash");
+    return google("gemini-3.1-flash-lite");
   }
   return groq("llama-3.3-70b-versatile");
 }
@@ -42,19 +42,30 @@ export function getLightFallbackModel() {
   if (process.env.GROQ_API_KEY) {
     return groq("llama-3.3-70b-versatile");
   }
-  return google("gemini-2.5-flash");
+  return google("gemini-3.1-flash-lite");
 }
 
 /**
- * Multimodal Vision Model (Gemini 2.5 Flash)
- * Used for: Reference image breakdown & visual palette extraction
+ * Multimodal Vision Model (Gemini 3.7 Flash)
+ * Used for: Reference image stylistic breakdown & visual palette extraction
  */
 export function getVisionModel() {
-  return google("gemini-2.5-flash");
+  return google("gemini-3.7-flash");
 }
 
 /**
- * Legacy compatibility aliases
+ * Critic & Brand Guard Model (Groq Llama 3.3 70B primary, Gemini 3.7 Flash fallback)
+ * Used for: Fast structured compliance auditing & brand scorecards
+ */
+export function getCriticModel() {
+  if (process.env.GROQ_API_KEY) {
+    return groq("llama-3.3-70b-versatile");
+  }
+  return google("gemini-3.7-flash");
+}
+
+/**
+ * Compatibility aliases
  */
 export const getPrimaryModel = getReasoningModel;
 export const getFallbackModel = getReasoningFallbackModel;

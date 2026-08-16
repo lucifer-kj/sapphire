@@ -72,10 +72,11 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
           </span>
         );
       case "Nano Banana":
+      case "Nano Banana 2":
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-amber-50 text-amber-800 border border-amber-200">
             <Sparkles className="w-3 h-3" />
-            Nano Banana
+            Nano Banana 2 ({model})
           </span>
         );
       case "Pollinations AI":
