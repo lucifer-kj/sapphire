@@ -2,11 +2,12 @@ import { generateObject } from "ai";
 import { CreativeBriefSchema, CreativeBrief, UserIntent, ResearchContext } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
-import { getPrimaryModel, getFallbackModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 
 export class CreativeDirectorAgent {
   /**
    * Generates two genuinely distinct A/B creative concepts with image generation prompts and captions.
+   * Uses Reasoning Model (Groq Llama 3.3 70B primary, Gemini Flash fallback) for superior creative depth.
    */
   static async developCreativeBrief(
     intent: UserIntent,
@@ -50,7 +51,7 @@ Brand Voice Tone: ${brand.voice.tone}`;
 
     try {
       const result = await generateObject({
-        model: getPrimaryModel(),
+        model: getReasoningModel(),
         schema: CreativeBriefSchema,
         system: systemPrompt,
         prompt: promptText,
@@ -59,14 +60,13 @@ Brand Voice Tone: ${brand.voice.tone}`;
     } catch (err) {
       try {
         const result = await generateObject({
-          model: getFallbackModel(),
+          model: getReasoningFallbackModel(),
           schema: CreativeBriefSchema,
           system: systemPrompt,
           prompt: promptText,
         });
         return result.object;
       } catch (err2) {
-        // Build topic & reference aware dynamic creative brief
         const topic = intent.event.replace(/^(make a post for|create a post for|promote|a post about)/gi, "").trim() || "Travel Expedition";
         const hashtagTopic = topic.replace(/[^\w]/g, "");
 

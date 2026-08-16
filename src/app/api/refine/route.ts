@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
       brand
     );
 
-    // 3. Generate updated AI artwork via Pollinations
+    // 3. Generate updated AI artwork via Nano Banana / Pollinations
     const seed = Math.floor(Math.random() * 1000000);
-    const newImageUrl = ImageGenerationService.generateImageUrl(
+    const newImageUrl = await ImageGenerationService.generateImageUrl(
       refinement.updated_image_prompt,
       seed
     );

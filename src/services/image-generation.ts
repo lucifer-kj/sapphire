@@ -1,25 +1,86 @@
 /**
- * Image Generation Service integrating Pollinations AI.
+ * Image Generation Service integrating Nano Banana (Gemini 2.5 Flash Image)
+ * as primary with Pollinations AI (Flux) as secondary/fallback.
  */
 export class ImageGenerationService {
   /**
-   * Generates a social media image URL (1080x1350 aspect ratio 4:5) based on a detailed prompt and optional reference style.
+   * Generates an image URL (either data:image base64 from Nano Banana or Pollinations Flux URL).
    */
-  static generateImageUrl(
+  static async generateImageUrl(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
     styleOverride?: string
+  ): Promise<string> {
+    const fullPrompt = styleOverride ? `${styleOverride}, ${prompt}` : prompt;
+
+    // 1. Try Nano Banana (Gemini 2.5 Flash Image) if Google API key exists
+    const googleKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (googleKey) {
+      try {
+        const nanoBananaUrl = await this.generateWithNanoBanana(fullPrompt, googleKey);
+        if (nanoBananaUrl) {
+          return nanoBananaUrl;
+        }
+      } catch (err) {
+        console.warn("Nano Banana generation error, falling back to Pollinations:", err);
+      }
+    }
+
+    // 2. Fallback to Pollinations AI
+    return this.generateWithPollinations(fullPrompt, seed);
+  }
+
+  /**
+   * Generates an image using Google's Nano Banana (gemini-2.5-flash-image) model.
+   */
+  private static async generateWithNanoBanana(
+    prompt: string,
+    apiKey: string
+  ): Promise<string | null> {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE"],
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+    const candidatePart = data?.candidates?.[0]?.content?.parts?.[0];
+    const inlineData = candidatePart?.inlineData;
+
+    if (inlineData?.data && inlineData?.mimeType) {
+      return `data:${inlineData.mimeType};base64,${inlineData.data}`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Fallback generation with Pollinations AI (Flux model).
+   */
+  static generateWithPollinations(
+    prompt: string,
+    seed: number = Math.floor(Math.random() * 1000000)
   ): string {
     const apiKey = process.env.POLLINATIONS_API_KEY || "";
 
-    // Build optimized prompt putting key style descriptors first
-    let fullPrompt = prompt;
-    if (styleOverride) {
-      fullPrompt = `${styleOverride}, ${prompt}`;
-    }
-
-    // Clean prompt to ensure valid URL encoding while preserving key descriptive words
-    const cleanPrompt = fullPrompt
+    const cleanPrompt = prompt
       .replace(/["'#]/g, "")
       .replace(/\s+/g, " ")
       .trim()

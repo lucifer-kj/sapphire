@@ -1,11 +1,12 @@
 import { generateObject } from "ai";
 import { UserIntentSchema, UserIntent } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
-import { getPrimaryModel, getFallbackModel } from "@/lib/ai-model";
+import { getLightModel, getLightFallbackModel } from "@/lib/ai-model";
 
 export class IntentAgent {
   /**
    * Analyzes raw user prompt and brand context using AI model to extract structured User Intent.
+   * Uses Light Model (Gemini Flash) for high-speed parsing.
    */
   static async parseIntent(
     prompt: string,
@@ -18,7 +19,7 @@ Analyze the request and return structured JSON matching the requested schema.`;
 
     try {
       const result = await generateObject({
-        model: getPrimaryModel(),
+        model: getLightModel(),
         schema: UserIntentSchema,
         system: systemPrompt,
         prompt: `User Request: "${prompt}"`,
@@ -27,14 +28,13 @@ Analyze the request and return structured JSON matching the requested schema.`;
     } catch (err) {
       try {
         const result = await generateObject({
-          model: getFallbackModel(),
+          model: getLightFallbackModel(),
           schema: UserIntentSchema,
           system: systemPrompt,
           prompt: `User Request: "${prompt}"`,
         });
         return result.object;
       } catch (err2) {
-        // Extract topic intelligently from prompt
         const cleanPrompt = prompt.trim();
         return {
           event: cleanPrompt,

@@ -23,7 +23,9 @@ export interface WorkflowResult {
 export class CampaignWorkflow {
   /**
    * Executes end-to-end agent workflow:
-   * Intent Parsing -> Multimodal Analysis -> Brand Context -> Research -> Creative Brief -> Image Gen -> Critic Evaluation -> Supabase Persistence.
+   * Intent Parsing (Gemini Flash) -> Multimodal Vision (Gemini Flash) ->
+   * Research (Groq 70B) -> Creative Brief (Groq 70B) -> Critic Audit (Groq 70B) ->
+   * Image Generation (Nano Banana primary, Pollinations secondary) -> Supabase.
    */
   static async run(
     prompt: string,
@@ -33,7 +35,7 @@ export class CampaignWorkflow {
     // 1. Fetch Brand Context
     const brand = await BrandBrainService.getBrandById(brandId);
 
-    // 2. Parse User Intent using AI models
+    // 2. Parse User Intent using Light Model (Gemini Flash)
     const intent = await IntentAgent.parseIntent(prompt, brand);
 
     // 3. Analyze Reference Image using Gemini Multimodal (if provided)
@@ -42,10 +44,10 @@ export class CampaignWorkflow {
       referenceAnalysis = await MultimodalAgent.analyzeReferenceImage(referenceImage);
     }
 
-    // 4. Synthesize Research & Trends using AI models
+    // 4. Synthesize Research & Trends using Reasoning Model (Groq Llama 3.3 70B)
     const research = await ResearchAgent.synthesizeResearch(intent, brand);
 
-    // 5. Develop A/B Creative Brief using AI models
+    // 5. Develop A/B Creative Brief using Reasoning Model (Groq Llama 3.3 70B)
     const brief = await CreativeDirectorAgent.developCreativeBrief(
       intent,
       research,
@@ -53,23 +55,23 @@ export class CampaignWorkflow {
       referenceAnalysis
     );
 
-    // 6. Run Critic Agent (Brand Guard Audit) on both Concept A and Concept B
+    // 6. Run Critic Agent (Brand Guard Audit) on both Concept A and Concept B (Groq 70B)
     const critiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand);
     const critiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand);
 
-    // 7. Generate AI Images for Concept A and Concept B with Pollinations AI
+    // 7. Generate AI Images (Nano Banana primary, Pollinations AI fallback)
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
 
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
 
-    brief.concept_a.image_url = ImageGenerationService.generateImageUrl(
+    brief.concept_a.image_url = await ImageGenerationService.generateImageUrl(
       brief.concept_a.image_prompt,
       seedA,
       refStyle
     );
 
-    brief.concept_b.image_url = ImageGenerationService.generateImageUrl(
+    brief.concept_b.image_url = await ImageGenerationService.generateImageUrl(
       brief.concept_b.image_prompt,
       seedB,
       refStyle

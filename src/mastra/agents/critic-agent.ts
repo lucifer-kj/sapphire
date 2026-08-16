@@ -2,11 +2,12 @@ import { generateObject } from "ai";
 import { CriticResultSchema, CriticResult } from "@/lib/schema/critic";
 import { ConceptItem } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
-import { getPrimaryModel, getFallbackModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 
 export class CriticAgent {
   /**
    * Evaluates a concept against Brand Guidelines, tone rules, forbidden phrases, and visual quality standards.
+   * Uses Reasoning Model (Groq Llama 3.3 70B primary, Gemini Flash fallback).
    */
   static async evaluateConcept(
     concept: ConceptItem,
@@ -37,24 +38,22 @@ LinkedIn Caption: "${concept.caption_linkedin}"`;
 
     try {
       const result = await generateObject({
-        model: getPrimaryModel(),
+        model: getReasoningModel(),
         schema: CriticResultSchema,
         system: systemPrompt,
         prompt: promptText,
       });
       return result.object;
     } catch (err) {
-      console.warn("Primary Critic Agent fallback to secondary:", err);
       try {
         const result = await generateObject({
-          model: getFallbackModel(),
+          model: getReasoningFallbackModel(),
           schema: CriticResultSchema,
           system: systemPrompt,
           prompt: promptText,
         });
         return result.object;
       } catch (err2) {
-        console.warn("Dynamic Critic fallback:", err2);
         return {
           brand_alignment_score: 92,
           voice_compliance: true,

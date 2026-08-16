@@ -1,10 +1,6 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { ReferenceImageAnalysisSchema, ReferenceImageAnalysis } from "@/lib/schema/reference";
-
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
+import { getVisionModel } from "@/lib/ai-model";
 
 export class MultimodalAgent {
   /**
@@ -15,7 +11,7 @@ export class MultimodalAgent {
   ): Promise<ReferenceImageAnalysis> {
     try {
       const result = await generateObject({
-        model: google("gemini-2.5-flash"),
+        model: getVisionModel(),
         schema: ReferenceImageAnalysisSchema,
         messages: [
           {

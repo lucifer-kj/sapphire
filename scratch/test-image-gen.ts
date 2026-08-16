@@ -1,29 +1,12 @@
-import fs from "fs";
 import { ImageGenerationService } from "../src/services/image-generation";
 
-if (fs.existsSync(".env.local")) {
-  const lines = fs.readFileSync(".env.local", "utf8").split("\n");
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith("#")) {
-      const [key, ...valParts] = trimmed.split("=");
-      if (key && valParts.length > 0) {
-        process.env[key.trim()] = valParts.join("=").trim();
-      }
-    }
-  }
+async function main() {
+  const prompt = "Cinematic travel photography of a family enjoying vacation in Japan, cherry blossoms, golden hour light, 8k";
+  console.log("Testing Image Generation with prompt:", prompt);
+  
+  const url = await ImageGenerationService.generateImageUrl(prompt);
+  console.log("Generated Image URL length:", url.length);
+  console.log("URL preview:", url.slice(0, 100) + "...");
 }
 
-async function testImageGen() {
-  const url = ImageGenerationService.generateImageUrl("Family vacation in Kyoto Japan with cherry blossoms, golden hour, 8k", 12345);
-  console.log("Generated Image URL:", url);
-
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    console.log("Image URL HTTP Status:", res.status, res.headers.get("content-type"));
-  } catch (err: any) {
-    console.error("Image Fetch Error:", err.message);
-  }
-}
-
-testImageGen();
+main().catch(console.error);

@@ -1,11 +1,12 @@
 import { generateObject } from "ai";
 import { ResearchContextSchema, ResearchContext, UserIntent } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
-import { getPrimaryModel, getFallbackModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 
 export class ResearchAgent {
   /**
    * Synthesizes market trends, visual patterns, and overused clichés to avoid for a campaign.
+   * Uses Reasoning Model (Groq Llama 3.3 70B primary, Gemini Flash fallback).
    */
   static async synthesizeResearch(
     intent: UserIntent,
@@ -17,7 +18,7 @@ Synthesize 3 winning visual trends, 3 overused clichés to avoid, search queries
 
     try {
       const result = await generateObject({
-        model: getPrimaryModel(),
+        model: getReasoningModel(),
         schema: ResearchContextSchema,
         system: systemPrompt,
         prompt: `Campaign Event: ${intent.event}, Objective: ${intent.objective}, Target Platforms: ${intent.target_platforms.join(", ")}`,
@@ -26,7 +27,7 @@ Synthesize 3 winning visual trends, 3 overused clichés to avoid, search queries
     } catch (err) {
       try {
         const result = await generateObject({
-          model: getFallbackModel(),
+          model: getReasoningFallbackModel(),
           schema: ResearchContextSchema,
           system: systemPrompt,
           prompt: `Campaign Event: ${intent.event}, Objective: ${intent.objective}`,
