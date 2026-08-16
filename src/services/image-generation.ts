@@ -1,24 +1,32 @@
 /**
- * Image Generation Service integrating Pollinations AI with Flux model parameters.
+ * Image Generation Service integrating Pollinations AI.
  */
 export class ImageGenerationService {
   /**
-   * Generates a social media image URL (1080x1350 aspect ratio 4:5) based on a detailed prompt.
+   * Generates a social media image URL (1080x1350 aspect ratio 4:5) based on a detailed prompt and optional reference style.
    */
   static generateImageUrl(
     prompt: string,
-    seed: number = Math.floor(Math.random() * 1000000)
+    seed: number = Math.floor(Math.random() * 1000000),
+    styleOverride?: string
   ): string {
     const apiKey = process.env.POLLINATIONS_API_KEY || "";
-    // Clean prompt to ensure valid URL encoding
-    const cleanPrompt = prompt
-      .replace(/[^\w\s,.-]/gi, "")
+
+    // Build optimized prompt putting key style descriptors first
+    let fullPrompt = prompt;
+    if (styleOverride) {
+      fullPrompt = `${styleOverride}, ${prompt}`;
+    }
+
+    // Clean prompt to ensure valid URL encoding while preserving key descriptive words
+    const cleanPrompt = fullPrompt
+      .replace(/["'#]/g, "")
+      .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 300);
+      .slice(0, 450);
 
     const encodedPrompt = encodeURIComponent(cleanPrompt);
 
-    // High quality Flux model settings for 4:5 social posts
     const baseUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
     const queryParams = new URLSearchParams({
       width: "1080",
