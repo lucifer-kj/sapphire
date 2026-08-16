@@ -8,48 +8,43 @@ const google = createGoogleGenerativeAI({
 
 export class MultimodalAgent {
   /**
-   * Analyzes reference image (base64 or URL) using Gemini Flash to extract visual elements & composition guidelines.
+   * Analyzes an uploaded reference image URL/base64 string using Gemini 2.5 Flash to extract visual traits.
    */
   static async analyzeReferenceImage(
-    imageBase64OrUrl: string
+    imageDataUrl: string
   ): Promise<ReferenceImageAnalysis> {
     try {
-      const systemPrompt = `You are Sapphire's Multimodal Visual Analysis Agent. Your role is to analyze visual reference images provided by the user and extract key visual traits (composition, lighting, color palette, mood, photography style, and subject elements) to guide social content generation.`;
-
-      const messages: any[] = [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Analyze this reference image and extract visual characteristics according to the schema.",
-            },
-            {
-              type: "image",
-              image: imageBase64OrUrl,
-            },
-          ],
-        },
-      ];
-
       const result = await generateObject({
-        model: google("gemini-1.5-flash"),
+        model: google("gemini-2.5-flash"),
         schema: ReferenceImageAnalysisSchema,
-        system: systemPrompt,
-        messages,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this visual reference image for a brand marketing campaign. Extract its photography style, mood, color palette, lighting, composition, and visual subject.",
+              },
+              {
+                type: "image",
+                image: imageDataUrl,
+              },
+            ],
+          },
+        ],
       });
 
       return result.object;
     } catch (err) {
       console.warn("Gemini Multimodal Agent fallback:", err);
       return {
-        composition: "Golden hour rule-of-thirds landscape framing with subject looking towards horizon",
-        lighting: "Warm golden hour backlight with soft atmospheric diffusion",
-        color_palette: ["#D97757", "#FAF9F5", "#141413", "#6A9BCC"],
-        mood: "Aspirational, serene, adventurous",
-        photography_style: "Cinematic editorial travel photography",
-        visual_subject: "Traveler standing on mountain overlook",
-        key_elements: ["Expansive view", "Human element in scale", "Subtle color harmony"],
+        photography_style: "Editorial Travel Photography",
+        mood: "Aspirational & Warm",
+        color_palette: ["#D97757", "#FAF9F5", "#141413"],
+        lighting: "Warm Golden Hour",
+        composition: "Centered Rule of Thirds",
+        visual_subject: "Traveler in scenic landscape",
+        key_elements: ["Golden hour light", "Natural landscapes", "Editorial depth"],
       };
     }
   }
