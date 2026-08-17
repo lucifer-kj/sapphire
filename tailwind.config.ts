@@ -10,15 +10,15 @@ const config: Config = {
     extend: {
       colors: {
         sapphire: {
-          bg: "#FAF9F5",
-          surface: "#FFFFFF",
-          subtle: "#E8E6DC",
-          dark: "#141413",
-          muted: "#B0AEA5",
-          border: "rgba(20, 20, 19, 0.12)",
+          bg: "#181816",
+          surface: "#21211F",
+          subtle: "#2B2B28",
+          dark: "#ECEBE4",
+          muted: "#9C9A91",
+          border: "rgba(255, 255, 255, 0.08)",
           terracotta: "#D97757",
-          blue: "#6A9BCC",
-          green: "#788C5D",
+          blue: "#7BA7D7",
+          green: "#87A96B",
         },
       },
       borderWidth: {

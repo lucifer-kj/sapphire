@@ -59,14 +59,14 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
     switch (provider) {
       case "Groq":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#F5E8E4] text-[#D97757] border border-[#D97757]/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#D97757]/15 text-[#D97757] border border-[#D97757]/30">
             <Zap className="w-3 h-3" />
             Groq ({model})
           </span>
         );
       case "Google Gemini":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-blue-500/15 text-blue-300 border border-blue-500/30">
             <Sparkles className="w-3 h-3" />
             Gemini ({model})
           </span>
@@ -74,14 +74,14 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
       case "Nano Banana":
       case "Nano Banana 2":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-amber-50 text-amber-800 border border-amber-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
             <Sparkles className="w-3 h-3" />
             Nano Banana 2 ({model})
           </span>
         );
       case "Cloudflare Workers AI (Flux)":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-orange-50 text-orange-700 border border-orange-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-orange-500/15 text-orange-300 border border-orange-500/30">
             <Sparkles className="w-3 h-3" />
             Cloudflare FLUX ({model.split("/").pop()})
           </span>
@@ -89,21 +89,21 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
       case "Pollinations AI":
       case "Pollinations AI (Flux)":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-purple-50 text-purple-700 border border-purple-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-purple-500/15 text-purple-300 border border-purple-500/30">
             <Terminal className="w-3 h-3" />
             Pollinations (Flux)
           </span>
         );
       case "Puter.js":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
             <Sparkles className="w-3 h-3" />
             Puter.js ({model})
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-white/5 text-stone-300 border border-white/10">
             {provider}
           </span>
         );
@@ -114,44 +114,44 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
     switch (status) {
       case "success":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Success
           </span>
         );
       case "fallback":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">
             <AlertTriangle className="w-3.5 h-3.5" />
             Fallback Triggered
           </span>
         );
       case "error":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-300 bg-rose-500/15 px-1.5 py-0.5 rounded border border-rose-500/30">
             <AlertTriangle className="w-3.5 h-3.5" />
             Error
           </span>
         );
       default:
-        return <span className="text-[11px] text-stone-500 font-medium">{status}</span>;
+        return <span className="text-[11px] text-stone-400 font-medium">{status}</span>;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#FAF9F5] h-full shadow-2xl flex flex-col border-l border-[#141413]/10">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-[#181816] h-full shadow-2xl flex flex-col border-l border-white/10 text-[#ECEBE4]">
         {/* Header */}
-        <div className="p-4 bg-[#FFFFFF] border-b border-[#141413]/10 flex items-center justify-between">
+        <div className="p-4 bg-[#21211F] border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+            <div className="w-8 h-8 rounded-lg bg-[#D97757]/15 flex items-center justify-center text-[#D97757]">
               <Activity className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-[#141413]">
+              <h2 className="text-sm font-semibold text-[#ECEBE4]">
                 Agent Telemetry & Execution Logs
               </h2>
-              <p className="text-xs text-stone-500 font-mono">
+              <p className="text-xs text-[#9C9A91] font-mono">
                 {logs.length} events recorded • Total Latency: {totalDuration}ms
               </p>
             </div>
@@ -160,12 +160,12 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyLogs}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-stone-100 hover:bg-stone-200 text-[#141413] rounded-md transition-colors border border-stone-200"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-[#2B2B28] hover:bg-[#383834] text-[#ECEBE4] rounded-md transition-colors border border-white/10"
               title="Copy complete JSON log trace"
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Copied</span>
                 </>
               ) : (
@@ -177,7 +177,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md hover:bg-stone-100 text-stone-500 hover:text-stone-800 transition-colors"
+              className="p-1.5 rounded-md hover:bg-[#2B2B28] text-[#9C9A91] hover:text-[#ECEBE4] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -185,36 +185,36 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
         </div>
 
         {/* Summary Metrics Bar */}
-        <div className="grid grid-cols-4 gap-2 p-3 bg-[#FFFFFF] border-b border-[#141413]/10 text-xs">
-          <div className="p-2 rounded bg-stone-50 border border-stone-200">
-            <span className="text-stone-500 block text-[10px] uppercase font-mono">
+        <div className="grid grid-cols-4 gap-2 p-3 bg-[#21211F] border-b border-white/10 text-xs">
+          <div className="p-2 rounded bg-[#2B2B28] border border-white/5">
+            <span className="text-[#9C9A91] block text-[10px] uppercase font-mono">
               Total Steps
             </span>
-            <span className="font-semibold text-stone-800 text-sm">{logs.length}</span>
+            <span className="font-semibold text-[#ECEBE4] text-sm">{logs.length}</span>
           </div>
-          <div className="p-2 rounded bg-stone-50 border border-stone-200">
-            <span className="text-stone-500 block text-[10px] uppercase font-mono">
+          <div className="p-2 rounded bg-[#2B2B28] border border-white/5">
+            <span className="text-[#9C9A91] block text-[10px] uppercase font-mono">
               Total Duration
             </span>
-            <span className="font-semibold text-stone-800 text-sm">
+            <span className="font-semibold text-[#ECEBE4] text-sm">
               {(totalDuration / 1000).toFixed(2)}s
             </span>
           </div>
-          <div className="p-2 rounded bg-amber-50/60 border border-amber-200">
-            <span className="text-amber-700 block text-[10px] uppercase font-mono">
+          <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+            <span className="text-amber-400 block text-[10px] uppercase font-mono">
               Fallbacks
             </span>
-            <span className="font-semibold text-amber-800 text-sm">{fallbackCount}</span>
+            <span className="font-semibold text-amber-300 text-sm">{fallbackCount}</span>
           </div>
-          <div className="p-2 rounded bg-rose-50/60 border border-rose-200">
-            <span className="text-rose-700 block text-[10px] uppercase font-mono">Errors</span>
-            <span className="font-semibold text-rose-800 text-sm">{errorCount}</span>
+          <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20">
+            <span className="text-rose-400 block text-[10px] uppercase font-mono">Errors</span>
+            <span className="font-semibold text-rose-300 text-sm">{errorCount}</span>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="flex items-center gap-1.5 px-4 py-2 bg-[#FAF9F5] border-b border-[#141413]/10 overflow-x-auto text-xs">
-          <Filter className="w-3.5 h-3.5 text-stone-400 mr-1" />
+        <div className="flex items-center gap-1.5 px-4 py-2 bg-[#181816] border-b border-white/10 overflow-x-auto text-xs">
+          <Filter className="w-3.5 h-3.5 text-[#9C9A91] mr-1" />
           {[
             { id: "all", label: "All Logs" },
             { id: "groq", label: "Groq" },
@@ -227,8 +227,8 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
               onClick={() => setFilter(tab.id)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 filter === tab.id
-                  ? "bg-[#141413] text-[#FAF9F5]"
-                  : "bg-stone-200/60 hover:bg-stone-200 text-stone-700"
+                  ? "bg-[#D97757] text-white"
+                  : "bg-[#2B2B28] hover:bg-[#383834] text-[#9C9A91] hover:text-[#ECEBE4]"
               }`}
             >
               {tab.label}
@@ -239,7 +239,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
         {/* Log Entries Timeline */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-12 text-stone-400 text-xs">
+            <div className="text-center py-12 text-[#9C9A91] text-xs">
               No log entries match the selected filter.
             </div>
           ) : (
@@ -248,12 +248,12 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
               return (
                 <div
                   key={log.id || index}
-                  className={`bg-[#FFFFFF] rounded-lg border transition-all ${
+                  className={`bg-[#21211F] rounded-lg border transition-all ${
                     log.status === "error"
-                      ? "border-rose-300"
+                      ? "border-rose-500/40"
                       : log.status === "fallback"
-                      ? "border-amber-300"
-                      : "border-[#141413]/10 hover:border-stone-400"
+                      ? "border-amber-500/40"
+                      : "border-white/10 hover:border-white/20"
                   }`}
                 >
                   <div
@@ -261,7 +261,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
                     className="p-3 cursor-pointer flex items-start justify-between gap-2 select-none"
                   >
                     <div className="flex items-start gap-2 flex-1">
-                      <button className="mt-0.5 text-stone-400 hover:text-stone-700">
+                      <button className="mt-0.5 text-[#9C9A91] hover:text-[#ECEBE4]">
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
@@ -271,21 +271,21 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
 
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-xs text-[#141413]">
+                          <span className="font-semibold text-xs text-[#ECEBE4]">
                             {log.agent}
                           </span>
                           {getProviderBadge(log.provider, log.model)}
                           {getStatusBadge(log.status)}
                         </div>
 
-                        <p className="text-xs text-stone-600 leading-relaxed font-sans">
+                        <p className="text-xs text-[#9C9A91] leading-relaxed font-sans">
                           {log.summary}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-stone-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#9C9A91]">
                         <Clock className="w-3 h-3" />
                         {log.durationMs}ms
                       </span>
@@ -294,16 +294,16 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
 
                   {/* Expanded JSON Inspector */}
                   {isExpanded && (
-                    <div className="border-t border-stone-100 p-3 bg-stone-50/80 rounded-b-lg">
+                    <div className="border-t border-white/10 p-3 bg-[#181816] rounded-b-lg">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-mono uppercase text-stone-500">
+                        <span className="text-[10px] font-mono uppercase text-[#9C9A91]">
                           Raw Payload / State
                         </span>
-                        <span className="text-[10px] font-mono text-stone-400">
+                        <span className="text-[10px] font-mono text-[#9C9A91]/80">
                           {new Date(log.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
-                      <pre className="text-[11px] font-mono bg-[#141413] text-[#FAF9F5] p-2.5 rounded overflow-x-auto max-h-60 leading-tight">
+                      <pre className="text-[11px] font-mono bg-[#111110] text-[#ECEBE4] p-2.5 rounded overflow-x-auto max-h-60 leading-tight border border-white/5">
                         {JSON.stringify(log.details || log, null, 2)}
                       </pre>
                     </div>
@@ -317,3 +317,4 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
     </div>
   );
 };
+

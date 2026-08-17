@@ -483,15 +483,15 @@ export default function SapphireWorkspace() {
 
       {/* Lightbox Preview Modal */}
       {activeImageModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-[90vh] bg-sapphire-surface rounded-xl overflow-hidden shadow-2xl flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-[90vh] bg-sapphire-surface border border-sapphire-border rounded-2xl overflow-hidden shadow-2xl flex flex-col">
             <div className="h-10 px-4 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface select-none">
               <span className="text-text-xs font-semibold text-sapphire-dark">
-                High Resolution Asset Preview
+                High Resolution Artwork Preview
               </span>
               <button
                 onClick={() => setActiveImageModal(null)}
-                className="p-1 rounded hover:bg-sapphire-bg text-sapphire-muted hover:text-sapphire-dark"
+                className="p-1 rounded hover:bg-sapphire-subtle text-sapphire-muted hover:text-sapphire-dark transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -501,7 +501,7 @@ export default function SapphireWorkspace() {
               <img
                 src={activeImageModal}
                 alt="Enlarged Artwork Preview"
-                className="max-h-[75vh] w-auto object-contain rounded-lg shadow-hairline"
+                className="max-h-[75vh] w-auto object-contain rounded-lg shadow-lg"
               />
             </div>
           </div>
@@ -510,8 +510,8 @@ export default function SapphireWorkspace() {
 
       {/* Human Approval & Email Delivery Modal */}
       {showApprovalModal && selectedConcept && brief && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="relative max-w-md w-full bg-sapphire-surface border border-sapphire-border rounded-xl shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative max-w-md w-full bg-sapphire-surface border border-sapphire-border rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-sapphire-border pb-3">
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-sapphire-terracotta" />
@@ -527,7 +527,7 @@ export default function SapphireWorkspace() {
               </button>
             </div>
 
-            <div className="space-y-2 text-text-xs text-sapphire-dark/80">
+            <div className="space-y-2 text-text-xs text-sapphire-muted">
               <p>
                 You are approving{" "}
                 <strong className="font-semibold text-sapphire-dark">
@@ -550,7 +550,7 @@ export default function SapphireWorkspace() {
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
                   placeholder="Leave empty to use .env.local RESEND_TO_EMAIL"
-                  className="w-full p-2.5 text-text-xs rounded-md border border-sapphire-border bg-sapphire-bg outline-none focus:border-sapphire-dark text-sapphire-dark"
+                  className="w-full p-2.5 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-bg outline-none focus:border-white/30 text-sapphire-dark placeholder:text-sapphire-muted/60"
                 />
               </div>
 
@@ -558,14 +558,14 @@ export default function SapphireWorkspace() {
                 <button
                   type="button"
                   onClick={() => setShowApprovalModal(false)}
-                  className="px-3 py-2 rounded-md border border-sapphire-border text-text-xs font-medium hover:bg-sapphire-bg"
+                  className="px-3 py-2 rounded-lg border border-sapphire-border text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle text-sapphire-dark transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isDelivering}
-                  className="px-4 py-2 rounded-md bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 rounded-lg bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1.5 shadow-sm transition-all"
                 >
                   {isDelivering ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -586,7 +586,7 @@ export default function SapphireWorkspace() {
       <header className="h-12 border-b border-sapphire-border bg-sapphire-surface px-4 flex items-center justify-between shrink-0 select-none z-10">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="h-5 w-5 rounded-md bg-sapphire-dark text-sapphire-surface flex items-center justify-center font-bold text-xs tracking-wider">
+            <span className="h-5 w-5 rounded-md bg-sapphire-terracotta text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-sm">
               S
             </span>
             <span className="font-semibold text-text-sm tracking-tight text-sapphire-dark">
@@ -596,7 +596,7 @@ export default function SapphireWorkspace() {
 
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border">
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark">
             <span className="w-2 h-2 rounded-full bg-sapphire-green" />
             <span className="max-w-[160px] truncate">{activeBrand}</span>
             <ChevronDown className="w-3.5 h-3.5 text-sapphire-muted" />
@@ -612,24 +612,18 @@ export default function SapphireWorkspace() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-text-xs text-sapphire-muted">
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${
-                isLoading || isRefinementLoading || isDelivering
-                  ? "bg-sapphire-terracotta animate-ping"
-                  : "bg-sapphire-green animate-pulse"
-              }`}
-            />
-            <span className="hidden sm:inline">
-              {isLoading
-                ? "Critic & Image Agents running..."
-                : isRefinementLoading
-                ? "Refining Concept..."
-                : isDelivering
-                ? "Delivering Email Package..."
-                : "Orchestrator Ready"}
-            </span>
-          </div>
+          {(isLoading || isRefinementLoading || isDelivering) && (
+            <div className="flex items-center gap-1.5 text-text-xs text-sapphire-terracotta bg-sapphire-terracotta/10 px-2.5 py-1 rounded-md border border-sapphire-terracotta/20 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-sapphire-terracotta" />
+              <span className="hidden sm:inline font-medium">
+                {isLoading
+                  ? "Generating Concepts..."
+                  : isRefinementLoading
+                  ? "Refining Concept..."
+                  : "Delivering Package..."}
+              </span>
+            </div>
+          )}
 
           <button
             onClick={() => setIsLogsOpen(true)}
@@ -639,7 +633,7 @@ export default function SapphireWorkspace() {
             <Activity className="w-3.5 h-3.5 text-sapphire-terracotta" />
             <span className="hidden sm:inline">Telemetry Logs</span>
             {workflowLogs.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-sapphire-dark text-sapphire-surface font-semibold">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-sapphire-terracotta text-white font-semibold">
                 {workflowLogs.length}
               </span>
             )}
@@ -663,7 +657,7 @@ export default function SapphireWorkspace() {
               setImageErrorA(false);
               setImageErrorB(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-dark text-sapphire-surface hover:bg-opacity-90 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-dark text-sapphire-bg hover:bg-white hover:text-black transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Campaign</span>
@@ -711,7 +705,7 @@ export default function SapphireWorkspace() {
                   <span>Active Campaigns</span>
                   <Folder className="w-3.5 h-3.5" />
                 </div>
-                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-sapphire-subtle/70 text-sapphire-dark font-medium text-left">
+                <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-sapphire-subtle text-sapphire-dark font-medium text-left border border-sapphire-border">
                   <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta shrink-0" />
                   <span className="truncate">
                     {intent ? `${intent.event} Post` : "Independence Day Post"}
@@ -742,6 +736,56 @@ export default function SapphireWorkspace() {
               </div>
             </div>
 
+            {/* Daily Quota Status Widget Repositioned in Left Sidebar */}
+            <div className="p-3 border-t border-sapphire-border bg-sapphire-bg/50 space-y-2 text-text-xs select-none">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-medium text-sapphire-dark text-[11px]">
+                  <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
+                  <span>Cloudflare FLUX</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchQuota}
+                  disabled={isRefreshingQuota}
+                  title="Refresh Live Cloudflare Quota"
+                  className="p-1 rounded hover:bg-sapphire-subtle text-sapphire-muted hover:text-sapphire-dark transition-colors"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 ${isRefreshingQuota ? "animate-spin" : ""}`}
+                  />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-sapphire-muted font-mono">
+                  <span>
+                    {quotaInfo
+                      ? `${quotaInfo.remainingNeurons.toLocaleString()} / 10k Neurons`
+                      : "Connecting..."}
+                  </span>
+                  {quotaInfo && (
+                    <span className="text-sapphire-dark font-medium">
+                      ~{quotaInfo.estimatedPostsRemaining} left
+                    </span>
+                  )}
+                </div>
+                <div className="w-full bg-sapphire-subtle rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-sapphire-terracotta h-1.5 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.max(5, 100 - (quotaInfo?.percentUsed || 0))}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-sapphire-muted pt-0.5">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Resets {quotaInfo?.resetsIn || "00:00 UTC"}
+                  </span>
+                  <span>Free Tier</span>
+                </div>
+              </div>
+            </div>
+
             <div className="p-3 border-t border-sapphire-border bg-sapphire-surface flex items-center justify-between text-text-xs text-sapphire-muted">
               <button className="flex items-center gap-2 hover:text-sapphire-dark transition-colors">
                 <Settings className="w-3.5 h-3.5" />
@@ -755,57 +799,44 @@ export default function SapphireWorkspace() {
         </aside>
 
         {/* CENTER PANEL: Conversational Workspace */}
-        <main className="flex-1 flex flex-col bg-sapphire-surface overflow-hidden min-w-0">
-          <div className="h-10 px-4 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface shrink-0 select-none">
-            <div className="flex items-center gap-2">
-              {!isLeftOpen && (
-                <button
-                  onClick={() => setIsLeftOpen(true)}
-                  title="Expand Left Panel (Ctrl+B)"
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-text-xs font-medium text-sapphire-terracotta bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border transition-colors"
-                >
-                  <PanelLeftOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Show Sidebar</span>
-                </button>
-              )}
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-sapphire-terracotta" />
-                <h2 className="text-heading-xs font-semibold text-sapphire-dark uppercase tracking-wider">
-                  Creative Conversation
-                </h2>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-text-xs text-sapphire-muted hidden md:inline">
-                Groq + Gemini + Resend API
-              </span>
-              {!isRightOpen && (
-                <button
-                  onClick={() => setIsRightOpen(true)}
-                  title="Expand Right Canvas (Ctrl+Alt+B)"
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-text-xs font-medium text-sapphire-terracotta bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border transition-colors"
-                >
-                  <PanelRightOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Show Canvas</span>
-                </button>
-              )}
-            </div>
+        <main className="flex-1 flex flex-col bg-sapphire-bg overflow-hidden min-w-0 relative">
+          {/* Subtle panel toggle controls if sidebars are collapsed */}
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+            {!isLeftOpen && (
+              <button
+                onClick={() => setIsLeftOpen(true)}
+                title="Expand Left Panel (Ctrl+B)"
+                className="p-1.5 rounded-md text-text-xs text-sapphire-muted hover:text-sapphire-dark bg-sapphire-surface/80 backdrop-blur hover:bg-sapphire-surface border border-sapphire-border transition-colors shadow-sm"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            {!isRightOpen && (
+              <button
+                onClick={() => setIsRightOpen(true)}
+                title="Expand Right Canvas (Ctrl+Alt+B)"
+                className="p-1.5 rounded-md text-text-xs text-sapphire-muted hover:text-sapphire-dark bg-sapphire-surface/80 backdrop-blur hover:bg-sapphire-surface border border-sapphire-border transition-colors shadow-sm"
+              >
+                <PanelRightOpen className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Centered Conversation Area */}
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl w-full mx-auto px-4 md:px-6 py-6 space-y-6">
+            <div className="max-w-2xl w-full mx-auto px-4 md:px-6 py-8 space-y-6">
               {/* Delivery Success Notification Banner */}
               {deliverySuccess && (
-                <div className="p-4 rounded-xl bg-sapphire-green/10 border border-sapphire-green/30 text-sapphire-dark text-text-xs flex items-center justify-between">
+                <div className="p-4 rounded-xl bg-sapphire-green/15 border border-sapphire-green/30 text-sapphire-dark text-text-xs flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-2">
                     <CheckCheck className="w-4 h-4 text-sapphire-green" />
                     <span className="font-semibold">{deliverySuccess}</span>
                   </div>
                   <button
                     onClick={() => setDeliverySuccess(null)}
-                    className="p-1 rounded hover:bg-sapphire-bg"
+                    className="p-1 rounded hover:bg-sapphire-surface text-sapphire-muted hover:text-sapphire-dark"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -815,10 +846,10 @@ export default function SapphireWorkspace() {
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`p-5 rounded-xl border border-sapphire-border space-y-2 shadow-hairline ${
+                  className={`p-5 rounded-2xl border space-y-2 transition-all ${
                     msg.role === "user"
-                      ? "bg-sapphire-surface text-sapphire-dark border-sapphire-dark/20 ml-8"
-                      : "bg-sapphire-bg text-sapphire-dark"
+                      ? "bg-sapphire-surface text-sapphire-dark border-sapphire-border ml-12 shadow-sm"
+                      : "bg-transparent text-sapphire-dark border-transparent"
                   }`}
                 >
                   <div className="flex items-center justify-between text-text-xs text-sapphire-muted">
@@ -834,7 +865,7 @@ export default function SapphireWorkspace() {
                     </span>
                     <span>{msg.timestamp}</span>
                   </div>
-                  <p className="text-text-xs text-sapphire-dark leading-relaxed whitespace-pre-wrap">
+                  <p className="text-text-sm text-sapphire-dark/95 leading-relaxed whitespace-pre-wrap font-sans">
                     {msg.content}
                   </p>
                 </div>
@@ -843,13 +874,15 @@ export default function SapphireWorkspace() {
               {referenceAnalysis && (
                 <div className="border border-sapphire-border rounded-xl p-4 bg-sapphire-surface space-y-2 shadow-hairline">
                   <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 text-sapphire-dark">
                       <ImageIcon className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                      Gemini Visual Reference Breakdown
+                      Visual Reference Breakdown
                     </span>
-                    <span className="text-sapphire-green font-medium">Analyzed</span>
+                    <span className="text-sapphire-green font-medium text-[11px] bg-sapphire-green/10 px-2 py-0.5 rounded border border-sapphire-green/20">
+                      Analyzed
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-text-xs pt-1">
+                  <div className="grid grid-cols-2 gap-3 text-text-xs pt-1">
                     <div>
                       <span className="text-sapphire-muted font-medium">Mood:</span>{" "}
                       <span className="text-sapphire-dark font-medium">{referenceAnalysis.mood}</span>
@@ -867,21 +900,21 @@ export default function SapphireWorkspace() {
               {research && (
                 <div className="border border-sapphire-border rounded-xl p-4 bg-sapphire-surface space-y-2.5 shadow-hairline">
                   <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 text-sapphire-dark">
                       <Search className="w-3.5 h-3.5 text-sapphire-blue" />
                       Research Synthesis
                     </span>
-                    <span className="text-sapphire-green font-medium flex items-center gap-1">
+                    <span className="text-sapphire-green font-medium flex items-center gap-1 text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Complete
                     </span>
                   </div>
-                  <p className="text-text-xs text-sapphire-dark">{research.summary}</p>
+                  <p className="text-text-xs text-sapphire-dark/90 leading-relaxed">{research.summary}</p>
                 </div>
               )}
 
               {isLoading && (
-                <div className="flex items-center justify-center p-6 border border-sapphire-border rounded-xl bg-sapphire-bg space-x-2 text-text-xs text-sapphire-muted">
+                <div className="flex items-center justify-center p-6 border border-sapphire-border rounded-xl bg-sapphire-surface/50 space-x-2 text-text-xs text-sapphire-muted">
                   <Loader2 className="w-4 h-4 animate-spin text-sapphire-terracotta" />
                   <span>
                     Critic Agent auditing brand alignment & generating assets...
@@ -891,12 +924,12 @@ export default function SapphireWorkspace() {
             </div>
           </div>
 
-          {/* Centered Composer Input */}
-          <div className="p-4 border-t border-sapphire-border bg-sapphire-surface">
-            <div className="max-w-3xl w-full mx-auto">
+          {/* Centered Composer Input (Claude Minimalist Style) */}
+          <div className="p-4 border-t border-sapphire-border bg-sapphire-bg/90 backdrop-blur-md">
+            <div className="max-w-2xl w-full mx-auto">
               <form onSubmit={handleSubmit} className="space-y-2">
                 {referenceImage && (
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-sapphire-bg border border-sapphire-border text-text-xs">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-sapphire-surface border border-sapphire-border text-text-xs">
                     <div className="flex items-center gap-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -916,21 +949,21 @@ export default function SapphireWorkspace() {
                   </div>
                 )}
 
-                <div className="relative border border-sapphire-border rounded-xl bg-sapphire-bg focus-within:border-sapphire-dark transition-colors p-3 shadow-hairline">
+                <div className="relative border border-sapphire-border rounded-2xl bg-sapphire-surface focus-within:border-white/20 transition-all p-3.5 shadow-md">
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe your social media post request or upload a reference image..."
                     rows={3}
-                    className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-sapphire-dark placeholder:text-sapphire-muted"
+                    className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-sapphire-dark placeholder:text-sapphire-muted font-sans"
                   />
-                  <div className="flex items-center justify-between pt-2.5 border-t border-sapphire-border/60">
+                  <div className="flex items-center justify-between pt-2 border-t border-sapphire-border/50">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className={`p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-text-xs ${
+                      className={`p-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-text-xs ${
                         referenceImage
-                          ? "bg-sapphire-terracotta/10 text-sapphire-terracotta border border-sapphire-terracotta/30"
+                          ? "bg-sapphire-terracotta/20 text-sapphire-terracotta border border-sapphire-terracotta/30"
                           : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle"
                       }`}
                       title="Attach reference image"
@@ -943,7 +976,7 @@ export default function SapphireWorkspace() {
                     <button
                       type="submit"
                       disabled={!prompt.trim() || isLoading}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 transition-colors shadow-sm"
+                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 transition-all shadow-sm"
                     >
                       {isLoading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -957,43 +990,6 @@ export default function SapphireWorkspace() {
                   </div>
                 </div>
               </form>
-            </div>
-
-            {/* Daily Quota Status Widget (Left Sidebar Bottom) */}
-            <div className="px-4 py-2 bg-sapphire-surface border-t border-sapphire-border flex items-center justify-between text-[11px] text-sapphire-muted select-none shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
-                <span className="font-semibold text-sapphire-dark">
-                  Cloudflare FLUX:
-                </span>
-                <span className="text-sapphire-dark font-medium">
-                  {quotaInfo
-                    ? `${quotaInfo.remainingNeurons.toLocaleString()} / 10,000 Neurons`
-                    : "Connecting..."}
-                </span>
-                {quotaInfo && (
-                  <span className="text-sapphire-muted font-mono hidden md:inline">
-                    (~{quotaInfo.estimatedPostsRemaining} Posts Left)
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-sapphire-muted flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-sapphire-muted" />
-                  Resets {quotaInfo?.resetsIn || "00:00 UTC"}
-                </span>
-                <button
-                  type="button"
-                  onClick={fetchQuota}
-                  disabled={isRefreshingQuota}
-                  title="Refresh Live Cloudflare Quota"
-                  className="p-1 rounded hover:bg-sapphire-bg text-sapphire-muted hover:text-sapphire-dark transition-colors"
-                >
-                  <RefreshCw
-                    className={`w-3 h-3 ${isRefreshingQuota ? "animate-spin" : ""}`}
-                  />
-                </button>
-              </div>
             </div>
           </div>
         </main>
@@ -1048,24 +1044,24 @@ export default function SapphireWorkspace() {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {/* Concept A Card */}
                   <div
-                    className={`border rounded-xl bg-sapphire-surface p-4 space-y-3 shadow-hairline transition-all ${
+                    className={`border rounded-2xl bg-sapphire-surface p-4 space-y-3.5 shadow-md transition-all ${
                       selectedConcept === "A"
-                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/50"
-                        : "border-sapphire-border hover:border-sapphire-dark/30"
+                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
+                        : "border-sapphire-border hover:border-white/20"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-text-xs font-semibold px-2 py-0.5 rounded-md bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
+                      <span className="text-text-xs font-semibold px-2.5 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
                         {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
                       </span>
-                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-bg px-2 py-0.5 rounded border border-sapphire-border">
+                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-blue/10 px-2 py-0.5 rounded border border-sapphire-blue/20">
                         {selectedConcept === "A" ? "Selected" : "Draft"}
                       </span>
                     </div>
 
                     {/* Brand Compliance Scorecard (Critic Agent) */}
                     {critiqueA && (
-                      <div className="p-2.5 rounded-lg bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                      <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
                         <div className="flex items-center justify-between font-semibold">
                           <span className="flex items-center gap-1.5 text-sapphire-dark">
                             <ShieldCheck className="w-3.5 h-3.5 text-sapphire-green" />
@@ -1094,7 +1090,7 @@ export default function SapphireWorkspace() {
                             }}
                             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                               activeVersionA === v.versionNumber
-                                ? "bg-sapphire-dark text-sapphire-surface font-semibold"
+                                ? "bg-sapphire-dark text-sapphire-bg font-semibold"
                                 : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
                             }`}
                           >
@@ -1105,7 +1101,7 @@ export default function SapphireWorkspace() {
                     )}
 
                     {/* Image Preview Container */}
-                    <div className="relative aspect-[4/5] rounded-lg bg-sapphire-bg border border-sapphire-border overflow-hidden group">
+                    <div className="relative aspect-[4/5] rounded-xl bg-sapphire-bg border border-sapphire-border overflow-hidden group">
                       {brief?.concept_a.image_url && !imageErrorA ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1115,10 +1111,10 @@ export default function SapphireWorkspace() {
                             onError={() => setImageErrorA(true)}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-xs">
                             <button
                               onClick={() => setActiveImageModal(brief.concept_a.image_url!)}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Enlarge Image Preview"
                             >
                               <Maximize2 className="w-4 h-4" />
@@ -1126,7 +1122,7 @@ export default function SapphireWorkspace() {
                             <button
                               onClick={() => handleRegenerateImage("A")}
                               disabled={isRegeneratingA}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Regenerate Artwork"
                             >
                               <RefreshCw className={`w-4 h-4 ${isRegeneratingA ? "animate-spin" : ""}`} />
@@ -1135,7 +1131,7 @@ export default function SapphireWorkspace() {
                               href={brief.concept_a.image_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Open High Res Image"
                             >
                               <Download className="w-4 h-4" />
@@ -1143,39 +1139,39 @@ export default function SapphireWorkspace() {
                           </div>
                         </>
                       ) : imageErrorA ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-50/50 border border-rose-200 rounded-lg space-y-2.5">
-                          <AlertCircle className="w-8 h-8 text-rose-500 stroke-1" />
-                          <p className="text-text-xs font-semibold text-rose-900">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
+                          <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
+                          <p className="text-text-xs font-semibold text-rose-300">
                             Artwork Rendering Timeout
                           </p>
-                          <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
-                            Google API returned an unrendered state or rate limit.
+                          <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
+                            API returned an unrendered state or rate limit.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("A")}
                             disabled={isRegeneratingA}
-                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
                             <span>{isRegeneratingA ? "Regenerating..." : "Retry Image Generation"}</span>
                           </button>
                         </div>
                       ) : brief ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-50/40 border border-amber-200/60 rounded-lg space-y-2.5">
-                          <Sparkles className="w-8 h-8 text-amber-600 stroke-1" />
-                          <p className="text-text-xs font-semibold text-stone-900">
-                            Nano Banana 2 Prompt Ready
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2.5">
+                          <Sparkles className="w-8 h-8 text-amber-400 stroke-1" />
+                          <p className="text-text-xs font-semibold text-amber-300">
+                            Prompt Synthesized
                           </p>
-                          <p className="text-[11px] text-stone-600 max-w-[220px] leading-tight">
-                            Google AI Studio requires a linked Cloud Billing account for image quota (limit: 0 on free tier).
+                          <p className="text-[11px] text-amber-400/80 max-w-[220px] leading-tight">
+                            Generating photorealistic Canva-grade composite.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("A")}
                             disabled={isRegeneratingA}
-                            className="px-3 py-1.5 bg-sapphire-dark text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            className="px-3 py-1.5 bg-sapphire-dark text-sapphire-bg rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-white hover:text-black transition-opacity"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingA ? "Connecting..." : "Generate Nano Banana Image"}</span>
+                            <span>{isRegeneratingA ? "Generating..." : "Generate Artwork"}</span>
                           </button>
                         </div>
                       ) : (
@@ -1192,7 +1188,7 @@ export default function SapphireWorkspace() {
                     </div>
 
                     {brief && (
-                      <div className="p-3 rounded-lg bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
                         <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
                         <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3">
                           {brief.concept_a.caption_instagram}
@@ -1215,7 +1211,7 @@ export default function SapphireWorkspace() {
 
                     {/* Refinement Overlay Form */}
                     {isRefining === "A" ? (
-                      <div className="p-3 rounded-lg bg-sapphire-bg border border-sapphire-dark/30 space-y-2">
+                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
                         <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
                           <span className="flex items-center gap-1">
                             <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1233,19 +1229,19 @@ export default function SapphireWorkspace() {
                           value={refinementInput}
                           onChange={(e) => setRefinementInput(e.target.value)}
                           placeholder="e.g. Make lighting warmer & caption punchier..."
-                          className="w-full p-2 text-text-xs rounded border border-sapphire-border bg-sapphire-surface outline-none focus:border-sapphire-dark text-sapphire-dark"
+                          className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setIsRefining(null)}
-                            className="px-2.5 py-1 rounded text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                            className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={() => handleRefineSubmit("A")}
                             disabled={!refinementInput.trim() || isRefinementLoading}
-                            className="px-3 py-1 rounded bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                            className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
                           >
                             {isRefinementLoading ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -1260,10 +1256,10 @@ export default function SapphireWorkspace() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleConceptSelect("A")}
-                            className={`flex-1 py-2 rounded-md text-text-xs font-medium transition-colors ${
+                            className={`flex-1 py-2 rounded-xl text-text-xs font-medium transition-all ${
                               selectedConcept === "A"
-                                ? "bg-sapphire-dark text-sapphire-surface"
-                                : "border border-sapphire-border bg-sapphire-surface hover:bg-sapphire-bg text-sapphire-dark"
+                                ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
+                                : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
                             }`}
                           >
                             {selectedConcept === "A" ? "Concept A Selected" : "Select Concept A"}
@@ -1271,7 +1267,7 @@ export default function SapphireWorkspace() {
                           {brief && (
                             <button
                               onClick={() => setIsRefining("A")}
-                              className="p-2 rounded-md border border-sapphire-border bg-sapphire-surface hover:bg-sapphire-bg text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                              className="p-2 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
                               title="Refine Concept A"
                             >
                               <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1283,7 +1279,7 @@ export default function SapphireWorkspace() {
                         {selectedConcept === "A" && brief && (
                           <button
                             onClick={() => setShowApprovalModal(true)}
-                            className="w-full py-2 rounded-md bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                            className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
                           >
                             <Mail className="w-3.5 h-3.5" />
                             <span>Approve & Send Email Package</span>
@@ -1295,24 +1291,24 @@ export default function SapphireWorkspace() {
 
                   {/* Concept B Card */}
                   <div
-                    className={`border rounded-xl bg-sapphire-surface p-4 space-y-3 shadow-hairline transition-all ${
+                    className={`border rounded-2xl bg-sapphire-surface p-4 space-y-3.5 shadow-md transition-all ${
                       selectedConcept === "B"
-                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/50"
-                        : "border-sapphire-border hover:border-sapphire-dark/30"
+                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
+                        : "border-sapphire-border hover:border-white/20"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-text-xs font-semibold px-2 py-0.5 rounded-md bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
+                      <span className="text-text-xs font-semibold px-2.5 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
                         {brief ? brief.concept_b.label : "Concept B — Editorial India"}
                       </span>
-                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-bg px-2 py-0.5 rounded border border-sapphire-border">
+                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-blue/10 px-2 py-0.5 rounded border border-sapphire-blue/20">
                         {selectedConcept === "B" ? "Selected" : "Draft"}
                       </span>
                     </div>
 
                     {/* Brand Compliance Scorecard (Critic Agent) */}
                     {critiqueB && (
-                      <div className="p-2.5 rounded-lg bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                      <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
                         <div className="flex items-center justify-between font-semibold">
                           <span className="flex items-center gap-1.5 text-sapphire-dark">
                             <ShieldCheck className="w-3.5 h-3.5 text-sapphire-green" />
@@ -1341,7 +1337,7 @@ export default function SapphireWorkspace() {
                             }}
                             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                               activeVersionB === v.versionNumber
-                                ? "bg-sapphire-dark text-sapphire-surface font-semibold"
+                                ? "bg-sapphire-dark text-sapphire-bg font-semibold"
                                 : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
                             }`}
                           >
@@ -1352,7 +1348,7 @@ export default function SapphireWorkspace() {
                     )}
 
                     {/* Image Preview Container */}
-                    <div className="relative aspect-[4/5] rounded-lg bg-sapphire-bg border border-sapphire-border overflow-hidden group">
+                    <div className="relative aspect-[4/5] rounded-xl bg-sapphire-bg border border-sapphire-border overflow-hidden group">
                       {brief?.concept_b.image_url && !imageErrorB ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1362,10 +1358,10 @@ export default function SapphireWorkspace() {
                             onError={() => setImageErrorB(true)}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-xs">
                             <button
                               onClick={() => setActiveImageModal(brief.concept_b.image_url!)}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Enlarge Image Preview"
                             >
                               <Maximize2 className="w-4 h-4" />
@@ -1373,7 +1369,7 @@ export default function SapphireWorkspace() {
                             <button
                               onClick={() => handleRegenerateImage("B")}
                               disabled={isRegeneratingB}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Regenerate Artwork"
                             >
                               <RefreshCw className={`w-4 h-4 ${isRegeneratingB ? "animate-spin" : ""}`} />
@@ -1382,7 +1378,7 @@ export default function SapphireWorkspace() {
                               href={brief.concept_b.image_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-bg transition-colors"
+                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
                               title="Open High Res Image"
                             >
                               <Download className="w-4 h-4" />
@@ -1390,39 +1386,39 @@ export default function SapphireWorkspace() {
                           </div>
                         </>
                       ) : imageErrorB ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-50/50 border border-rose-200 rounded-lg space-y-2.5">
-                          <AlertCircle className="w-8 h-8 text-rose-500 stroke-1" />
-                          <p className="text-text-xs font-semibold text-rose-900">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
+                          <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
+                          <p className="text-text-xs font-semibold text-rose-300">
                             Artwork Rendering Timeout
                           </p>
-                          <p className="text-[11px] text-rose-700/80 max-w-[200px] leading-tight">
-                            Google API returned an unrendered state or rate limit.
+                          <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
+                            API returned an unrendered state or rate limit.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("B")}
                             disabled={isRegeneratingB}
-                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
                             <span>{isRegeneratingB ? "Regenerating..." : "Retry Image Generation"}</span>
                           </button>
                         </div>
                       ) : brief ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-50/40 border border-amber-200/60 rounded-lg space-y-2.5">
-                          <Sparkles className="w-8 h-8 text-amber-600 stroke-1" />
-                          <p className="text-text-xs font-semibold text-stone-900">
-                            Nano Banana 2 Prompt Ready
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2.5">
+                          <Sparkles className="w-8 h-8 text-amber-400 stroke-1" />
+                          <p className="text-text-xs font-semibold text-amber-300">
+                            Prompt Synthesized
                           </p>
-                          <p className="text-[11px] text-stone-600 max-w-[220px] leading-tight">
-                            Google AI Studio requires a linked Cloud Billing account for image quota (limit: 0 on free tier).
+                          <p className="text-[11px] text-amber-400/80 max-w-[220px] leading-tight">
+                            Generating photorealistic Canva-grade composite.
                           </p>
                           <button
                             onClick={() => handleRegenerateImage("B")}
                             disabled={isRegeneratingB}
-                            className="px-3 py-1.5 bg-sapphire-dark text-white rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            className="px-3 py-1.5 bg-sapphire-dark text-sapphire-bg rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-white hover:text-black transition-opacity"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingB ? "Connecting..." : "Generate Nano Banana Image"}</span>
+                            <span>{isRegeneratingB ? "Generating..." : "Generate Artwork"}</span>
                           </button>
                         </div>
                       ) : (
@@ -1439,7 +1435,7 @@ export default function SapphireWorkspace() {
                     </div>
 
                     {brief && (
-                      <div className="p-3 rounded-lg bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
                         <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
                         <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3">
                           {brief.concept_b.caption_instagram}
@@ -1462,7 +1458,7 @@ export default function SapphireWorkspace() {
 
                     {/* Refinement Overlay Form */}
                     {isRefining === "B" ? (
-                      <div className="p-3 rounded-lg bg-sapphire-bg border border-sapphire-dark/30 space-y-2">
+                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
                         <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
                           <span className="flex items-center gap-1">
                             <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1480,19 +1476,19 @@ export default function SapphireWorkspace() {
                           value={refinementInput}
                           onChange={(e) => setRefinementInput(e.target.value)}
                           placeholder="e.g. Make composition more dramatic & captions punchier..."
-                          className="w-full p-2 text-text-xs rounded border border-sapphire-border bg-sapphire-surface outline-none focus:border-sapphire-dark text-sapphire-dark"
+                          className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setIsRefining(null)}
-                            className="px-2.5 py-1 rounded text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                            className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={() => handleRefineSubmit("B")}
                             disabled={!refinementInput.trim() || isRefinementLoading}
-                            className="px-3 py-1 rounded bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                            className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
                           >
                             {isRefinementLoading ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -1507,10 +1503,10 @@ export default function SapphireWorkspace() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleConceptSelect("B")}
-                            className={`flex-1 py-2 rounded-md text-text-xs font-medium transition-colors ${
+                            className={`flex-1 py-2 rounded-xl text-text-xs font-medium transition-all ${
                               selectedConcept === "B"
-                                ? "bg-sapphire-dark text-sapphire-surface"
-                                : "border border-sapphire-border bg-sapphire-surface hover:bg-sapphire-bg text-sapphire-dark"
+                                ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
+                                : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
                             }`}
                           >
                             {selectedConcept === "B" ? "Concept B Selected" : "Select Concept B"}
@@ -1518,7 +1514,7 @@ export default function SapphireWorkspace() {
                           {brief && (
                             <button
                               onClick={() => setIsRefining("B")}
-                              className="p-2 rounded-md border border-sapphire-border bg-sapphire-surface hover:bg-sapphire-bg text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                              className="p-2 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
                               title="Refine Concept B"
                             >
                               <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1530,7 +1526,7 @@ export default function SapphireWorkspace() {
                         {selectedConcept === "B" && brief && (
                           <button
                             onClick={() => setShowApprovalModal(true)}
-                            className="w-full py-2 rounded-md bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                            className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
                           >
                             <Mail className="w-3.5 h-3.5" />
                             <span>Approve & Send Email Package</span>
