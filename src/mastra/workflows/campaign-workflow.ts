@@ -24,23 +24,47 @@ export interface WorkflowResult {
   logs: WorkflowLogEntry[];
 }
 
+export type WorkflowStage =
+  | "intent"
+  | "reference"
+  | "brief"
+  | "prompt_decomp"
+  | "image_rendering"
+  | "critic_audit"
+  | "complete";
+
+export interface WorkflowProgressEvent {
+  step: number;
+  totalSteps: number;
+  stage: WorkflowStage;
+  agentName: string;
+  provider: string;
+  model: string;
+  status: "active" | "success" | "error";
+  summary: string;
+  durationMs?: number;
+  details?: any;
+}
+
+export type ProgressCallback = (event: WorkflowProgressEvent) => Promise<void> | void;
+
 export class CampaignWorkflow {
   /**
    * Executes end-to-end agent workflow with Multi-Layer Visual Decomposition & live telemetry:
    * 1. Brand Context & DNA
-   * 2. Intent Parsing (Gemini 3.1 Flash Lite)
-   * 3. Multimodal Vision (Gemini 3.7 Flash)
-   * 4. Research & Trends (Gemini 3.7 Flash / Groq)
-   * 5. Creative Brief A/B (Gemini 3.7 Flash / Groq)
-   * 6. Multi-Layer Visual Decomposition (Gemini 3.7 Flash - Background, Subject, Lighting, Composite)
-   * 7. Image Generation & Blending (Nano Banana 2 with multimodal conditioning / Pollinations Flux)
-   * 8. Critic Brand Guard (Groq 70B / Gemini 3.7 Flash)
-   * 9. Supabase Durable Persistence
+   * 2. Intent Parsing (Groq Llama 3.3 / Gemini 3.1)
+   * 3. Multimodal Vision (Gemini 2.5 Flash)
+   * 4. Creative Brief A/B (Creative Director Agent)
+   * 5. Multi-Layer Visual Decomposition & Negative Space Blueprint
+   * 6. Image Generation & Blending (Cloudflare FLUX 1 Schnell + Satori Resvg)
+   * 7. Critic Brand Guard (Gemini / Groq 70B)
+   * 8. Supabase Durable Persistence
    */
   static async run(
     prompt: string,
     brandId?: string,
-    referenceImage?: string | null
+    referenceImage?: string | null,
+    onProgress?: ProgressCallback
   ): Promise<WorkflowResult> {
     const logger = new ExecutionLogger();
 
@@ -53,7 +77,19 @@ export class CampaignWorkflow {
       (b) => `Loaded brand DNA for "${b.name}" (${b.industry}).`
     );
 
-    // 2. Parse User Intent using Gemini 3.1 Flash Lite
+    // 2. Parse User Intent using Groq Llama 3.3 / Gemini 3.1
+    await onProgress?.({
+      step: 0,
+      totalSteps: 6,
+      stage: "intent",
+      agentName: "Intent Parsing & Brand DNA Extraction",
+      provider: "Groq / Gemini",
+      model: "llama-3.3-70b-versatile",
+      status: "active",
+      summary: `Analyzing campaign objective and aligning with brand voice "${brand.name}"...`,
+    });
+
+    const intentStart = Date.now();
     const intent = await logger.track(
       "IntentAgent",
       "Google Gemini",
@@ -62,7 +98,34 @@ export class CampaignWorkflow {
       (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}".`
     );
 
-    // 3. Analyze Reference Image using Gemini 3.7 Flash (if provided)
+    await onProgress?.({
+      step: 0,
+      totalSteps: 6,
+      stage: "intent",
+      agentName: "Intent Parsing & Brand DNA Extraction",
+      provider: "Groq / Gemini",
+      model: "llama-3.3-70b-versatile",
+      status: "success",
+      durationMs: Date.now() - intentStart,
+      summary: `Objective: ${intent.objective} • Event: ${intent.event} • Industry: ${intent.industry}`,
+      details: intent,
+    });
+
+    // 3. Analyze Reference Image using Gemini 2.5 Flash (if provided) + Research
+    await onProgress?.({
+      step: 1,
+      totalSteps: 6,
+      stage: "reference",
+      agentName: "Multimodal Visual Reference & Web Trends",
+      provider: "Google Gemini",
+      model: "gemini-2.5-flash",
+      status: "active",
+      summary: referenceImage
+        ? "Extracting lighting, depth of field, color temperature and composition from reference image..."
+        : "Synthesizing real-time design intelligence and negative space requirements...",
+    });
+
+    const refStart = Date.now();
     let referenceAnalysis: ReferenceImageAnalysis | null = null;
     if (referenceImage) {
       referenceAnalysis = await logger.track(
@@ -83,7 +146,6 @@ export class CampaignWorkflow {
       });
     }
 
-    // 4. Synthesize Research & Trends using Gemini 3.7 Flash / Groq
     const research = await logger.track(
       "ResearchAgent",
       "Google Gemini",
@@ -92,7 +154,34 @@ export class CampaignWorkflow {
       (r) => `Synthesized ${r.key_trends.length} winning trends & ${r.overused_patterns_to_avoid.length} clichés to avoid.`
     );
 
-    // 5. Develop A/B Creative Brief using Gemini 3.7 Flash / Groq
+    await onProgress?.({
+      step: 1,
+      totalSteps: 6,
+      stage: "reference",
+      agentName: "Multimodal Visual Reference & Web Trends",
+      provider: "Google Gemini",
+      model: "gemini-2.5-flash",
+      status: "success",
+      durationMs: Date.now() - refStart,
+      summary: referenceAnalysis
+        ? `Style: ${referenceAnalysis.photography_style} • Mood: ${referenceAnalysis.mood} • Palette: ${referenceAnalysis.color_palette.join(", ")}`
+        : `Identified ${research.key_trends.length} design trends • Filtered ${research.overused_patterns_to_avoid.length} overused clichés`,
+      details: { referenceAnalysis, research },
+    });
+
+    // 4. Develop A/B Creative Brief using CreativeDirectorAgent
+    await onProgress?.({
+      step: 2,
+      totalSteps: 6,
+      stage: "brief",
+      agentName: "Creative Direction & A/B Archetype Formulation",
+      provider: "Google Gemini / Mastra",
+      model: "gemini-3.7-flash",
+      status: "active",
+      summary: "Formulating dual creative directions and selecting graphic design archetypes...",
+    });
+
+    const briefStart = Date.now();
     const brief = await logger.track(
       "CreativeDirectorAgent",
       "Google Gemini",
@@ -107,7 +196,32 @@ export class CampaignWorkflow {
       (b) => `Generated dual concepts: "${b.concept_a.label}" & "${b.concept_b.label}".`
     );
 
-    // 6. Multi-Layer Visual Decomposition & Prompt Engineering for Concept A and Concept B
+    await onProgress?.({
+      step: 2,
+      totalSteps: 6,
+      stage: "brief",
+      agentName: "Creative Direction & A/B Archetype Formulation",
+      provider: "Google Gemini / Mastra",
+      model: "gemini-3.7-flash",
+      status: "success",
+      durationMs: Date.now() - briefStart,
+      summary: `Concept A: "${brief.concept_a.label}" vs Concept B: "${brief.concept_b.label}"`,
+      details: brief,
+    });
+
+    // 5. Multi-Layer Visual Decomposition & Prompt Engineering
+    await onProgress?.({
+      step: 3,
+      totalSteps: 6,
+      stage: "prompt_decomp",
+      agentName: "Spatial Prompt Engineering & Satori Blueprint",
+      provider: "Google Gemini / Satori",
+      model: "gemini-3.7-flash",
+      status: "active",
+      summary: "Calculating negative space void & 3-layer visual prompt decomposition...",
+    });
+
+    const promptStart = Date.now();
     const promptEngineeredA = await logger.track(
       "VisualDecomposition (Concept A)",
       "Google Gemini",
@@ -138,83 +252,132 @@ export class CampaignWorkflow {
       (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept B.`
     );
 
-    // 7. Run Critic Agent on both Concept A and Concept B
-    const critiqueA = await logger.track(
-      "CriticAgent (Concept A)",
-      "Groq",
-      "llama-3.3-70b-versatile",
-      () => CriticAgent.evaluateConcept(brief.concept_a, brand),
-      (c) => `Concept A Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
-    );
+    await onProgress?.({
+      step: 3,
+      totalSteps: 6,
+      stage: "prompt_decomp",
+      agentName: "Spatial Prompt Engineering & Satori Blueprint",
+      provider: "Google Gemini / Satori",
+      model: "gemini-3.7-flash",
+      status: "success",
+      durationMs: Date.now() - promptStart,
+      summary: `Constructed 4-zone negative space budget • Archetypes: ${brief.concept_a.design_blueprint?.archetype} & ${brief.concept_b.design_blueprint?.archetype}`,
+      details: { promptEngineeredA, promptEngineeredB },
+    });
 
-    const critiqueB = await logger.track(
-      "CriticAgent (Concept B)",
-      "Groq",
-      "llama-3.3-70b-versatile",
-      () => CriticAgent.evaluateConcept(brief.concept_b, brand),
-      (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
-    );
+    // 6. Image Generation & Canva-Grade Compositing
+    await onProgress?.({
+      step: 4,
+      totalSteps: 6,
+      stage: "image_rendering",
+      agentName: "FLUX Photorealistic Generation & Compositing",
+      provider: "Cloudflare FLUX 1 Schnell + Satori",
+      model: "@cf/black-forest-labs/flux-1-schnell",
+      status: "active",
+      summary: "Rendering photorealistic backgrounds and overlaying editorial typography hierarchy...",
+    });
 
-    // 8. Hybrid Photography & Canva-Grade Compositing (Cloudflare FLUX 1 Schnell + Satori Resvg)
+    const renderStart = Date.now();
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
 
-    const imgResultA = await ImageGenerationService.generateImageUrlWithMeta(
-      promptEngineeredA.optimized_image_prompt,
-      seedA,
-      refStyle,
-      promptEngineeredA.negative_prompt,
-      referenceImage,
-      brief.concept_a.design_blueprint
-    );
+    const [imgResultA, imgResultB] = await Promise.all([
+      ImageGenerationService.generateImageUrlWithMeta(
+        promptEngineeredA.optimized_image_prompt,
+        seedA,
+        refStyle,
+        promptEngineeredA.negative_prompt,
+        referenceImage,
+        brief.concept_a.design_blueprint
+      ),
+      ImageGenerationService.generateImageUrlWithMeta(
+        promptEngineeredB.optimized_image_prompt,
+        seedB,
+        refStyle,
+        promptEngineeredB.negative_prompt,
+        referenceImage,
+        brief.concept_b.design_blueprint
+      ),
+    ]);
+
     brief.concept_a.image_url = imgResultA.url;
+    brief.concept_b.image_url = imgResultB.url;
+
     logger.log({
       agent: "ImageGenerationService (Concept A)",
       provider: imgResultA.provider,
       model: imgResultA.model,
       status: imgResultA.status,
       durationMs: imgResultA.durationMs,
-      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms [Archetype: ${brief.concept_a.design_blueprint?.archetype || "editorial"} | Font: ${brief.concept_a.design_blueprint?.font_family_hook || "Playfair"}].`,
-      details: {
-        archetype: brief.concept_a.design_blueprint?.archetype,
-        fontHook: brief.concept_a.design_blueprint?.font_family_hook,
-        fontBody: brief.concept_a.design_blueprint?.font_family_body,
-        keywords: brief.concept_a.design_blueprint?.highlighted_keywords,
-        layers: promptEngineeredA.layers,
-        blendedPrompt: promptEngineeredA.optimized_image_prompt,
-        negativePrompt: promptEngineeredA.negative_prompt,
-        url: imgResultA.url ? `${imgResultA.url.slice(0, 50)}...` : undefined,
-      },
+      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms.`,
     });
 
-    const imgResultB = await ImageGenerationService.generateImageUrlWithMeta(
-      promptEngineeredB.optimized_image_prompt,
-      seedB,
-      refStyle,
-      promptEngineeredB.negative_prompt,
-      referenceImage,
-      brief.concept_b.design_blueprint
-    );
-    brief.concept_b.image_url = imgResultB.url;
     logger.log({
       agent: "ImageGenerationService (Concept B)",
       provider: imgResultB.provider,
       model: imgResultB.model,
       status: imgResultB.status,
       durationMs: imgResultB.durationMs,
-      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms [Archetype: ${brief.concept_b.design_blueprint?.archetype || "editorial"} | Font: ${brief.concept_b.design_blueprint?.font_family_hook || "Plus Jakarta"}].`,
-      details: {
-        archetype: brief.concept_b.design_blueprint?.archetype,
-        fontHook: brief.concept_b.design_blueprint?.font_family_hook,
-        fontBody: brief.concept_b.design_blueprint?.font_family_body,
-        keywords: brief.concept_b.design_blueprint?.highlighted_keywords,
-        layers: promptEngineeredB.layers,
-        blendedPrompt: promptEngineeredB.optimized_image_prompt,
-        negativePrompt: promptEngineeredB.negative_prompt,
-        url: imgResultB.url ? `${imgResultB.url.slice(0, 50)}...` : undefined,
-      },
+      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms.`,
     });
+
+    await onProgress?.({
+      step: 4,
+      totalSteps: 6,
+      stage: "image_rendering",
+      agentName: "FLUX Photorealistic Generation & Compositing",
+      provider: "Cloudflare FLUX 1 Schnell + Satori",
+      model: "@cf/black-forest-labs/flux-1-schnell",
+      status: "success",
+      durationMs: Date.now() - renderStart,
+      summary: `Generated two 1080×1350 Canva-grade visual compositions in ${(Date.now() - renderStart) / 1000}s`,
+      details: { urlA: imgResultA.url, urlB: imgResultB.url },
+    });
+
+    // 7. Critic Agent Brand Voice & Compliance Audit
+    await onProgress?.({
+      step: 5,
+      totalSteps: 6,
+      stage: "critic_audit",
+      agentName: "Critic Agent Brand Voice & Compliance Audit",
+      provider: "Groq / Gemini",
+      model: "llama-3.3-70b-versatile",
+      status: "active",
+      summary: "Running 100-point brand alignment, visual density, and readability evaluation...",
+    });
+
+    const criticStart = Date.now();
+    const [critiqueA, critiqueB] = await Promise.all([
+      logger.track(
+        "CriticAgent (Concept A)",
+        "Groq",
+        "llama-3.3-70b-versatile",
+        () => CriticAgent.evaluateConcept(brief.concept_a, brand),
+        (c) => `Concept A Brand Alignment: ${c.brand_alignment_score}/100.`
+      ),
+      logger.track(
+        "CriticAgent (Concept B)",
+        "Groq",
+        "llama-3.3-70b-versatile",
+        () => CriticAgent.evaluateConcept(brief.concept_b, brand),
+        (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100.`
+      ),
+    ]);
+
+    await onProgress?.({
+      step: 5,
+      totalSteps: 6,
+      stage: "critic_audit",
+      agentName: "Critic Agent Brand Voice & Compliance Audit",
+      provider: "Groq / Gemini",
+      model: "llama-3.3-70b-versatile",
+      status: "success",
+      durationMs: Date.now() - criticStart,
+      summary: `Alignment Scores: Concept A (${critiqueA.brand_alignment_score}/100) • Concept B (${critiqueB.brand_alignment_score}/100)`,
+      details: { critiqueA, critiqueB },
+    });
+
 
     // 9. Persist Campaign, Concepts, Critiques & Versions in Supabase
     let campaignId = "local-campaign-" + Date.now();

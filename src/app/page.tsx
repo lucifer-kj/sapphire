@@ -37,7 +37,9 @@ import {
   Activity,
   RefreshCw,
   AlertCircle,
+  Eye,
 } from "lucide-react";
+
 import { CreativeBrief, ResearchContext, UserIntent, ConceptItem } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
@@ -46,8 +48,47 @@ import { LogDrawer } from "@/components/telemetry/log-drawer";
 import { BrandSwitcherModal, PRECONFIGURED_BRANDS } from "@/components/brand/brand-switcher-modal";
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
-import { AgentPlanning } from "@/components/ui/agent-planning";
+import { AgentPlanning, PlanStep } from "@/components/ui/agent-planning";
 import { ImageGeneration } from "@/components/ui/image-generation";
+
+const createInitialPlanningSteps = (): PlanStep[] => [
+  {
+    id: "1",
+    title: "1. Intent Parsing & Brand DNA Extraction (Groq Llama 3.3)",
+    status: "pending",
+    icon: <BrainCircuit className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "2",
+    title: "2. Multimodal Visual Reference & Web Trends (Gemini 2.5 Flash)",
+    status: "pending",
+    icon: <Search className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "3",
+    title: "3. Creative Direction & A/B Archetype Formulation (Mastra)",
+    status: "pending",
+    icon: <Layers className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "4",
+    title: "4. Spatial Prompt Engineering & Satori Blueprint",
+    status: "pending",
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "5",
+    title: "5. FLUX Photorealistic Generation & Compositing (1080×1350)",
+    status: "pending",
+    icon: <ImageIcon className="w-3.5 h-3.5" />,
+  },
+  {
+    id: "6",
+    title: "6. Critic Agent Brand Voice & Compliance Audit (100-pt Score)",
+    status: "pending",
+    icon: <ShieldCheck className="w-3.5 h-3.5" />,
+  },
+];
 
 interface ConceptVersionHistory {
   versionNumber: number;
@@ -62,6 +103,8 @@ export default function SapphireWorkspace() {
   const [activeBrandProfile, setActiveBrandProfile] = useState<BrandProfile>(PRECONFIGURED_BRANDS[0]);
   const [activeBrand, setActiveBrand] = useState("Vagabond Travel Agency");
   const [isLoading, setIsLoading] = useState(false);
+  const [planningSteps, setPlanningSteps] = useState<PlanStep[]>(createInitialPlanningSteps());
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Brand Switcher & Settings State
@@ -380,6 +423,11 @@ export default function SapphireWorkspace() {
     setImageErrorA(false);
     setImageErrorB(false);
 
+    // Reset planning steps to active state
+    const initialSteps = createInitialPlanningSteps();
+    initialSteps[0].status = "active";
+    setPlanningSteps(initialSteps);
+
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userMessage, timestamp: new Date().toLocaleTimeString() },
@@ -391,57 +439,118 @@ export default function SapphireWorkspace() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: userMessage,
+          brandId: activeBrandProfile.id,
           referenceImage: currentRefImage,
         }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: Failed to reach agent workflow.`);
+      }
 
-      if (data.success) {
-        setCampaignId(data.campaignId);
-        setIntent(data.intent);
-        setResearch(data.research);
-        setReferenceAnalysis(data.referenceAnalysis || null);
-        setBrief(data.brief);
-        setCritiqueA(data.critiqueA || null);
-        setCritiqueB(data.critiqueB || null);
+      if (!res.body) {
+        throw new Error("ReadableStream not supported by browser environment.");
+      }
 
-        if (data.logs && Array.isArray(data.logs)) {
-          setWorkflowLogs(data.logs);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+
+          try {
+            const payload = JSON.parse(trimmed.slice(6));
+
+            if (payload.type === "progress") {
+              setPlanningSteps((prev) =>
+                prev.map((step, idx) => {
+                  if (idx === payload.step) {
+                    return {
+                      ...step,
+                      status: payload.status,
+                      duration: payload.durationMs
+                        ? `${(payload.durationMs / 1000).toFixed(1)}s`
+                        : undefined,
+                      content: (
+                        <div className="space-y-1 font-mono text-[11px] text-sapphire-muted mt-1 p-2.5 rounded-xl bg-sapphire-bg/70 border border-sapphire-border">
+                          <p className="text-sapphire-dark font-medium leading-relaxed">
+                            {payload.summary}
+                          </p>
+                        </div>
+                      ),
+                    };
+                  } else if (idx < payload.step) {
+                    return { ...step, status: "success" };
+                  } else if (idx === payload.step + 1 && payload.status === "success") {
+                    return { ...step, status: "active" };
+                  }
+                  return step;
+                })
+              );
+            } else if (payload.type === "complete") {
+              setCampaignId(payload.campaignId);
+              setIntent(payload.intent);
+              setResearch(payload.research);
+              setReferenceAnalysis(payload.referenceAnalysis || null);
+              setBrief(payload.brief);
+              setCritiqueA(payload.critiqueA || null);
+              setCritiqueB(payload.critiqueB || null);
+
+              if (payload.logs && Array.isArray(payload.logs)) {
+                setWorkflowLogs(payload.logs);
+              }
+
+              setHistoryConceptA([
+                { versionNumber: 1, conceptItem: payload.brief.concept_a, userInstruction: "Initial Generation" },
+              ]);
+              setHistoryConceptB([
+                { versionNumber: 1, conceptItem: payload.brief.concept_b, userInstruction: "Initial Generation" },
+              ]);
+              setActiveVersionA(1);
+              setActiveVersionB(1);
+
+              setPlanningSteps((prev) =>
+                prev.map((step) => ({ ...step, status: "success" }))
+              );
+
+              let assistantMsg = `I've analyzed your request for "${payload.intent.event}" (${payload.intent.industry}). Brand context loaded for ${activeBrandProfile.name}.`;
+              if (payload.referenceAnalysis) {
+                assistantMsg += ` Gemini analyzed your reference image (Mood: ${payload.referenceAnalysis.mood}).`;
+              }
+              assistantMsg += ` Research synthesis complete. Critic Agent audited brand alignment. Select a concept on the Canvas to refine or approve for email delivery.`;
+
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: assistantMsg,
+                  timestamp: new Date().toLocaleTimeString(),
+                },
+              ]);
+            } else if (payload.type === "error") {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: `Agent Workflow Error: ${payload.error}`,
+                  timestamp: new Date().toLocaleTimeString(),
+                },
+              ]);
+            }
+          } catch (jsonErr) {
+            console.warn("Error parsing SSE JSON chunk:", jsonErr, trimmed);
+          }
         }
-
-        setHistoryConceptA([
-          { versionNumber: 1, conceptItem: data.brief.concept_a, userInstruction: "Initial Generation" },
-        ]);
-        setHistoryConceptB([
-          { versionNumber: 1, conceptItem: data.brief.concept_b, userInstruction: "Initial Generation" },
-        ]);
-        setActiveVersionA(1);
-        setActiveVersionB(1);
-
-        let assistantMsg = `I've analyzed your request for "${data.intent.event}" (${data.intent.industry}). Brand context loaded for ${activeBrand}.`;
-        if (data.referenceAnalysis) {
-          assistantMsg += ` Gemini analyzed your reference image (Mood: ${data.referenceAnalysis.mood}).`;
-        }
-        assistantMsg += ` Research synthesis complete. Critic Agent audited brand alignment. Select a concept on the Canvas to refine or approve for email delivery.`;
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: assistantMsg,
-            timestamp: new Date().toLocaleTimeString(),
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Error: ${data.error || "Failed to process request."}`,
-            timestamp: new Date().toLocaleTimeString(),
-          },
-        ]);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -454,8 +563,10 @@ export default function SapphireWorkspace() {
       ]);
     } finally {
       setIsLoading(false);
+      fetchSavedCampaigns();
     }
   };
+
 
   const handleRefineSubmit = async (conceptKey: "A" | "B") => {
     if (!refinementInput.trim() || !brief || isRefinementLoading) return;
@@ -792,13 +903,14 @@ export default function SapphireWorkspace() {
         {/* LEFT PANEL: Navigation & Brand Context */}
         <aside
           className={`border-r border-sapphire-border bg-sapphire-surface flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
-            isLeftOpen ? "w-[280px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
+            isLeftOpen ? "w-[260px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
           }`}
         >
-          <div className="w-[280px] flex flex-col h-full">
+          <div className="w-[260px] flex flex-col h-full">
+            {/* Minimalist Top Header */}
             <div className="h-10 px-3 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface">
-              <span className="text-heading-xs font-semibold uppercase tracking-wider text-sapphire-muted">
-                Navigation
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-sapphire-muted">
+                Campaigns
               </span>
               <button
                 onClick={() => setIsLeftOpen(false)}
@@ -809,6 +921,7 @@ export default function SapphireWorkspace() {
               </button>
             </div>
 
+            {/* Clean + New Campaign Button */}
             <div className="p-3 border-b border-sapphire-border">
               <button
                 onClick={handleNewConversation}
@@ -824,137 +937,42 @@ export default function SapphireWorkspace() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-text-xs">
-              {/* Active Campaigns Feed (Hydrated from Supabase) */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-sapphire-muted font-medium px-2 py-1 uppercase text-[11px] tracking-wider">
-                  <span>Instagram Campaigns</span>
-                  <Folder className="w-3.5 h-3.5" />
-                </div>
-                {savedCampaigns.length > 0 ? (
-                  <div className="space-y-1 max-h-[160px] overflow-y-auto pr-1">
-                    {savedCampaigns.map((c) => {
-                      const isActive = campaignId === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => handleSelectCampaign(c)}
-                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium text-left border transition-all ${
-                            isActive
-                              ? "bg-sapphire-subtle text-sapphire-dark border-sapphire-terracotta/50 font-semibold"
-                              : "bg-sapphire-bg text-sapphire-muted hover:text-sapphire-dark border-sapphire-border hover:bg-sapphire-subtle/50"
-                          }`}
-                        >
-                          <MessageSquare className="w-3 h-3 text-sapphire-terracotta shrink-0" />
-                          <span className="truncate text-[11px]">{c.campaign_title}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl bg-sapphire-subtle text-sapphire-dark font-medium text-left border border-sapphire-border">
-                    <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta shrink-0" />
-                    <span className="truncate">
-                      {intent ? `${intent.event} Post` : "Active Instagram Post"}
-                    </span>
-                  </button>
-                )}
-              </div>
-
-              {/* Learned Brand Memory & Taste Vectors Widget */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-sapphire-muted font-medium px-2 py-1 uppercase text-[11px] tracking-wider">
-                  <span>Brand Brain Memory</span>
-                  <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="hover:text-sapphire-dark p-0.5 rounded"
-                    title="Edit Brand Preferences"
-                  >
-                    <BrainCircuit className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                  </button>
-                </div>
-                <div className="p-3 rounded-xl border border-sapphire-border bg-sapphire-bg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sapphire-dark truncate max-w-[160px]">
-                      {activeBrandProfile.name}
-                    </span>
-                    <span className="text-[10px] text-sapphire-green font-medium bg-sapphire-green/10 px-1.5 py-0.5 rounded border border-sapphire-green/20">
-                      Active
-                    </span>
-                  </div>
-                  <p className="text-sapphire-muted leading-tight text-[11px]">
-                    {activeBrandProfile.positioning}
-                  </p>
-                  <div className="flex items-center justify-between pt-1 border-t border-sapphire-border/50 text-[10px] text-sapphire-muted">
-                    <span>Temp: {activeBrandProfile.learned_preferences?.visual_temperature_preference?.replace("_", " ") || "warm golden"}</span>
+            {/* Spacious Minimalist Recent Campaigns List */}
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-1 text-text-xs">
+              {savedCampaigns.length > 0 ? (
+                savedCampaigns.map((c) => {
+                  const isActive = campaignId === c.id;
+                  return (
                     <button
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="text-sapphire-terracotta hover:underline font-medium"
+                      key={c.id}
+                      onClick={() => handleSelectCampaign(c)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all ${
+                        isActive
+                          ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
+                          : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
+                      }`}
                     >
-                      Tune
+                      <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta/80 shrink-0" />
+                      <span className="truncate text-text-xs">{c.campaign_title}</span>
                     </button>
-                  </div>
+                  );
+                })
+              ) : (
+                <div className="p-3 text-center text-sapphire-muted text-text-xs">
+                  <p>No previous campaigns.</p>
+                  <p className="text-[10px] pt-1 text-sapphire-muted/70">Submit a prompt to begin.</p>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Daily Quota Status Widget Repositioned in Left Sidebar */}
-            <div className="p-3 border-t border-sapphire-border bg-sapphire-bg/50 space-y-2 text-text-xs select-none">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 font-medium text-sapphire-dark text-[11px]">
-                  <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
-                  <span>Cloudflare FLUX</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={fetchQuota}
-                  disabled={isRefreshingQuota}
-                  title="Refresh Live Cloudflare Quota"
-                  className="p-1 rounded hover:bg-sapphire-subtle text-sapphire-muted hover:text-sapphire-dark transition-colors"
-                >
-                  <RefreshCw
-                    className={`w-3 h-3 ${isRefreshingQuota ? "animate-spin" : ""}`}
-                  />
-                </button>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-sapphire-muted font-mono">
-                  <span>
-                    {quotaInfo
-                      ? `${quotaInfo.remainingNeurons.toLocaleString()} / 10k Neurons`
-                      : "Connecting..."}
-                  </span>
-                  {quotaInfo && (
-                    <span className="text-sapphire-dark font-medium">
-                      ~{quotaInfo.estimatedPostsRemaining} left
-                    </span>
-                  )}
-                </div>
-                <div className="w-full bg-sapphire-subtle rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-sapphire-terracotta h-1.5 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.max(5, 100 - (quotaInfo?.percentUsed || 0))}%`,
-                    }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-sapphire-muted pt-0.5">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Resets {quotaInfo?.resetsIn || "00:00 UTC"}
-                  </span>
-                  <span>Free Tier</span>
-                </div>
-              </div>
-            </div>
-
+            {/* Minimalist Bottom Footer: Brand Brain & Settings */}
             <div className="p-3 border-t border-sapphire-border bg-sapphire-surface flex items-center justify-between text-text-xs text-sapphire-muted">
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="flex items-center gap-2 hover:text-sapphire-dark transition-colors"
+                className="flex items-center gap-2 hover:text-sapphire-dark transition-colors font-medium"
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span>Brand Preferences & Settings</span>
+                <Settings className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                <span>Brand Brain & Quotas</span>
               </button>
               <span className="text-[10px] bg-sapphire-bg px-1.5 py-0.5 rounded border border-sapphire-border">
                 Ctrl+B
@@ -1022,21 +1040,25 @@ export default function SapphireWorkspace() {
                 </div>
               ))}
 
+              {/* Reference Analysis Synthesis Card */}
               {referenceAnalysis && (
-                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2 shadow-sm">
+                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2.5 shadow-sm">
                   <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
                     <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
-                      <ImageIcon className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                      Visual Reference Breakdown
+                      <Eye className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                      Multimodal Reference Analysis
                     </span>
-                    <span className="text-sapphire-green font-medium text-[11px] bg-sapphire-green/10 px-2 py-0.5 rounded border border-sapphire-green/20">
-                      Analyzed
+                    <span className="text-sapphire-green font-medium flex items-center gap-1 text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Processed
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-text-xs pt-1">
+                  <div className="grid grid-cols-2 gap-2 text-text-xs text-sapphire-muted">
                     <div>
                       <span className="text-sapphire-muted font-medium">Mood:</span>{" "}
-                      <span className="text-sapphire-dark font-medium">{referenceAnalysis.mood}</span>
+                      <span className="text-sapphire-dark font-medium">
+                        {referenceAnalysis.mood}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sapphire-muted font-medium">Style:</span>{" "}
@@ -1065,18 +1087,16 @@ export default function SapphireWorkspace() {
               )}
 
               {/* Dynamic Live Multi-Agent Planning & Orchestration Timeline */}
-              {isLoading ? (
+              {(isLoading || brief) && (
                 <AgentPlanning
-                  title="Multi-Agent Pipeline Active • Synthesizing Instagram Post"
+                  title={
+                    isLoading
+                      ? "Multi-Agent Pipeline Active • Streaming Mastra Agents..."
+                      : "Multi-Agent Generation Complete • 1080×1350 Assets Ready"
+                  }
+                  steps={planningSteps}
                   className="animate-in fade-in duration-300"
                 />
-              ) : (
-                brief && (
-                  <AgentPlanning
-                    title="Multi-Agent Generation Complete • 1080×1350 Assets Ready"
-                    className="opacity-95"
-                  />
-                )
               )}
             </div>
           </div>
@@ -1901,6 +1921,9 @@ export default function SapphireWorkspace() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         brand={activeBrandProfile}
+        quotaInfo={quotaInfo}
+        onRefreshQuota={fetchQuota}
+        isRefreshingQuota={isRefreshingQuota}
         onSavePreferences={(prefs, email) => {
           setActiveBrandProfile((prev) => ({
             ...prev,
@@ -1909,6 +1932,7 @@ export default function SapphireWorkspace() {
           if (email) setRecipientEmail(email);
         }}
       />
+
 
       {/* Dedicated Agent Telemetry & Logs Drawer */}
       <LogDrawer

@@ -62,6 +62,7 @@ export const BrandProfileSchema = z.object({
   description: z.string().optional(),
   positioning: z.string().optional(),
   target_audience: z.string().optional(),
+  social_handle: z.string().optional(),
   visual_identity: VisualIdentitySchema.default({}),
   voice: BrandVoiceSchema.default({}),
   learned_preferences: LearnedPreferencesSchema.default({}),

@@ -259,7 +259,6 @@ export class ImageCompositor {
         return this.buildEditorialTemplate(bgUrl, bp);
     }
   }
-
   // -------------------------------------------------------------
   // Archetype 1: Editorial Magazine (Luxury, Hospitality, Food, Boutique Travel)
   // -------------------------------------------------------------
@@ -267,7 +266,7 @@ export class ImageCompositor {
     const accentColor = bp.color_tokens?.accent || "#D97757";
     const hookFont = bp.font_family_hook || "Playfair Display";
     const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
-    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 56, 34);
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 58, 36);
 
     return {
       type: "div",
@@ -278,7 +277,7 @@ export class ImageCompositor {
           justifyContent: "space-between",
           width: "1080px",
           height: "1350px",
-          padding: "65px 70px 50px 70px",
+          padding: "70px 70px 60px 70px",
           backgroundColor: "#141413",
           color: "#FAF7F2",
           fontFamily: bodyFont,
@@ -286,7 +285,6 @@ export class ImageCompositor {
           overflow: "hidden",
         },
         children: [
-          // 1. Background Photo
           {
             type: "img",
             props: {
@@ -302,7 +300,6 @@ export class ImageCompositor {
               },
             },
           },
-          // 2. Multi-Stop Logarithmic Scrim
           {
             type: "div",
             props: {
@@ -313,115 +310,55 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(20,10,5,0.78) 0%, rgba(20,10,5,0.3) 25%, rgba(0,0,0,0) 45%, rgba(20,10,5,0.5) 70%, rgba(20,10,5,0.92) 100%)",
+                  "linear-gradient(180deg, rgba(14,10,8,0.7) 0%, rgba(14,10,8,0.3) 30%, rgba(14,10,8,0.15) 50%, rgba(14,10,8,0.5) 75%, rgba(14,10,8,0.88) 100%)",
               },
             },
           },
-          // 3. Top Header Bar
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "flex-start",
+                alignItems: "center",
                 width: "100%",
+                zIndex: 10,
               },
               children: [
                 {
-                  type: "div",
+                  type: "span",
                   props: {
                     style: {
-                      display: "flex",
-                      flexDirection: "column",
-                      lineHeight: "1.0",
+                      fontFamily: hookFont,
+                      fontSize: "26px",
+                      fontWeight: 700,
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      color: "#FAF7F2",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
                     },
-                    children: [
-                      {
-                        type: "span",
-                        props: {
-                          style: {
-                            fontFamily: hookFont,
-                            fontSize: "44px",
-                            fontWeight: 700,
-                            letterSpacing: "-1px",
-                            color: "#FAF7F2",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.6)",
-                          },
-                          children: bp.brand_name,
-                        },
-                      },
-                    ],
+                    children: bp.brand_name,
                   },
                 },
                 bp.brand_tagline
                   ? {
-                      type: "div",
+                      type: "span",
                       props: {
                         style: {
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          textAlign: "right",
+                          fontFamily: bodyFont,
+                          fontSize: "20px",
+                          fontWeight: 400,
+                          color: "rgba(250, 247, 242, 0.8)",
+                          letterSpacing: "1px",
+                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
                         },
-                        children: [
-                          {
-                            type: "span",
-                            props: {
-                              style: {
-                                fontFamily: bodyFont,
-                                fontSize: "22px",
-                                fontWeight: 700,
-                                color: "#FAF7F2",
-                                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-                              },
-                              children: bp.brand_tagline,
-                            },
-                          },
-                        ],
+                        children: bp.brand_tagline,
                       },
                     }
                   : null,
               ].filter(Boolean),
             },
           },
-          // 4. Center Pill / Floating Tag
-          bp.category_pill
-            ? {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    width: "100%",
-                  },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          display: "flex",
-                          backgroundColor: "rgba(255, 255, 255, 0.22)",
-                          border: "1px solid rgba(255, 255, 255, 0.45)",
-                          borderRadius: "9999px",
-                          padding: "10px 28px",
-                          color: "#FFFFFF",
-                          fontFamily: bodyFont,
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          letterSpacing: "3px",
-                          textTransform: "uppercase",
-                          textShadow: "0 2px 8px rgba(0,0,0,0.5)",
-                        },
-                        children: `✦ ${bp.category_pill} ✦`,
-                      },
-                    },
-                  ],
-                },
-              }
-            : { type: "div", props: { style: { display: "flex" } } },
-          // 5. Bottom Editorial Content & CTA
           {
             type: "div",
             props: {
@@ -430,84 +367,35 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
+                zIndex: 10,
               },
               children: [
-                {
-                  type: "div",
-                  props: {
-                    style: {
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-end",
-                      width: "100%",
-                    },
-                    children: [
-                      // Left Value Props / Hook
-                      {
-                        type: "div",
-                        props: {
-                          style: {
-                            display: "flex",
-                            flexDirection: "column",
-                            fontSize: "26px",
-                            fontWeight: 700,
-                            lineHeight: "1.35",
-                            color: "#FAF7F2",
-                            maxWidth: "480px",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.7)",
-                          },
-                          children: [
-                            renderHeadlineElements(
-                              bp.headline,
-                              bp.highlighted_keywords,
-                              accentColor,
-                              accentColor,
-                              hookFont,
-                              fontSize,
-                              lineHeight
-                            ),
-                            ...(bp.value_props && bp.value_props.length
-                              ? bp.value_props.slice(0, 3).map((vp) => ({
-                                  type: "span",
-                                  props: {
-                                    style: { fontFamily: bodyFont, marginTop: "6px" },
-                                    children: `• ${vp}`,
-                                  },
-                                }))
-                              : []),
-                          ],
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "24px",
+                          lineHeight: "1.4",
+                          fontWeight: 400,
+                          color: "rgba(250, 247, 242, 0.9)",
+                          maxWidth: "880px",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.7)",
                         },
+                        children: bp.subheadline,
                       },
-                      // Right Subheadline
-                      {
-                        type: "div",
-                        props: {
-                          style: {
-                            display: "flex",
-                            flexDirection: "column",
-                            fontSize: "22px",
-                            fontWeight: 600,
-                            lineHeight: "1.35",
-                            color: "#FAF7F2",
-                            maxWidth: "420px",
-                            textAlign: "right",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.7)",
-                          },
-                          children: [
-                            {
-                              type: "span",
-                              props: {
-                                style: { fontFamily: bodyFont },
-                                children: bp.subheadline,
-                              },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-                // Bottom Bar
+                    }
+                  : null,
                 {
                   type: "div",
                   props: {
@@ -515,9 +403,8 @@ export class ImageCompositor {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      borderTop: "1px solid rgba(255,255,255,0.35)",
-                      paddingTop: "18px",
-                      color: "#FAF7F2",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
                     },
                     children: [
                       {
@@ -525,36 +412,19 @@ export class ImageCompositor {
                         props: {
                           style: {
                             fontFamily: bodyFont,
-                            fontSize: "22px",
-                            fontWeight: 700,
-                            letterSpacing: "1px",
-                            textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                            fontSize: "20px",
+                            fontWeight: 600,
+                            letterSpacing: "1.5px",
+                            color: "rgba(250, 247, 242, 0.75)",
+                            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
                           },
                           children: bp.social_handle,
-                        },
-                      },
-                      {
-                        type: "div",
-                        props: {
-                          style: {
-                            display: "flex",
-                            alignItems: "center",
-                            backgroundColor: accentColor,
-                            padding: "10px 24px",
-                            borderRadius: "8px",
-                            fontFamily: bodyFont,
-                            fontSize: "18px",
-                            fontWeight: 700,
-                            color: "#FFFFFF",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-                          },
-                          children: bp.cta_text,
                         },
                       },
                     ],
                   },
                 },
-              ],
+              ].filter(Boolean),
             },
           },
         ],
@@ -580,7 +450,7 @@ export class ImageCompositor {
           justifyContent: "space-between",
           width: "1080px",
           height: "1350px",
-          padding: "70px 70px 50px 70px",
+          padding: "70px 70px 60px 70px",
           backgroundColor: "#141413",
           color: "#FAF7F2",
           fontFamily: bodyFont,
@@ -613,11 +483,10 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to right, rgba(20,20,19,0.15) 0%, rgba(20,20,19,0.75) 45%, rgba(20,20,19,0.96) 100%)",
+                  "linear-gradient(180deg, rgba(16,16,14,0.75) 0%, rgba(16,16,14,0.3) 35%, rgba(16,16,14,0.2) 55%, rgba(16,16,14,0.85) 100%)",
               },
             },
           },
-          // Header
           {
             type: "div",
             props: {
@@ -626,112 +495,106 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
+                zIndex: 10,
               },
               children: [
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "24px", fontWeight: 700, color: "#B0AEA5" },
-                    children: bp.social_handle,
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "26px",
+                      fontWeight: 700,
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      color: "#FAF7F2",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                    },
+                    children: bp.brand_name,
                   },
                 },
-                bp.category_pill
+                bp.brand_tagline
                   ? {
-                      type: "div",
+                      type: "span",
                       props: {
                         style: {
-                          display: "flex",
-                          backgroundColor: accentColor,
-                          padding: "8px 20px",
-                          borderRadius: "9999px",
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          color: "#FFFFFF",
+                          fontFamily: bodyFont,
+                          fontSize: "20px",
+                          color: "rgba(250, 247, 242, 0.8)",
+                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
                         },
-                        children: bp.category_pill,
+                        children: bp.brand_tagline,
                       },
                     }
                   : null,
               ].filter(Boolean),
             },
           },
-          // Main Right-Aligned Content Column
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-end",
-                textAlign: "right",
-                width: "100%",
                 gap: "24px",
+                width: "100%",
+                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
                   bp.headline,
                   bp.highlighted_keywords,
                   accentColor,
-                  "#FFFFFF",
+                  "#FAF7F2",
                   hookFont,
                   fontSize,
                   lineHeight
                 ),
-                {
-                  type: "p",
-                  props: {
-                    style: {
-                      fontFamily: bodyFont,
-                      fontSize: "26px",
-                      fontWeight: 500,
-                      lineHeight: "1.4",
-                      color: "#B0AEA5",
-                      maxWidth: "520px",
-                      margin: 0,
-                    },
-                    children: bp.subheadline,
-                  },
-                },
-              ],
-            },
-          },
-          // Footer
-          {
-            type: "div",
-            props: {
-              style: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                borderTop: "1px solid rgba(255,255,255,0.25)",
-                paddingTop: "20px",
-              },
-              children: [
-                {
-                  type: "span",
-                  props: {
-                    style: { fontSize: "24px", fontWeight: 700, color: "#FAF7F2" },
-                    children: bp.brand_name,
-                  },
-                },
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "24px",
+                          lineHeight: "1.4",
+                          color: "rgba(250, 247, 242, 0.9)",
+                          maxWidth: "900px",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.7)",
+                        },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
                 {
                   type: "div",
                   props: {
                     style: {
                       display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      backgroundColor: accentColor,
-                      padding: "12px 28px",
-                      borderRadius: "10px",
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      color: "#FFFFFF",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
                     },
-                    children: bp.cta_text,
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            fontFamily: bodyFont,
+                            fontSize: "20px",
+                            fontWeight: 600,
+                            letterSpacing: "1.5px",
+                            color: "rgba(250, 247, 242, 0.75)",
+                            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                          },
+                          children: bp.social_handle,
+                        },
+                      },
+                    ],
                   },
                 },
-              ],
+              ].filter(Boolean),
             },
           },
         ],
@@ -740,13 +603,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 3: Comparison Split (Before/After, Versus, Growth)
+  // Archetype 3: Comparison Split (Before/After, Pros/Cons, Two Realities)
   // -------------------------------------------------------------
   private static buildComparisonSplitTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
-    const hookFont = bp.font_family_hook || "Inter";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
     const bodyFont = bp.font_family_body || "Inter";
-    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 54, 32);
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 56, 34);
 
     return {
       type: "div",
@@ -757,9 +620,9 @@ export class ImageCompositor {
           justifyContent: "space-between",
           width: "1080px",
           height: "1350px",
-          padding: "60px 60px 40px 60px",
-          backgroundColor: "#FAF9F5",
-          color: "#141413",
+          padding: "70px 70px 60px 70px",
+          backgroundColor: "#141413",
+          color: "#FAF7F2",
           fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
@@ -790,11 +653,10 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(250,249,245,0.95) 0%, rgba(250,249,245,0.45) 25%, rgba(0,0,0,0) 50%, rgba(20,20,19,0.88) 100%)",
+                  "linear-gradient(180deg, rgba(14,10,8,0.7) 0%, rgba(14,10,8,0.25) 35%, rgba(14,10,8,0.2) 55%, rgba(14,10,8,0.85) 100%)",
               },
             },
           },
-          // Header
           {
             type: "div",
             props: {
@@ -803,6 +665,7 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
+                zIndex: 10,
               },
               children: [
                 {
@@ -810,98 +673,98 @@ export class ImageCompositor {
                   props: {
                     style: {
                       fontFamily: hookFont,
-                      fontSize: "32px",
+                      fontSize: "26px",
                       fontWeight: 700,
-                      color: "#141413",
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      color: "#FAF7F2",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
                     },
                     children: bp.brand_name,
                   },
                 },
-                {
-                  type: "span",
-                  props: {
-                    style: { fontSize: "20px", fontWeight: 600, color: "#787670" },
-                    children: bp.social_handle,
-                  },
-                },
-              ],
+                bp.brand_tagline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "20px",
+                          color: "rgba(250, 247, 242, 0.8)",
+                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                        },
+                        children: bp.brand_tagline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
             },
           },
-          // Center Headline
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
+                gap: "24px",
                 width: "100%",
-                gap: "12px",
+                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
                   bp.headline,
                   bp.highlighted_keywords,
                   accentColor,
-                  "#141413",
+                  "#FAF7F2",
                   hookFont,
                   fontSize,
                   lineHeight
                 ),
-                {
-                  type: "p",
-                  props: {
-                    style: {
-                      fontFamily: bodyFont,
-                      fontSize: "24px",
-                      fontWeight: 500,
-                      color: "#4B4944",
-                      maxWidth: "720px",
-                      margin: 0,
-                    },
-                    children: bp.subheadline,
-                  },
-                },
-              ],
-            },
-          },
-          // Footer
-          {
-            type: "div",
-            props: {
-              style: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                color: "#FAF7F2",
-              },
-              children: [
-                {
-                  type: "span",
-                  props: {
-                    style: { fontSize: "22px", fontWeight: 700 },
-                    children: bp.brand_tagline || bp.headline,
-                  },
-                },
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "24px",
+                          lineHeight: "1.4",
+                          color: "rgba(250, 247, 242, 0.9)",
+                          maxWidth: "900px",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.7)",
+                        },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
                 {
                   type: "div",
                   props: {
                     style: {
                       display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      backgroundColor: accentColor,
-                      padding: "10px 24px",
-                      borderRadius: "8px",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#FFFFFF",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
                     },
-                    children: bp.cta_text,
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            fontFamily: bodyFont,
+                            fontSize: "20px",
+                            fontWeight: 600,
+                            letterSpacing: "1.5px",
+                            color: "rgba(250, 247, 242, 0.75)",
+                            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                          },
+                          children: bp.social_handle,
+                        },
+                      },
+                    ],
                   },
                 },
-              ],
+              ].filter(Boolean),
             },
           },
         ],
@@ -910,154 +773,12 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 4: Vintage Poster (DTC, Organic, Wellness, Heritage)
+  // Archetype 4: Vintage / Warm Organic Poster (Artisanal, Coffee, Craft)
   // -------------------------------------------------------------
   private static buildVintagePosterTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
     const hookFont = bp.font_family_hook || "Outfit";
     const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
-    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 62, 34);
-
-    return {
-      type: "div",
-      props: {
-        style: {
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          width: "1080px",
-          height: "1350px",
-          padding: "60px 65px 45px 65px",
-          backgroundColor: "#FAF7EE",
-          color: "#1E4D2B",
-          fontFamily: bodyFont,
-          position: "relative",
-          overflow: "hidden",
-        },
-        children: [
-          {
-            type: "img",
-            props: {
-              src: bgUrl,
-              alt: "Background",
-              style: {
-                position: "absolute",
-                top: "0px",
-                left: "0px",
-                width: "1080px",
-                height: "1350px",
-                objectFit: "cover",
-              },
-            },
-          },
-          {
-            type: "div",
-            props: {
-              style: {
-                position: "absolute",
-                top: "0px",
-                left: "0px",
-                width: "1080px",
-                height: "1350px",
-                background:
-                  "linear-gradient(to bottom, rgba(250,247,238,0.94) 0%, rgba(250,247,238,0.35) 25%, rgba(0,0,0,0) 50%, rgba(250,247,238,0.88) 100%)",
-              },
-            },
-          },
-          // Header Display
-          {
-            type: "div",
-            props: {
-              style: {
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-                width: "100%",
-                gap: "8px",
-              },
-              children: [
-                renderHeadlineElements(
-                  bp.headline,
-                  bp.highlighted_keywords,
-                  accentColor,
-                  "#1E4D2B",
-                  hookFont,
-                  fontSize,
-                  lineHeight
-                ),
-                bp.category_pill
-                  ? {
-                      type: "span",
-                      props: {
-                        style: {
-                          fontFamily: hookFont,
-                          fontSize: "26px",
-                          fontWeight: 600,
-                          letterSpacing: "2px",
-                          color: accentColor,
-                        },
-                        children: `✦ ${bp.category_pill} ✦`,
-                      },
-                    }
-                  : null,
-              ].filter(Boolean),
-            },
-          },
-          // Footer Stamps
-          {
-            type: "div",
-            props: {
-              style: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                borderTop: "2px solid #1E4D2B",
-                paddingTop: "16px",
-              },
-              children: [
-                {
-                  type: "span",
-                  props: {
-                    style: {
-                      fontFamily: bodyFont,
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      letterSpacing: "1px",
-                    },
-                    children: bp.subheadline,
-                  },
-                },
-                {
-                  type: "span",
-                  props: {
-                    style: {
-                      fontFamily: hookFont,
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      border: "2px solid #1E4D2B",
-                      borderRadius: "9999px",
-                      padding: "4px 16px",
-                    },
-                    children: "EST 2026",
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    };
-  }
-
-  // -------------------------------------------------------------
-  // Archetype 5: SaaS Dot-Grid (Dev tools, AI Apps, Productivity)
-  // -------------------------------------------------------------
-  private static buildSaaSTemplate(bgUrl: string, bp: DesignBlueprint) {
-    const accentColor = bp.color_tokens?.accent || "#D97757";
-    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
-    const bodyFont = bp.font_family_body || "Inter";
     const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 60, 36);
 
     return {
@@ -1069,8 +790,179 @@ export class ImageCompositor {
           justifyContent: "space-between",
           width: "1080px",
           height: "1350px",
-          padding: "70px 70px 50px 70px",
-          backgroundColor: "#0F172A",
+          padding: "70px 70px 60px 70px",
+          backgroundColor: "#181816",
+          color: "#FAF7EE",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background:
+                  "linear-gradient(180deg, rgba(24,20,16,0.7) 0%, rgba(24,20,16,0.25) 35%, rgba(24,20,16,0.2) 55%, rgba(24,20,16,0.88) 100%)",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                zIndex: 10,
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "28px",
+                      fontWeight: 700,
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      color: "#FAF7EE",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                    },
+                    children: bp.brand_name,
+                  },
+                },
+                bp.brand_tagline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "20px",
+                          fontStyle: "italic",
+                          color: "rgba(250, 247, 238, 0.85)",
+                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                        },
+                        children: bp.brand_tagline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                width: "100%",
+                zIndex: 10,
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7EE",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "24px",
+                          lineHeight: "1.4",
+                          color: "rgba(250, 247, 238, 0.9)",
+                          maxWidth: "900px",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.7)",
+                        },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+                    },
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            fontFamily: bodyFont,
+                            fontSize: "20px",
+                            fontWeight: 600,
+                            letterSpacing: "1.5px",
+                            color: "rgba(250, 247, 238, 0.75)",
+                            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                          },
+                          children: bp.social_handle,
+                        },
+                      },
+                    ],
+                  },
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype 5: SaaS Dotgrid (Developer Platforms, Cloud, AI)
+  // -------------------------------------------------------------
+  private static buildSaaSTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#7BA7D7";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 58, 36);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "70px 70px 60px 70px",
+          backgroundColor: "#0A0D14",
           color: "#F8FAFC",
           fontFamily: bodyFont,
           position: "relative",
@@ -1102,11 +994,10 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(15,23,42,0.94) 0%, rgba(15,23,42,0.45) 30%, rgba(0,0,0,0) 60%, rgba(15,23,42,0.94) 100%)",
+                  "linear-gradient(180deg, rgba(10,13,20,0.75) 0%, rgba(10,13,20,0.3) 35%, rgba(10,13,20,0.2) 55%, rgba(10,13,20,0.9) 100%)",
               },
             },
           },
-          // Header
           {
             type: "div",
             props: {
@@ -1115,6 +1006,7 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
+                zIndex: 10,
               },
               children: [
                 {
@@ -1124,39 +1016,40 @@ export class ImageCompositor {
                       fontFamily: hookFont,
                       fontSize: "26px",
                       fontWeight: 700,
-                      letterSpacing: "2px",
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      color: "#F8FAFC",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.6)",
                     },
-                    children: bp.brand_name.toUpperCase(),
+                    children: bp.brand_name,
                   },
                 },
-                {
-                  type: "div",
-                  props: {
-                    style: {
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "50%",
-                      border: "2px solid #64748B",
-                      fontSize: "20px",
-                    },
-                    children: "➔",
-                  },
-                },
-              ],
+                bp.brand_tagline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontFamily: bodyFont,
+                          fontSize: "20px",
+                          color: "rgba(248, 250, 252, 0.8)",
+                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                        },
+                        children: bp.brand_tagline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
             },
           },
-          // Headline Block
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 flexDirection: "column",
-                gap: "16px",
-                maxWidth: "720px",
+                gap: "24px",
+                width: "100%",
+                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -1168,70 +1061,51 @@ export class ImageCompositor {
                   fontSize,
                   lineHeight
                 ),
-                {
-                  type: "p",
-                  props: {
-                    style: {
-                      fontFamily: bodyFont,
-                      fontSize: "24px",
-                      fontWeight: 500,
-                      color: "#94A3B8",
-                      lineHeight: "1.4",
-                      margin: 0,
-                    },
-                    children: bp.subheadline,
-                  },
-                },
-              ],
-            },
-          },
-          // Footer
-          {
-            type: "div",
-            props: {
-              style: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                borderTop: "1px solid rgba(255,255,255,0.2)",
-                paddingTop: "20px",
-              },
-              children: [
-                bp.category_pill
+                bp.subheadline
                   ? {
-                      type: "div",
+                      type: "span",
                       props: {
                         style: {
-                          display: "flex",
-                          backgroundColor: "rgba(255,255,255,0.12)",
-                          border: "1px solid rgba(255,255,255,0.3)",
-                          padding: "8px 20px",
-                          borderRadius: "9999px",
-                          fontSize: "16px",
-                          fontWeight: 700,
+                          fontFamily: bodyFont,
+                          fontSize: "24px",
+                          lineHeight: "1.4",
+                          color: "rgba(248, 250, 252, 0.9)",
+                          maxWidth: "900px",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.7)",
                         },
-                        children: bp.category_pill,
+                        children: bp.subheadline,
                       },
                     }
-                  : { type: "div", props: { style: { display: "flex" } } },
+                  : null,
                 {
                   type: "div",
                   props: {
                     style: {
                       display: "flex",
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      backgroundColor: accentColor,
-                      padding: "10px 24px",
-                      borderRadius: "8px",
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#FFFFFF",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
                     },
-                    children: bp.cta_text,
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            fontFamily: bodyFont,
+                            fontSize: "20px",
+                            fontWeight: 600,
+                            letterSpacing: "1.5px",
+                            color: "rgba(248, 250, 252, 0.75)",
+                            textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                          },
+                          children: bp.social_handle,
+                        },
+                      },
+                    ],
                   },
                 },
-              ],
+              ].filter(Boolean),
             },
           },
         ],
@@ -1239,4 +1113,3 @@ export class ImageCompositor {
     };
   }
 }
-

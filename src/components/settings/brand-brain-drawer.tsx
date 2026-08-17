@@ -11,19 +11,42 @@ import {
   Type,
   Layers,
   Sparkles,
+  RefreshCw,
+  Clock,
+  Zap,
 } from "lucide-react";
+
+interface QuotaInfo {
+  configured?: boolean;
+  totalNeurons?: number;
+  limit?: number;
+  dailyLimitNeurons?: number;
+  remainingNeurons: number;
+  percentUsed: number;
+  resetsIn: string;
+  estimatedPostsRemaining: number;
+  requestsToday?: number;
+  provider?: string;
+}
 
 interface BrandBrainDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   brand: BrandProfile;
+  quotaInfo?: QuotaInfo | null;
+  onRefreshQuota?: () => void;
+  isRefreshingQuota?: boolean;
   onSavePreferences: (prefs: LearnedPreferences, deliveryEmail?: string) => void;
 }
+
 
 export const BrandBrainDrawer: React.FC<BrandBrainDrawerProps> = ({
   isOpen,
   onClose,
   brand,
+  quotaInfo,
+  onRefreshQuota,
+  isRefreshingQuota = false,
   onSavePreferences,
 }) => {
   const [affinities, setAffinities] = useState<Record<string, number>>({
@@ -101,10 +124,10 @@ export const BrandBrainDrawer: React.FC<BrandBrainDrawerProps> = ({
             </div>
             <div>
               <h2 className="text-text-sm font-semibold text-sapphire-dark">
-                Brand Brain & Taste Preferences
+                Brand Brain & Settings
               </h2>
               <p className="text-text-xs text-sapphire-muted">
-                {brand.name} • Instagram Creative Memory
+                {brand.name} • Instagram Creative Memory & Quotas
               </p>
             </div>
           </div>
@@ -118,6 +141,79 @@ export const BrandBrainDrawer: React.FC<BrandBrainDrawerProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          {/* Brand DNA Overview Card */}
+          <div className="p-4 rounded-2xl bg-sapphire-surface border border-sapphire-border space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-sapphire-dark text-text-sm">{brand.name}</span>
+              <span className="text-[10px] text-sapphire-green font-medium bg-sapphire-green/10 px-2 py-0.5 rounded-full border border-sapphire-green/20">
+                Active Brand Profile
+              </span>
+            </div>
+            <p className="text-text-xs text-sapphire-muted leading-relaxed">
+              {brand.positioning}
+            </p>
+            <div className="flex items-center gap-2 pt-1 border-t border-sapphire-border/50 text-[11px] text-sapphire-muted">
+              <span className="font-medium text-sapphire-dark">Industry:</span>
+              <span>{brand.industry}</span>
+              <span className="text-sapphire-border">•</span>
+              <span className="font-medium text-sapphire-dark">Handle:</span>
+              <span>{brand.social_handle || "@vagabondtravel"}</span>
+            </div>
+
+          </div>
+
+          {/* Cloudflare Quota Status Widget */}
+          <div className="p-4 rounded-2xl bg-sapphire-surface border border-sapphire-border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-sapphire-green" />
+                <h3 className="font-semibold text-text-xs uppercase tracking-wider text-sapphire-dark">
+                  Cloudflare FLUX Quota Tracker
+                </h3>
+              </div>
+              {onRefreshQuota && (
+                <button
+                  type="button"
+                  onClick={onRefreshQuota}
+                  disabled={isRefreshingQuota}
+                  title="Refresh Quota"
+                  className="p-1 rounded hover:bg-sapphire-subtle text-sapphire-muted hover:text-sapphire-dark transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingQuota ? "animate-spin" : ""}`} />
+                </button>
+              )}
+            </div>
+            <div className="space-y-1.5 font-mono text-[11px]">
+              <div className="flex items-center justify-between text-sapphire-muted">
+                <span>
+                  {quotaInfo
+                    ? `${quotaInfo.remainingNeurons.toLocaleString()} / 10k Neurons Available`
+                    : "Connecting to Cloudflare Workers AI..."}
+                </span>
+                {quotaInfo && (
+                  <span className="text-sapphire-dark font-medium font-sans">
+                    ~{quotaInfo.estimatedPostsRemaining} generations left
+                  </span>
+                )}
+              </div>
+              <div className="w-full bg-sapphire-subtle rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-sapphire-terracotta h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.max(5, 100 - (quotaInfo?.percentUsed || 0))}%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-sapphire-muted font-sans pt-1">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Daily Reset: {quotaInfo?.resetsIn || "00:00 UTC"}
+                </span>
+                <span className="text-sapphire-green font-medium">Free Tier Active</span>
+              </div>
+            </div>
+          </div>
+
           {/* Section 1: Archetype Affinities */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-sapphire-border pb-2">
