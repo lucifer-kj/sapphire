@@ -4,7 +4,11 @@ import { ImageGenerationService } from "@/services/image-generation";
 import { BrandBrainService } from "@/services/brand-brain";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
+
   try {
     const body = await req.json();
     const {

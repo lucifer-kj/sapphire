@@ -38,7 +38,9 @@ import {
   RefreshCw,
   AlertCircle,
   Eye,
+  Zap,
 } from "lucide-react";
+
 
 import { CreativeBrief, ResearchContext, UserIntent, ConceptItem } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
@@ -46,8 +48,10 @@ import { CriticResult } from "@/lib/schema/critic";
 import { WorkflowLogEntry } from "@/lib/schema/telemetry";
 import { LogDrawer } from "@/components/telemetry/log-drawer";
 import { WorkspaceModal } from "@/components/workspace/workspace-modal";
+import { WorkspaceOnboardingModal } from "@/components/workspace/workspace-onboarding-modal";
 
 import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
+
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
 
@@ -110,10 +114,14 @@ export default function SapphireWorkspace() {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Brand Switcher & Settings State
+  // Brand Switcher, Onboarding & Platform Switcher State
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+  const [activePlatform, setActivePlatform] = useState<"instagram" | "linkedin">("instagram");
+  const [learningToast, setLearningToast] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"ab" | "focus">("ab");
+
 
   // Supabase Saved Campaigns
   const [savedCampaigns, setSavedCampaigns] = useState<
@@ -675,9 +683,13 @@ export default function SapphireWorkspace() {
         }),
       });
       setPreferenceSaved(true);
+      const archetype = selected.design_blueprint?.archetype?.replace(/_/g, " ") || "Editorial Layout";
+      setLearningToast(`🧠 Brand Brain Updated: +15% affinity for ${archetype}`);
+      setTimeout(() => setLearningToast(null), 4500);
     } catch (err) {
       console.warn("Preference recording error:", err);
     }
+
   };
 
   // Human Approval & Resend Email Delivery Handler
@@ -871,21 +883,56 @@ export default function SapphireWorkspace() {
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline group"
           >
             <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
-            <span className="max-w-[170px] truncate">{activeBrand}</span>
+            <span className="max-w-[150px] truncate">{activeBrand}</span>
             <span className="text-[10px] font-mono text-sapphire-muted hidden sm:inline-block px-1 rounded bg-sapphire-subtle">
               Ctrl+W
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-sapphire-muted" />
           </button>
 
+          {/* New Onboarding Button */}
+          <button
+            onClick={() => setIsOnboardingModalOpen(true)}
+            title="Create or Onboard New Brand Workspace"
+            className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-sapphire-terracotta bg-sapphire-terracotta/10 hover:bg-sapphire-terracotta/20 transition-all border border-sapphire-terracotta/20"
+          >
+            <Plus className="w-3 h-3" />
+            <span>Onboard Brand</span>
+          </button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 text-text-xs text-sapphire-muted">
-          <span>{intent ? intent.event : "Instagram Studio"}</span>
-          <ChevronRight className="w-3 h-3 text-sapphire-muted/60" />
-          <span className="text-sapphire-dark font-medium truncate max-w-[240px]">
-            {brief ? brief.campaign_title : "Concept Direction A/B"}
-          </span>
+        {/* Center: Platform Switcher Segmented Control */}
+        <div className="hidden md:flex items-center bg-sapphire-bg p-0.5 rounded-xl border border-sapphire-border text-text-xs font-medium shadow-inner">
+          <button
+            onClick={() => setActivePlatform("instagram")}
+            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+              activePlatform === "instagram"
+                ? "bg-sapphire-surface text-sapphire-dark font-semibold shadow-xs"
+                : "text-sapphire-muted hover:text-sapphire-dark"
+            }`}
+          >
+            <span>📷 Instagram</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-sapphire-terracotta/10 text-sapphire-terracotta font-mono font-bold">
+              1080×1350
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setActivePlatform("linkedin");
+              setLearningToast("💼 LinkedIn Multi-Slide Carousel pipeline in development — Instagram Studio active.");
+              setTimeout(() => setLearningToast(null), 4000);
+            }}
+            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+              activePlatform === "linkedin"
+                ? "bg-sapphire-surface text-sapphire-dark font-semibold shadow-xs"
+                : "text-sapphire-muted hover:text-sapphire-dark"
+            }`}
+          >
+            <span>💼 LinkedIn</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-sapphire-subtle text-sapphire-muted font-mono">
+              Coming Soon
+            </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -930,17 +977,25 @@ export default function SapphireWorkspace() {
 
       {/* 2. Main 3-Pane Spatial Workspace */}
       <div className="flex flex-1 overflow-hidden relative">
-        {/* LEFT PANEL: Navigation & Brand Context */}
+        {/* Floating Cognitive Learning Toast */}
+        {learningToast && (
+          <div className="absolute top-4 right-4 z-40 bg-sapphire-surface border border-sapphire-terracotta/30 text-sapphire-dark px-4 py-2.5 rounded-2xl shadow-xl animate-fade-in flex items-center gap-2 text-text-xs font-medium">
+            <Sparkles className="w-4 h-4 text-sapphire-terracotta shrink-0" />
+            <span>{learningToast}</span>
+          </div>
+        )}
+
+        {/* LEFT PANEL: Navigation, Asset Gallery & History */}
         <aside
           className={`border-r border-sapphire-border bg-sapphire-surface flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
-            isLeftOpen ? "w-[260px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
+            isLeftOpen ? "w-[270px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
           }`}
         >
-          <div className="w-[260px] flex flex-col h-full">
+          <div className="w-[270px] flex flex-col h-full">
             {/* Minimalist Top Header */}
             <div className="h-10 px-3 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-sapphire-muted">
-                Campaigns
+                Workspace Hub
               </span>
               <button
                 onClick={() => setIsLeftOpen(false)}
@@ -967,49 +1022,122 @@ export default function SapphireWorkspace() {
               </button>
             </div>
 
-            {/* Spacious Minimalist Recent Campaigns List */}
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-1 text-text-xs">
-              {savedCampaigns.length > 0 ? (
-                savedCampaigns.map((c) => {
-                  const isActive = campaignId === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => handleSelectCampaign(c)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all ${
-                        isActive
-                          ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
-                          : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
-                      }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta/80 shrink-0" />
-                      <span className="truncate text-text-xs">{c.campaign_title}</span>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="p-3 text-center text-sapphire-muted text-text-xs">
-                  <p>No previous campaigns.</p>
-                  <p className="text-[10px] pt-1 text-sapphire-muted/70">Submit a prompt to begin.</p>
+            {/* Scrollable Gallery & Chronological History */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-text-xs">
+              {/* Workspace Gallery Section */}
+              {savedCampaigns.some((c) => c.raw?.brief?.concept_a?.image_url) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-sapphire-muted px-1">
+                    <span>CREATIVE GALLERY</span>
+                    <span className="font-mono text-[10px]">
+                      {savedCampaigns.filter((c) => c.raw?.brief?.concept_a?.image_url).length} Assets
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {savedCampaigns
+                      .filter((c) => c.raw?.brief?.concept_a?.image_url)
+                      .slice(0, 6)
+                      .map((c) => {
+                        const img = c.raw?.brief?.concept_a?.image_url;
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => handleSelectCampaign(c)}
+                            title={c.campaign_title}
+                            className="aspect-[4/5] rounded-lg overflow-hidden border border-sapphire-border bg-sapphire-bg cursor-pointer hover:border-sapphire-terracotta transition-all relative group"
+                          >
+                            <img
+                              src={img}
+                              alt={c.campaign_title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
+
+              {/* Chronological Campaign Stream with Thumbnails */}
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-semibold text-sapphire-muted px-1 pb-1">
+                  RECENT SESSIONS
+                </div>
+                {savedCampaigns.length > 0 ? (
+                  savedCampaigns.map((c) => {
+                    const isActive = campaignId === c.id;
+                    const thumb = c.raw?.brief?.concept_a?.image_url;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => handleSelectCampaign(c)}
+                        className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
+                          isActive
+                            ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
+                            : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
+                        }`}
+                      >
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt=""
+                            className="w-8 h-10 rounded-md object-cover border border-sapphire-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-10 rounded-md bg-sapphire-bg border border-sapphire-border flex items-center justify-center shrink-0 text-sapphire-muted">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-text-xs text-sapphire-dark font-medium leading-tight">
+                            {c.campaign_title}
+                          </p>
+                          <span className="text-[10px] text-sapphire-muted/80 block pt-0.5">
+                            {new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 text-center text-sapphire-muted text-text-xs border border-dashed border-sapphire-border rounded-xl">
+                    <p className="font-medium">No previous campaigns.</p>
+                    <p className="text-[10px] pt-1 text-sapphire-muted/70">Submit a prompt to create artwork.</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Minimalist Bottom Footer: Brand Brain & Settings */}
-            <div className="p-3 border-t border-sapphire-border bg-sapphire-surface flex items-center justify-between text-text-xs text-sapphire-muted">
-              <button
+            {/* Minimalist Bottom Footer: Micro-Quota Tracker */}
+            <div className="p-3 border-t border-sapphire-border bg-sapphire-surface space-y-2">
+              <div
                 onClick={() => setIsSettingsOpen(true)}
-                className="flex items-center gap-2 hover:text-sapphire-dark transition-colors font-medium"
+                className="group cursor-pointer p-2 rounded-xl bg-sapphire-bg/70 hover:bg-sapphire-subtle border border-sapphire-border transition-all"
+                title="Click to manage Brand Brain & Quotas"
               >
-                <Settings className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                <span>Brand Brain & Quotas</span>
-              </button>
-              <span className="text-[10px] bg-sapphire-bg px-1.5 py-0.5 rounded border border-sapphire-border">
-                Ctrl+B
-              </span>
+                <div className="flex items-center justify-between text-[11px] font-medium text-sapphire-dark pb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-sapphire-terracotta" />
+                    <span>
+                      {quotaInfo ? `${quotaInfo.remainingNeurons.toLocaleString()} Neurons` : "Daily Quota"}
+                    </span>
+                  </span>
+                  <span className="text-[10px] font-mono text-sapphire-muted group-hover:text-sapphire-dark">
+                    {quotaInfo ? `${quotaInfo.estimatedPostsRemaining} left` : "Free Tier"}
+                  </span>
+                </div>
+                <div className="w-full bg-sapphire-border rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-sapphire-terracotta h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, quotaInfo?.percentUsed || 16)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </aside>
+
+
 
         {/* CENTER PANEL: Conversational Workspace */}
         <main className="flex-1 flex flex-col bg-sapphire-bg overflow-hidden min-w-0 relative">
@@ -1940,11 +2068,26 @@ export default function SapphireWorkspace() {
         isOpen={isBrandModalOpen}
         onClose={() => setIsBrandModalOpen(false)}
         activeBrand={activeBrandProfile}
+        onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
         onSelectBrand={(b) => {
           setActiveBrand(b.name);
           setActiveBrandProfile(b);
         }}
       />
+
+      {/* Dual Personal & Client OpenBrand Onboarding Modal */}
+      <WorkspaceOnboardingModal
+        isOpen={isOnboardingModalOpen}
+        onClose={() => setIsOnboardingModalOpen(false)}
+        onComplete={(newBrand) => {
+          setActiveBrandProfile(newBrand);
+          setActiveBrand(newBrand.name);
+          setIsOnboardingModalOpen(false);
+          setLearningToast(`🎉 Workspace "${newBrand.name}" initialized with OpenBrand DNA!`);
+          setTimeout(() => setLearningToast(null), 5000);
+        }}
+      />
+
 
 
       {/* Brand Brain & Settings Drawer */}

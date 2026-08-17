@@ -171,8 +171,9 @@ export class ImageGenerationService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ prompt }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000),
     });
+
 
     if (!res.ok) {
       return null;
@@ -256,8 +257,9 @@ export class ImageGenerationService {
   ): Promise<string | null> {
     const url = this.buildPollinationsUrl(prompt, seed, negativePrompt, model);
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(14000),
+      signal: AbortSignal.timeout(8000),
     });
+
 
     if (!res.ok) return null;
 

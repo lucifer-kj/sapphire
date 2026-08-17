@@ -11,6 +11,7 @@ interface WorkspaceModalProps {
   onClose: () => void;
   activeBrand: BrandProfile;
   onSelectBrand: (brand: BrandProfile) => void;
+  onOpenOnboarding?: () => void;
 }
 
 export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
@@ -18,6 +19,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   onClose,
   activeBrand,
   onSelectBrand,
+  onOpenOnboarding,
 }) => {
   const [brands] = useState<(BrandProfile & { id?: string })[]>(PRECONFIGURED_BRANDS);
 
@@ -48,13 +50,26 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenOnboarding && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenOnboarding();
+                }}
+                className="inline-flex items-center gap-1.5 text-text-xs font-semibold text-white bg-sapphire-terracotta hover:bg-sapphire-terracotta/90 px-3.5 py-1.5 rounded-lg shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                + New Workspace
+              </button>
+            )}
             <Link
               href="/workspaces"
               className="inline-flex items-center gap-1.5 text-text-xs font-semibold text-sapphire-muted hover:text-sapphire-dark px-3 py-1.5 rounded-lg border border-sapphire-border hover:bg-sapphire-surface transition-all"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Manage All Workspaces
+              Manage All
             </Link>
+
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle transition-colors"

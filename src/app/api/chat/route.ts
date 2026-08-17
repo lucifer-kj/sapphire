@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { CampaignWorkflow } from "@/mastra/workflows/campaign-workflow";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
+
   try {
     const body = await req.json();
     const { prompt, brandId, referenceImage } = body;
