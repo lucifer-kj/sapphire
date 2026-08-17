@@ -1,50 +1,4 @@
-import fs from "fs";
-import path from "path";
-
-const utils = `import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-`;
-
-const imageGen = `"use client";
-import React from "react";
-
-export interface ImageGenerationProps {
-  prompt?: string;
-  resolution?: string;
-  className?: string;
-}
-
-export function ImageGeneration({
-  prompt = "Artisanal espresso with golden hour lighting and clean negative space",
-  resolution = "1080 x 1350",
-  className = "",
-}: ImageGenerationProps) {
-  return (
-    <div className={"igWrap w-full h-full min-h-[360px] " + className}>
-      <div className="igCanvas" role="img" aria-label="Generating image">
-        <span className="igDots" aria-hidden />
-        <span className="igGlow" aria-hidden />
-        <span className="igRes font-mono">{resolution}</span>
-      </div>
-      <div className="igMeta">
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-sapphire-terracotta animate-pulse" />
-          <span className="igLabel font-semibold">Generating Canva-Grade Artwork</span>
-        </div>
-        <span className="igPrompt">&ldquo;{prompt}&rdquo;</span>
-      </div>
-    </div>
-  );
-}
-
-export default ImageGeneration;
-`;
-
-const agentPlanning = `"use client";
+"use client";
 import React, { useState } from "react";
 import {
   ChevronDown,
@@ -344,19 +298,3 @@ export const AgentPlanning: React.FC<AgentPlanningProps> = ({
 };
 
 export default AgentPlanning;
-`;
-
-const aiPlanning = `"use client";
-export { AgentPlanning as Component, AgentPlanning } from "./agent-planning";
-export type { PlanStep, PlanStepStatus, AgentPlanningProps } from "./agent-planning";
-`;
-
-fs.mkdirSync(path.resolve(process.cwd(), "src/lib"), { recursive: true });
-fs.mkdirSync(path.resolve(process.cwd(), "src/components/ui"), { recursive: true });
-
-fs.writeFileSync(path.resolve(process.cwd(), "src/lib/utils.ts"), utils);
-fs.writeFileSync(path.resolve(process.cwd(), "src/components/ui/image-generation.tsx"), imageGen);
-fs.writeFileSync(path.resolve(process.cwd(), "src/components/ui/agent-planning.tsx"), agentPlanning);
-fs.writeFileSync(path.resolve(process.cwd(), "src/components/ui/ai-planning.tsx"), aiPlanning);
-
-console.log("ALL_FILES_GENERATED_CLEANLY");

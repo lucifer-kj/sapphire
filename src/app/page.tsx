@@ -43,6 +43,11 @@ import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
 import { WorkflowLogEntry } from "@/lib/schema/telemetry";
 import { LogDrawer } from "@/components/telemetry/log-drawer";
+import { BrandSwitcherModal, PRECONFIGURED_BRANDS } from "@/components/brand/brand-switcher-modal";
+import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
+import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
+import { AgentPlanning } from "@/components/ui/agent-planning";
+import { ImageGeneration } from "@/components/ui/image-generation";
 
 interface ConceptVersionHistory {
   versionNumber: number;
@@ -54,9 +59,20 @@ export default function SapphireWorkspace() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [prompt, setPrompt] = useState("");
+  const [activeBrandProfile, setActiveBrandProfile] = useState<BrandProfile>(PRECONFIGURED_BRANDS[0]);
   const [activeBrand, setActiveBrand] = useState("Vagabond Travel Agency");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Brand Switcher & Settings State
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"ab" | "focus">("ab");
+
+  // Supabase Saved Campaigns
+  const [savedCampaigns, setSavedCampaigns] = useState<
+    Array<{ id: string; campaign_title: string; event: string; created_at: string; raw: any }>
+  >([]);
 
   // Dedicated Telemetry Logs State
   const [workflowLogs, setWorkflowLogs] = useState<WorkflowLogEntry[]>([]);
@@ -109,10 +125,35 @@ export default function SapphireWorkspace() {
     {
       role: "system",
       content:
-        "Welcome to Sapphire. Provide a short idea or direction (e.g. 'Create an Independence Day post for Vagabond Travel'). Attach an optional reference image to guide the visual aesthetic. Sapphire will analyze your reference image, research trends, generate distinct A/B visual directions & artwork, and deliver the final approved package to your email.",
+        "Welcome to Sapphire. Provide an Instagram post direction (e.g. 'Create an artisanal breakfast ritual post for Vagabond Travel'). Attach an optional reference image for visual art direction. Sapphire generates Canva-grade 1080×1350 Instagram artwork with custom typography overlays, audits brand voice, and delivers the package to your email upon approval.",
       timestamp: "Just now",
     },
   ]);
+
+  // Fetch Saved Campaigns from Supabase
+  const fetchSavedCampaigns = async () => {
+    try {
+      const res = await fetch("/api/campaigns");
+      const data = await res.json();
+      if (data.campaigns && Array.isArray(data.campaigns)) {
+        setSavedCampaigns(
+          data.campaigns.map((c: any) => ({
+            id: c.id,
+            campaign_title: c.campaign_title || c.topic || "Instagram Post",
+            event: c.event || "Instagram Campaign",
+            created_at: c.created_at,
+            raw: c,
+          }))
+        );
+      }
+    } catch (err) {
+      console.warn("Failed to fetch campaigns:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSavedCampaigns();
+  }, []);
 
   // Cloudflare Workers AI Daily Quota Tracking State
   const [quotaInfo, setQuotaInfo] = useState<{
@@ -147,7 +188,92 @@ export default function SapphireWorkspace() {
     fetchQuota();
   }, []);
 
-  // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel)
+  // Handle New Conversation / Reset Workspace
+  const handleNewConversation = () => {
+    setPrompt("");
+    setIntent(null);
+    setResearch(null);
+    setReferenceAnalysis(null);
+    setBrief(null);
+    setCritiqueA(null);
+    setCritiqueB(null);
+    setSelectedConcept(null);
+    setPreferenceSaved(false);
+    setDeliverySuccess(null);
+    setHistoryConceptA([]);
+    setHistoryConceptB([]);
+    setImageErrorA(false);
+    setImageErrorB(false);
+    setReferenceImage(null);
+    setWorkflowLogs([]);
+    setMessages([
+      {
+        role: "system",
+        content: `Ready for a new Instagram campaign with ${activeBrand}. Describe your post direction or attach a reference image to begin.`,
+        timestamp: "Just now",
+      },
+    ]);
+  };
+
+  // Hydrate Past Campaign onto Canvas
+  const handleSelectCampaign = (c: any) => {
+    const raw = c.raw;
+    if (!raw) return;
+
+    setCampaignId(raw.id);
+    if (raw.intent) setIntent(raw.intent);
+    if (raw.research_context) setResearch(raw.research_context);
+    if (raw.reference_image_analysis) setReferenceAnalysis(raw.reference_image_analysis);
+
+    if (raw.concepts && Array.isArray(raw.concepts) && raw.concepts.length >= 2) {
+      const cA = raw.concepts[0];
+      const cB = raw.concepts[1];
+      const reconstructedBrief: CreativeBrief = {
+        campaign_title: raw.campaign_title || c.campaign_title,
+        concept_a: {
+          label: cA.label || "Concept A",
+          creative_direction: cA.creative_direction || "Instagram Creative Direction",
+          visual_style: cA.visual_style || "editorial_magazine",
+          composition: cA.composition || "4:5 Portrait Editorial",
+          lighting: cA.lighting || "Golden hour warm ambient",
+          color_palette: cA.color_palette || ["#181816", "#FAF9F5", "#D97757"],
+          image_prompt: cA.image_prompt || "",
+          image_url: cA.image_url,
+          caption_instagram: cA.caption_instagram || "",
+          caption_linkedin: cA.caption_linkedin || "",
+          design_blueprint: cA.design_blueprint,
+        },
+        concept_b: {
+          label: cB.label || "Concept B",
+          creative_direction: cB.creative_direction || "Instagram Creative Direction",
+          visual_style: cB.visual_style || "conceptual_split",
+          composition: cB.composition || "50/50 Studio Split",
+          lighting: cB.lighting || "Clean studio neutral lighting",
+          color_palette: cB.color_palette || ["#181816", "#FAF9F5", "#D97757"],
+          image_prompt: cB.image_prompt || "",
+          image_url: cB.image_url,
+          caption_instagram: cB.caption_instagram || "",
+          caption_linkedin: cB.caption_linkedin || "",
+          design_blueprint: cB.design_blueprint,
+        },
+      };
+      setBrief(reconstructedBrief);
+      setHistoryConceptA([{ versionNumber: 1, conceptItem: reconstructedBrief.concept_a }]);
+      setHistoryConceptB([{ versionNumber: 1, conceptItem: reconstructedBrief.concept_b }]);
+      setSelectedConcept("A");
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: `Loaded past campaign "${c.campaign_title}" onto the canvas.`,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  };
+
+  // Keyboard shortcut listener: Ctrl+B (Settings), Ctrl+Alt+B (Right Panel), Ctrl+N (New Conversation)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
@@ -161,11 +287,16 @@ export default function SapphireWorkspace() {
           setIsLeftOpen((prev) => !prev);
         }
       }
+
+      if (isCtrlOrCmd && key === "n") {
+        e.preventDefault();
+        handleNewConversation();
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [activeBrand]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -508,7 +639,7 @@ export default function SapphireWorkspace() {
         </div>
       )}
 
-      {/* Human Approval & Email Delivery Modal */}
+      {/* Human Approval & Instagram Delivery Modal (100% Instagram-First) */}
       {showApprovalModal && selectedConcept && brief && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="relative max-w-md w-full bg-sapphire-surface border border-sapphire-border rounded-2xl shadow-2xl p-6 space-y-4">
@@ -516,7 +647,7 @@ export default function SapphireWorkspace() {
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-sapphire-terracotta" />
                 <h3 className="font-semibold text-text-sm text-sapphire-dark">
-                  Human Approval & Email Delivery
+                  Human Approval & Instagram Delivery
                 </h3>
               </div>
               <button
@@ -536,7 +667,7 @@ export default function SapphireWorkspace() {
                 .
               </p>
               <p>
-                Sapphire will package the high-resolution AI artwork, Instagram captions, and LinkedIn captions and send them to your email.
+                Sapphire will package the 1080×1350 Canva-grade composite, typography layers, and formatted Instagram copy and deliver it to your email.
               </p>
             </div>
 
@@ -596,17 +727,22 @@ export default function SapphireWorkspace() {
 
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark">
-            <span className="w-2 h-2 rounded-full bg-sapphire-green" />
-            <span className="max-w-[160px] truncate">{activeBrand}</span>
+          {/* Interactive Brand Switcher Button */}
+          <button
+            onClick={() => setIsBrandModalOpen(true)}
+            title="Switch Brand Profile"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline"
+          >
+            <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
+            <span className="max-w-[170px] truncate">{activeBrand}</span>
             <ChevronDown className="w-3.5 h-3.5 text-sapphire-muted" />
           </button>
         </div>
 
         <div className="hidden lg:flex items-center gap-2 text-text-xs text-sapphire-muted">
-          <span>{intent ? intent.event : "Active Campaign"}</span>
+          <span>{intent ? intent.event : "Instagram Studio"}</span>
           <ChevronRight className="w-3 h-3 text-sapphire-muted/60" />
-          <span className="text-sapphire-dark font-medium">
+          <span className="text-sapphire-dark font-medium truncate max-w-[240px]">
             {brief ? brief.campaign_title : "Concept Direction A/B"}
           </span>
         </div>
@@ -627,7 +763,7 @@ export default function SapphireWorkspace() {
 
           <button
             onClick={() => setIsLogsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark"
             title="Open Live Agent Telemetry & Logs"
           >
             <Activity className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -642,22 +778,8 @@ export default function SapphireWorkspace() {
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
           <button
-            onClick={() => {
-              setIntent(null);
-              setResearch(null);
-              setReferenceAnalysis(null);
-              setBrief(null);
-              setCritiqueA(null);
-              setCritiqueB(null);
-              setSelectedConcept(null);
-              setPreferenceSaved(false);
-              setDeliverySuccess(null);
-              setHistoryConceptA([]);
-              setHistoryConceptB([]);
-              setImageErrorA(false);
-              setImageErrorB(false);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-text-xs font-medium bg-sapphire-dark text-sapphire-bg hover:bg-white hover:text-black transition-colors shadow-sm"
+            onClick={handleNewConversation}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-text-xs font-medium bg-sapphire-dark text-sapphire-bg hover:bg-white hover:text-black transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Campaign</span>
@@ -688,10 +810,13 @@ export default function SapphireWorkspace() {
             </div>
 
             <div className="p-3 border-b border-sapphire-border">
-              <button className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-text-xs font-medium text-sapphire-dark transition-colors">
+              <button
+                onClick={handleNewConversation}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-text-xs font-medium text-sapphire-dark transition-colors shadow-hairline"
+              >
                 <span className="flex items-center gap-2">
                   <Plus className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                  <span>New Conversation</span>
+                  <span>New Campaign</span>
                 </span>
                 <span className="text-[10px] text-sapphire-muted bg-sapphire-surface px-1.5 py-0.5 rounded border border-sapphire-border">
                   Ctrl+N
@@ -700,38 +825,75 @@ export default function SapphireWorkspace() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-4 text-text-xs">
+              {/* Active Campaigns Feed (Hydrated from Supabase) */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sapphire-muted font-medium px-2 py-1 uppercase text-[11px] tracking-wider">
-                  <span>Active Campaigns</span>
+                  <span>Instagram Campaigns</span>
                   <Folder className="w-3.5 h-3.5" />
                 </div>
-                <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-sapphire-subtle text-sapphire-dark font-medium text-left border border-sapphire-border">
-                  <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta shrink-0" />
-                  <span className="truncate">
-                    {intent ? `${intent.event} Post` : "Independence Day Post"}
-                  </span>
-                </button>
+                {savedCampaigns.length > 0 ? (
+                  <div className="space-y-1 max-h-[160px] overflow-y-auto pr-1">
+                    {savedCampaigns.map((c) => {
+                      const isActive = campaignId === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => handleSelectCampaign(c)}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium text-left border transition-all ${
+                            isActive
+                              ? "bg-sapphire-subtle text-sapphire-dark border-sapphire-terracotta/50 font-semibold"
+                              : "bg-sapphire-bg text-sapphire-muted hover:text-sapphire-dark border-sapphire-border hover:bg-sapphire-subtle/50"
+                          }`}
+                        >
+                          <MessageSquare className="w-3 h-3 text-sapphire-terracotta shrink-0" />
+                          <span className="truncate text-[11px]">{c.campaign_title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <button className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl bg-sapphire-subtle text-sapphire-dark font-medium text-left border border-sapphire-border">
+                    <MessageSquare className="w-3.5 h-3.5 text-sapphire-terracotta shrink-0" />
+                    <span className="truncate">
+                      {intent ? `${intent.event} Post` : "Active Instagram Post"}
+                    </span>
+                  </button>
+                )}
               </div>
 
+              {/* Learned Brand Memory & Taste Vectors Widget */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sapphire-muted font-medium px-2 py-1 uppercase text-[11px] tracking-wider">
-                  <span>Learned Brand Memory</span>
-                  <BrainCircuit className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                  <span>Brand Brain Memory</span>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="hover:text-sapphire-dark p-0.5 rounded"
+                    title="Edit Brand Preferences"
+                  >
+                    <BrainCircuit className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                  </button>
                 </div>
-                <div className="p-2.5 rounded-md border border-sapphire-border bg-sapphire-bg space-y-1.5">
+                <div className="p-3 rounded-xl border border-sapphire-border bg-sapphire-bg space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sapphire-dark">Vagabond Travel</span>
-                    <span className="text-[10px] text-sapphire-green font-medium">95% Match</span>
+                    <span className="font-semibold text-sapphire-dark truncate max-w-[160px]">
+                      {activeBrandProfile.name}
+                    </span>
+                    <span className="text-[10px] text-sapphire-green font-medium bg-sapphire-green/10 px-1.5 py-0.5 rounded border border-sapphire-green/20">
+                      Active
+                    </span>
                   </div>
                   <p className="text-sapphire-muted leading-tight text-[11px]">
-                    Editorial photography, golden hour lighting, subtle logo placement.
+                    {activeBrandProfile.positioning}
                   </p>
-                  {preferenceSaved && (
-                    <div className="pt-1 flex items-center gap-1 text-[10px] text-sapphire-green font-medium">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Taste preference updated</span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between pt-1 border-t border-sapphire-border/50 text-[10px] text-sapphire-muted">
+                    <span>Temp: {activeBrandProfile.learned_preferences?.visual_temperature_preference?.replace("_", " ") || "warm golden"}</span>
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="text-sapphire-terracotta hover:underline font-medium"
+                    >
+                      Tune
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -787,9 +949,12 @@ export default function SapphireWorkspace() {
             </div>
 
             <div className="p-3 border-t border-sapphire-border bg-sapphire-surface flex items-center justify-between text-text-xs text-sapphire-muted">
-              <button className="flex items-center gap-2 hover:text-sapphire-dark transition-colors">
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="flex items-center gap-2 hover:text-sapphire-dark transition-colors"
+              >
                 <Settings className="w-3.5 h-3.5" />
-                <span>Settings</span>
+                <span>Brand Preferences & Settings</span>
               </button>
               <span className="text-[10px] bg-sapphire-bg px-1.5 py-0.5 rounded border border-sapphire-border">
                 Ctrl+B
@@ -825,35 +990,21 @@ export default function SapphireWorkspace() {
           </div>
 
           {/* Centered Conversation Area */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl w-full mx-auto px-4 md:px-6 py-8 space-y-6">
-              {/* Delivery Success Notification Banner */}
-              {deliverySuccess && (
-                <div className="p-4 rounded-xl bg-sapphire-green/15 border border-sapphire-green/30 text-sapphire-dark text-text-xs flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCheck className="w-4 h-4 text-sapphire-green" />
-                    <span className="font-semibold">{deliverySuccess}</span>
-                  </div>
-                  <button
-                    onClick={() => setDeliverySuccess(null)}
-                    className="p-1 rounded hover:bg-sapphire-surface text-sapphire-muted hover:text-sapphire-dark"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="max-w-2xl mx-auto space-y-4">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`p-5 rounded-2xl border space-y-2 transition-all ${
+                  className={`p-4 rounded-2xl border transition-all ${
                     msg.role === "user"
-                      ? "bg-sapphire-surface text-sapphire-dark border-sapphire-border ml-12 shadow-sm"
-                      : "bg-transparent text-sapphire-dark border-transparent"
+                      ? "bg-sapphire-surface border-sapphire-border ml-8 shadow-sm"
+                      : msg.role === "system"
+                      ? "bg-sapphire-surface/60 border-sapphire-border text-sapphire-muted text-text-xs"
+                      : "bg-sapphire-surface border-sapphire-border mr-8 shadow-sm"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-text-xs text-sapphire-muted">
-                    <span className="font-semibold text-sapphire-dark flex items-center gap-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-sapphire-muted font-medium mb-1.5">
+                    <span className="flex items-center gap-1.5 font-semibold text-sapphire-dark">
                       {msg.role === "user" ? (
                         "You"
                       ) : (
@@ -872,9 +1023,9 @@ export default function SapphireWorkspace() {
               ))}
 
               {referenceAnalysis && (
-                <div className="border border-sapphire-border rounded-xl p-4 bg-sapphire-surface space-y-2 shadow-hairline">
+                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2 shadow-sm">
                   <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
-                    <span className="flex items-center gap-1.5 text-sapphire-dark">
+                    <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
                       <ImageIcon className="w-3.5 h-3.5 text-sapphire-terracotta" />
                       Visual Reference Breakdown
                     </span>
@@ -898,9 +1049,9 @@ export default function SapphireWorkspace() {
               )}
 
               {research && (
-                <div className="border border-sapphire-border rounded-xl p-4 bg-sapphire-surface space-y-2.5 shadow-hairline">
+                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2.5 shadow-sm">
                   <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
-                    <span className="flex items-center gap-1.5 text-sapphire-dark">
+                    <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
                       <Search className="w-3.5 h-3.5 text-sapphire-blue" />
                       Research Synthesis
                     </span>
@@ -913,13 +1064,19 @@ export default function SapphireWorkspace() {
                 </div>
               )}
 
-              {isLoading && (
-                <div className="flex items-center justify-center p-6 border border-sapphire-border rounded-xl bg-sapphire-surface/50 space-x-2 text-text-xs text-sapphire-muted">
-                  <Loader2 className="w-4 h-4 animate-spin text-sapphire-terracotta" />
-                  <span>
-                    Critic Agent auditing brand alignment & generating assets...
-                  </span>
-                </div>
+              {/* Dynamic Live Multi-Agent Planning & Orchestration Timeline */}
+              {isLoading ? (
+                <AgentPlanning
+                  title="Multi-Agent Pipeline Active • Synthesizing Instagram Post"
+                  className="animate-in fade-in duration-300"
+                />
+              ) : (
+                brief && (
+                  <AgentPlanning
+                    title="Multi-Agent Generation Complete • 1080×1350 Assets Ready"
+                    className="opacity-95"
+                  />
+                )
               )}
             </div>
           </div>
@@ -929,7 +1086,7 @@ export default function SapphireWorkspace() {
             <div className="max-w-2xl w-full mx-auto">
               <form onSubmit={handleSubmit} className="space-y-2">
                 {referenceImage && (
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-sapphire-surface border border-sapphire-border text-text-xs">
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-sapphire-surface border border-sapphire-border text-text-xs">
                     <div className="flex items-center gap-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -953,7 +1110,7 @@ export default function SapphireWorkspace() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your social media post request or upload a reference image..."
+                    placeholder="Describe your Instagram post request (e.g. Artisanal breakfast pour-over ritual) or upload a reference image..."
                     rows={3}
                     className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-sapphire-dark placeholder:text-sapphire-muted font-sans"
                   />
@@ -982,7 +1139,7 @@ export default function SapphireWorkspace() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <>
-                          <span>Generate Concepts</span>
+                          <span>Generate Instagram Concepts</span>
                           <Send className="w-3 h-3" />
                         </>
                       )}
@@ -1005,14 +1162,22 @@ export default function SapphireWorkspace() {
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-sapphire-muted" />
                 <h2 className="text-text-sm font-semibold text-sapphire-dark">
-                  Spatial Creative Canvas
+                  Spatial Creative Canvas (Instagram 4:5)
                 </h2>
               </div>
 
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1 px-2 py-1 rounded-md text-text-xs font-medium border border-sapphire-border bg-sapphire-surface hover:bg-sapphire-bg text-sapphire-dark transition-colors">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-sapphire-muted" />
-                  <span>A/B View</span>
+                <button
+                  onClick={() => setViewMode((prev) => (prev === "ab" ? "focus" : "ab"))}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium border transition-colors ${
+                    viewMode === "focus"
+                      ? "bg-sapphire-terracotta text-white border-sapphire-terracotta"
+                      : "border-sapphire-border bg-sapphire-surface hover:bg-sapphire-subtle text-sapphire-dark"
+                  }`}
+                  title="Toggle between A/B Dual Grid and Studio Focus View"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>{viewMode === "ab" ? "Vertical Feed View" : "Studio Focus View"}</span>
                 </button>
                 <button
                   onClick={() => setIsRightOpen(false)}
@@ -1024,523 +1189,726 @@ export default function SapphireWorkspace() {
               </div>
             </div>
 
-            {/* Spatial Canvas Content Area */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              <div className="max-w-4xl mx-auto space-y-5">
+            {/* Spatial Canvas Content Area (Vertical Stack Layout with Generous Spacing) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              <div className="max-w-2xl mx-auto space-y-8">
                 <div className="flex items-center justify-between border-b border-sapphire-border pb-3">
                   <div>
                     <h3 className="text-heading-md font-semibold text-sapphire-dark">
-                      A / B Creative Directions
+                      {viewMode === "ab" ? "Instagram Creative Directions (Vertical Feed)" : "Studio Focus Inspector"}
                     </h3>
                     <p className="text-text-xs text-sapphire-muted">
                       {brief
-                        ? "Select a concept to refine captions or approve for email delivery."
-                        : "Generated visual artwork will render here side-by-side upon prompt submission."}
+                        ? "1080×1350 Canva-grade visual compositions stacked with generous inspection space."
+                        : "Generated visual artwork will render here stacked vertically upon prompt submission."}
                     </p>
                   </div>
                 </div>
 
-                {/* Concept Cards Grid */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                  {/* Concept A Card */}
-                  <div
-                    className={`border rounded-2xl bg-sapphire-surface p-4 space-y-3.5 shadow-md transition-all ${
-                      selectedConcept === "A"
-                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
-                        : "border-sapphire-border hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-xs font-semibold px-2.5 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
-                        {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
-                      </span>
-                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-blue/10 px-2 py-0.5 rounded border border-sapphire-blue/20">
-                        {selectedConcept === "A" ? "Selected" : "Draft"}
-                      </span>
-                    </div>
+                {/* View Mode 1: Vertical Stack Feed Layout (One below another with generous spacing) */}
+                {viewMode === "ab" ? (
+                  <div className="flex flex-col space-y-10">
+                    {/* Concept A Card */}
+                    <div
+                      className={`border rounded-2xl bg-sapphire-surface p-5 space-y-4 shadow-lg transition-all ${
+                        selectedConcept === "A"
+                          ? "border-sapphire-terracotta ring-2 ring-sapphire-terracotta/40"
+                          : "border-sapphire-border hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-text-sm font-semibold px-3 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark truncate max-w-[280px]">
+                          {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
+                        </span>
+                        <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
+                          {selectedConcept === "A" ? "Active Selection" : "Direction A"}
+                        </span>
+                      </div>
 
-                    {/* Brand Compliance Scorecard (Critic Agent) */}
-                    {critiqueA && (
-                      <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
-                        <div className="flex items-center justify-between font-semibold">
-                          <span className="flex items-center gap-1.5 text-sapphire-dark">
-                            <ShieldCheck className="w-3.5 h-3.5 text-sapphire-green" />
-                            Brand Alignment
-                          </span>
-                          <span className="text-sapphire-green font-bold">
-                            {critiqueA.brand_alignment_score}/100
-                          </span>
+                      {/* Brand Compliance Scorecard (Critic Agent) */}
+                      {critiqueA && (
+                        <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="flex items-center gap-1.5 text-sapphire-dark">
+                              <ShieldCheck className="w-4 h-4 text-sapphire-green" />
+                              Brand Alignment Score
+                            </span>
+                            <span className="text-sapphire-green font-bold text-text-xs">
+                              {critiqueA.brand_alignment_score}/100
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-sapphire-muted leading-tight">
+                            {critiqueA.critique_notes[0] || "Passed brand voice & visual compliance audit."}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-sapphire-muted leading-tight">
-                          {critiqueA.critique_notes[0] || "Passed brand voice & visual compliance audit."}
-                        </p>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Version History Strip */}
-                    {historyConceptA.length > 0 && (
-                      <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
-                        <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
-                        {historyConceptA.map((v) => (
-                          <button
-                            key={v.versionNumber}
-                            onClick={() => {
-                              setActiveVersionA(v.versionNumber);
-                              setBrief((prev) => (prev ? { ...prev, concept_a: v.conceptItem } : null));
-                            }}
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                              activeVersionA === v.versionNumber
-                                ? "bg-sapphire-dark text-sapphire-bg font-semibold"
-                                : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
-                            }`}
-                          >
-                            v{v.versionNumber}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Image Preview Container */}
-                    <div className="relative aspect-[4/5] rounded-xl bg-sapphire-bg border border-sapphire-border overflow-hidden group">
-                      {brief?.concept_a.image_url && !imageErrorA ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={brief.concept_a.image_url}
-                            alt="Concept A AI Generated Visual"
-                            onError={() => setImageErrorA(true)}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-xs">
+                      {/* Version History Strip */}
+                      {historyConceptA.length > 0 && (
+                        <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
+                          <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
+                          {historyConceptA.map((v) => (
                             <button
-                              onClick={() => setActiveImageModal(brief.concept_a.image_url!)}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Enlarge Image Preview"
+                              key={v.versionNumber}
+                              onClick={() => {
+                                setActiveVersionA(v.versionNumber);
+                                setBrief((prev) => (prev ? { ...prev, concept_a: v.conceptItem } : null));
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                                activeVersionA === v.versionNumber
+                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold"
+                                  : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
+                              }`}
                             >
-                              <Maximize2 className="w-4 h-4" />
+                              v{v.versionNumber}
                             </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Image Preview Container with Live Loading Animation */}
+                      <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-inner flex items-center justify-center">
+                        {isRegeneratingA || (isLoading && !brief?.concept_a.image_url) ? (
+                          <ImageGeneration
+                            prompt={brief?.concept_a.image_prompt || prompt || "Artisanal espresso with golden hour lighting"}
+                            resolution="1080 × 1350"
+                          />
+                        ) : brief?.concept_a.image_url && !imageErrorA ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={brief.concept_a.image_url}
+                              alt="Concept A AI Generated Visual"
+                              onError={() => setImageErrorA(true)}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-xs">
+                              <button
+                                onClick={() => setActiveImageModal(brief.concept_a.image_url!)}
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Enlarge Image Preview"
+                              >
+                                <Maximize2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRegenerateImage("A")}
+                                disabled={isRegeneratingA}
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Regenerate Artwork"
+                              >
+                                <RefreshCw className={`w-4 h-4 ${isRegeneratingA ? "animate-spin" : ""}`} />
+                              </button>
+                              <a
+                                href={brief.concept_a.image_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Open High Res Image"
+                              >
+                                <Download className="w-4 h-4" />
+                              </a>
+                            </div>
+                          </>
+                        ) : imageErrorA ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
+                            <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
+                            <p className="text-text-xs font-semibold text-rose-300">
+                              Artwork Rendering Timeout
+                            </p>
+                            <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
+                              API returned an unrendered state or rate limit.
+                            </p>
                             <button
                               onClick={() => handleRegenerateImage("A")}
                               disabled={isRegeneratingA}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Regenerate Artwork"
+                              className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
                             >
-                              <RefreshCw className={`w-4 h-4 ${isRegeneratingA ? "animate-spin" : ""}`} />
+                              <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
+                              <span>{isRegeneratingA ? "Regenerating..." : "Retry Image Generation"}</span>
                             </button>
-                            <a
-                              href={brief.concept_a.image_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Open High Res Image"
-                            >
-                              <Download className="w-4 h-4" />
-                            </a>
                           </div>
-                        </>
-                      ) : imageErrorA ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
-                          <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
-                          <p className="text-text-xs font-semibold text-rose-300">
-                            Artwork Rendering Timeout
-                          </p>
-                          <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
-                            API returned an unrendered state or rate limit.
+                        ) : brief ? (
+                          <ImageGeneration
+                            prompt={brief.concept_a.image_prompt}
+                            resolution="1080 × 1350"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
+                            <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
+                            <p className="text-text-xs font-semibold text-sapphire-dark">
+                              Concept A Visual Preview
+                            </p>
+                            <p className="text-text-xs text-sapphire-muted max-w-[220px]">
+                              Submit a prompt to generate AI social media artwork.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {brief && (
+                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
+                            <span className="text-[10px] text-sapphire-muted font-mono">
+                              {brief.concept_a.caption_instagram.length} chars
+                            </span>
+                          </div>
+                          <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
+                            {brief.concept_a.caption_instagram}
                           </p>
                           <button
-                            onClick={() => handleRegenerateImage("A")}
-                            disabled={isRegeneratingA}
-                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            onClick={() =>
+                              copyToClipboard(brief.concept_a.caption_instagram, "cap-a")
+                            }
+                            className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
                           >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingA ? "Regenerating..." : "Retry Image Generation"}</span>
+                            {copiedId === "cap-a" ? (
+                              <Check className="w-3 h-3 text-sapphire-green" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            <span>Copy Instagram Caption</span>
                           </button>
                         </div>
-                      ) : brief ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2.5">
-                          <Sparkles className="w-8 h-8 text-amber-400 stroke-1" />
-                          <p className="text-text-xs font-semibold text-amber-300">
-                            Prompt Synthesized
-                          </p>
-                          <p className="text-[11px] text-amber-400/80 max-w-[220px] leading-tight">
-                            Generating photorealistic Canva-grade composite.
-                          </p>
-                          <button
-                            onClick={() => handleRegenerateImage("A")}
-                            disabled={isRegeneratingA}
-                            className="px-3 py-1.5 bg-sapphire-dark text-sapphire-bg rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-white hover:text-black transition-opacity"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingA ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingA ? "Generating..." : "Generate Artwork"}</span>
-                          </button>
+                      )}
+
+                      {/* Refinement Overlay Form */}
+                      {isRefining === "A" ? (
+                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
+                          <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
+                            <span className="flex items-center gap-1">
+                              <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                              Refine Concept A (v{activeVersionA})
+                            </span>
+                            <button
+                              onClick={() => setIsRefining(null)}
+                              className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={refinementInput}
+                            onChange={(e) => setRefinementInput(e.target.value)}
+                            placeholder="e.g. Make lighting warmer & caption punchier..."
+                            className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => setIsRefining(null)}
+                              className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleRefineSubmit("A")}
+                              disabled={!refinementInput.trim() || isRefinementLoading}
+                              className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                            >
+                              {isRefinementLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                "Apply Edit"
+                              )}
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
-                          <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
-                          <p className="text-text-xs font-semibold text-sapphire-dark">
-                            Concept A Visual Preview
-                          </p>
-                          <p className="text-text-xs text-sapphire-muted max-w-[220px]">
-                            Submit a prompt to generate AI social media artwork.
-                          </p>
+                        <div className="pt-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleConceptSelect("A")}
+                              className={`flex-1 py-2.5 rounded-xl text-text-xs font-medium transition-all ${
+                                selectedConcept === "A"
+                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
+                                  : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
+                              }`}
+                            >
+                              {selectedConcept === "A" ? "Concept A Selected" : "Select Concept A"}
+                            </button>
+                            {brief && (
+                              <button
+                                onClick={() => setIsRefining("A")}
+                                className="p-2.5 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                                title="Refine Concept A"
+                              >
+                                <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                                <span>Refine</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {selectedConcept === "A" && brief && (
+                            <button
+                              onClick={() => setShowApprovalModal(true)}
+                              className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Approve & Send Instagram Package</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    {brief && (
-                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
-                        <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
-                        <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3">
-                          {brief.concept_a.caption_instagram}
-                        </p>
-                        <button
-                          onClick={() =>
-                            copyToClipboard(brief.concept_a.caption_instagram, "cap-a")
-                          }
-                          className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
-                        >
-                          {copiedId === "cap-a" ? (
-                            <Check className="w-3 h-3 text-sapphire-green" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                          <span>Copy Caption</span>
-                        </button>
+                    {/* Concept B Card */}
+                    <div
+                      className={`border rounded-2xl bg-sapphire-surface p-5 space-y-4 shadow-lg transition-all ${
+                        selectedConcept === "B"
+                          ? "border-sapphire-terracotta ring-2 ring-sapphire-terracotta/40"
+                          : "border-sapphire-border hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-text-sm font-semibold px-3 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark truncate max-w-[280px]">
+                          {brief ? brief.concept_b.label : "Concept B — Editorial India"}
+                        </span>
+                        <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
+                          {selectedConcept === "B" ? "Active Selection" : "Direction B"}
+                        </span>
                       </div>
-                    )}
 
-                    {/* Refinement Overlay Form */}
-                    {isRefining === "A" ? (
-                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
-                        <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
-                          <span className="flex items-center gap-1">
-                            <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                            Refine Concept A (v{activeVersionA})
-                          </span>
-                          <button
-                            onClick={() => setIsRefining(null)}
-                            className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                      {/* Brand Compliance Scorecard (Critic Agent) */}
+                      {critiqueB && (
+                        <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="flex items-center gap-1.5 text-sapphire-dark">
+                              <ShieldCheck className="w-4 h-4 text-sapphire-green" />
+                              Brand Alignment Score
+                            </span>
+                            <span className="text-sapphire-green font-bold text-text-xs">
+                              {critiqueB.brand_alignment_score}/100
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-sapphire-muted leading-tight">
+                            {critiqueB.critique_notes[0] || "Passed brand voice & visual compliance audit."}
+                          </p>
                         </div>
-                        <input
-                          type="text"
-                          value={refinementInput}
-                          onChange={(e) => setRefinementInput(e.target.value)}
-                          placeholder="e.g. Make lighting warmer & caption punchier..."
-                          className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
-                        />
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => setIsRefining(null)}
-                            className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleRefineSubmit("A")}
-                            disabled={!refinementInput.trim() || isRefinementLoading}
-                            className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
-                          >
-                            {isRefinementLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              "Apply Edit"
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="pt-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleConceptSelect("A")}
-                            className={`flex-1 py-2 rounded-xl text-text-xs font-medium transition-all ${
-                              selectedConcept === "A"
-                                ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
-                                : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
-                            }`}
-                          >
-                            {selectedConcept === "A" ? "Concept A Selected" : "Select Concept A"}
-                          </button>
-                          {brief && (
+                      )}
+
+                      {/* Version History Strip */}
+                      {historyConceptB.length > 0 && (
+                        <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
+                          <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
+                          {historyConceptB.map((v) => (
                             <button
-                              onClick={() => setIsRefining("A")}
-                              className="p-2 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
-                              title="Refine Concept A"
+                              key={v.versionNumber}
+                              onClick={() => {
+                                setActiveVersionB(v.versionNumber);
+                                setBrief((prev) => (prev ? { ...prev, concept_b: v.conceptItem } : null));
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                                activeVersionB === v.versionNumber
+                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold"
+                                  : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
+                              }`}
                             >
-                              <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                              <span>Refine</span>
+                              v{v.versionNumber}
                             </button>
-                          )}
+                          ))}
                         </div>
+                      )}
 
-                        {selectedConcept === "A" && brief && (
-                          <button
-                            onClick={() => setShowApprovalModal(true)}
-                            className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>Approve & Send Email Package</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Concept B Card */}
-                  <div
-                    className={`border rounded-2xl bg-sapphire-surface p-4 space-y-3.5 shadow-md transition-all ${
-                      selectedConcept === "B"
-                        ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
-                        : "border-sapphire-border hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-text-xs font-semibold px-2.5 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark">
-                        {brief ? brief.concept_b.label : "Concept B — Editorial India"}
-                      </span>
-                      <span className="text-[10px] font-medium text-sapphire-blue bg-sapphire-blue/10 px-2 py-0.5 rounded border border-sapphire-blue/20">
-                        {selectedConcept === "B" ? "Selected" : "Draft"}
-                      </span>
-                    </div>
-
-                    {/* Brand Compliance Scorecard (Critic Agent) */}
-                    {critiqueB && (
-                      <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
-                        <div className="flex items-center justify-between font-semibold">
-                          <span className="flex items-center gap-1.5 text-sapphire-dark">
-                            <ShieldCheck className="w-3.5 h-3.5 text-sapphire-green" />
-                            Brand Alignment
-                          </span>
-                          <span className="text-sapphire-green font-bold">
-                            {critiqueB.brand_alignment_score}/100
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-sapphire-muted leading-tight">
-                          {critiqueB.critique_notes[0] || "Passed brand voice & visual compliance audit."}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Version History Strip */}
-                    {historyConceptB.length > 0 && (
-                      <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
-                        <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
-                        {historyConceptB.map((v) => (
-                          <button
-                            key={v.versionNumber}
-                            onClick={() => {
-                              setActiveVersionB(v.versionNumber);
-                              setBrief((prev) => (prev ? { ...prev, concept_b: v.conceptItem } : null));
-                            }}
-                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                              activeVersionB === v.versionNumber
-                                ? "bg-sapphire-dark text-sapphire-bg font-semibold"
-                                : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
-                            }`}
-                          >
-                            v{v.versionNumber}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Image Preview Container */}
-                    <div className="relative aspect-[4/5] rounded-xl bg-sapphire-bg border border-sapphire-border overflow-hidden group">
-                      {brief?.concept_b.image_url && !imageErrorB ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={brief.concept_b.image_url}
-                            alt="Concept B AI Generated Visual"
-                            onError={() => setImageErrorB(true)}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      {/* Image Preview Container with Live Loading Animation */}
+                      <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-inner flex items-center justify-center">
+                        {isRegeneratingB || (isLoading && !brief?.concept_b.image_url) ? (
+                          <ImageGeneration
+                            prompt={brief?.concept_b.image_prompt || prompt || "Editorial photography with bold typography"}
+                            resolution="1080 × 1350"
                           />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-xs">
-                            <button
-                              onClick={() => setActiveImageModal(brief.concept_b.image_url!)}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Enlarge Image Preview"
-                            >
-                              <Maximize2 className="w-4 h-4" />
-                            </button>
+                        ) : brief?.concept_b.image_url && !imageErrorB ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={brief.concept_b.image_url}
+                              alt="Concept B AI Generated Visual"
+                              onError={() => setImageErrorB(true)}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-xs">
+                              <button
+                                onClick={() => setActiveImageModal(brief.concept_b.image_url!)}
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Enlarge Image Preview"
+                              >
+                                <Maximize2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRegenerateImage("B")}
+                                disabled={isRegeneratingB}
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Regenerate Artwork"
+                              >
+                                <RefreshCw className={`w-4 h-4 ${isRegeneratingB ? "animate-spin" : ""}`} />
+                              </button>
+                              <a
+                                href={brief.concept_b.image_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                title="Open High Res Image"
+                              >
+                                <Download className="w-4 h-4" />
+                              </a>
+                            </div>
+                          </>
+                        ) : imageErrorB ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
+                            <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
+                            <p className="text-text-xs font-semibold text-rose-300">
+                              Artwork Rendering Timeout
+                            </p>
+                            <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
+                              API returned an unrendered state or rate limit.
+                            </p>
                             <button
                               onClick={() => handleRegenerateImage("B")}
                               disabled={isRegeneratingB}
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Regenerate Artwork"
+                              className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
                             >
-                              <RefreshCw className={`w-4 h-4 ${isRegeneratingB ? "animate-spin" : ""}`} />
+                              <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
+                              <span>{isRegeneratingB ? "Regenerating..." : "Retry Image Generation"}</span>
                             </button>
-                            <a
-                              href={brief.concept_b.image_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 rounded-lg bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
-                              title="Open High Res Image"
-                            >
-                              <Download className="w-4 h-4" />
-                            </a>
                           </div>
-                        </>
-                      ) : imageErrorB ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl space-y-2.5">
-                          <AlertCircle className="w-8 h-8 text-rose-400 stroke-1" />
-                          <p className="text-text-xs font-semibold text-rose-300">
-                            Artwork Rendering Timeout
-                          </p>
-                          <p className="text-[11px] text-rose-400/80 max-w-[200px] leading-tight">
-                            API returned an unrendered state or rate limit.
+                        ) : brief ? (
+                          <ImageGeneration
+                            prompt={brief.concept_b.image_prompt}
+                            resolution="1080 × 1350"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
+                            <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
+                            <p className="text-text-xs font-semibold text-sapphire-dark">
+                              Concept B Visual Preview
+                            </p>
+                            <p className="text-text-xs text-sapphire-muted max-w-[220px]">
+                              Submit a prompt to generate AI social media artwork.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {brief && (
+                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
+                            <span className="text-[10px] text-sapphire-muted font-mono">
+                              {brief.concept_b.caption_instagram.length} chars
+                            </span>
+                          </div>
+                          <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
+                            {brief.concept_b.caption_instagram}
                           </p>
                           <button
-                            onClick={() => handleRegenerateImage("B")}
-                            disabled={isRegeneratingB}
-                            className="px-3 py-1.5 bg-sapphire-terracotta text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-opacity-90 transition-opacity"
+                            onClick={() =>
+                              copyToClipboard(brief.concept_b.caption_instagram, "cap-b")
+                            }
+                            className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
                           >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingB ? "Regenerating..." : "Retry Image Generation"}</span>
+                            {copiedId === "cap-b" ? (
+                              <Check className="w-3 h-3 text-sapphire-green" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            <span>Copy Instagram Caption</span>
                           </button>
                         </div>
-                      ) : brief ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2.5">
-                          <Sparkles className="w-8 h-8 text-amber-400 stroke-1" />
-                          <p className="text-text-xs font-semibold text-amber-300">
-                            Prompt Synthesized
-                          </p>
-                          <p className="text-[11px] text-amber-400/80 max-w-[220px] leading-tight">
-                            Generating photorealistic Canva-grade composite.
-                          </p>
-                          <button
-                            onClick={() => handleRegenerateImage("B")}
-                            disabled={isRegeneratingB}
-                            className="px-3 py-1.5 bg-sapphire-dark text-sapphire-bg rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm hover:bg-white hover:text-black transition-opacity"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRegeneratingB ? "animate-spin" : ""}`} />
-                            <span>{isRegeneratingB ? "Generating..." : "Generate Artwork"}</span>
-                          </button>
+                      )}
+
+                      {/* Refinement Overlay Form */}
+                      {isRefining === "B" ? (
+                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
+                          <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
+                            <span className="flex items-center gap-1">
+                              <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                              Refine Concept B (v{activeVersionB})
+                            </span>
+                            <button
+                              onClick={() => setIsRefining(null)}
+                              className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={refinementInput}
+                            onChange={(e) => setRefinementInput(e.target.value)}
+                            placeholder="e.g. Make composition more dramatic & captions punchier..."
+                            className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => setIsRefining(null)}
+                              className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleRefineSubmit("B")}
+                              disabled={!refinementInput.trim() || isRefinementLoading}
+                              className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                            >
+                              {isRefinementLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                "Apply Edit"
+                              )}
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
-                          <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
-                          <p className="text-text-xs font-semibold text-sapphire-dark">
-                            Concept B Visual Preview
-                          </p>
-                          <p className="text-text-xs text-sapphire-muted max-w-[220px]">
-                            Submit a prompt to generate AI social media artwork.
-                          </p>
+                        <div className="pt-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleConceptSelect("B")}
+                              className={`flex-1 py-2.5 rounded-xl text-text-xs font-medium transition-all ${
+                                selectedConcept === "B"
+                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
+                                  : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
+                              }`}
+                            >
+                              {selectedConcept === "B" ? "Concept B Selected" : "Select Concept B"}
+                            </button>
+                            {brief && (
+                              <button
+                                onClick={() => setIsRefining("B")}
+                                className="p-2.5 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                                title="Refine Concept B"
+                              >
+                                <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                                <span>Refine</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {selectedConcept === "B" && brief && (
+                            <button
+                              onClick={() => setShowApprovalModal(true)}
+                              className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Approve & Send Instagram Package</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
-
-                    {brief && (
-                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
-                        <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
-                        <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3">
-                          {brief.concept_b.caption_instagram}
-                        </p>
-                        <button
-                          onClick={() =>
-                            copyToClipboard(brief.concept_b.caption_instagram, "cap-b")
-                          }
-                          className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
-                        >
-                          {copiedId === "cap-b" ? (
-                            <Check className="w-3 h-3 text-sapphire-green" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                          <span>Copy Caption</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Refinement Overlay Form */}
-                    {isRefining === "B" ? (
-                      <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
-                        <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
-                          <span className="flex items-center gap-1">
-                            <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                            Refine Concept B (v{activeVersionB})
-                          </span>
-                          <button
-                            onClick={() => setIsRefining(null)}
-                            className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={refinementInput}
-                          onChange={(e) => setRefinementInput(e.target.value)}
-                          placeholder="e.g. Make composition more dramatic & captions punchier..."
-                          className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
-                        />
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => setIsRefining(null)}
-                            className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleRefineSubmit("B")}
-                            disabled={!refinementInput.trim() || isRefinementLoading}
-                            className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
-                          >
-                            {isRefinementLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              "Apply Edit"
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="pt-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleConceptSelect("B")}
-                            className={`flex-1 py-2 rounded-xl text-text-xs font-medium transition-all ${
-                              selectedConcept === "B"
-                                ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
-                                : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
-                            }`}
-                          >
-                            {selectedConcept === "B" ? "Concept B Selected" : "Select Concept B"}
-                          </button>
-                          {brief && (
-                            <button
-                              onClick={() => setIsRefining("B")}
-                              className="p-2 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
-                              title="Refine Concept B"
-                            >
-                              <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                              <span>Refine</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {selectedConcept === "B" && brief && (
-                          <button
-                            onClick={() => setShowApprovalModal(true)}
-                            className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>Approve & Send Email Package</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
-                </div>
+                ) : (
+
+                  /* View Mode 2: Studio Focus Inspector (Single Concept Hero View) */
+                  (() => {
+                    const activeHeroConcept =
+                      selectedConcept === "B"
+                        ? brief?.concept_b
+                        : brief?.concept_a;
+                    const activeHeroKey = selectedConcept === "B" ? "B" : "A";
+                    const activeHeroCritique =
+                      selectedHeroKey(selectedConcept, critiqueA, critiqueB);
+                    const bp = activeHeroConcept?.design_blueprint;
+
+                    return (
+                      <div className="space-y-5">
+                        {/* Hero Card */}
+                        <div className="border border-sapphire-border rounded-2xl bg-sapphire-surface p-6 shadow-md space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-text-sm font-semibold text-sapphire-dark">
+                                {activeHeroConcept ? activeHeroConcept.label : "Instagram Hero Direction"}
+                              </span>
+                              <span className="text-[10px] text-sapphire-terracotta bg-sapphire-terracotta/10 px-2.5 py-0.5 rounded-full border border-sapphire-terracotta/20 font-mono">
+                                Concept {activeHeroKey}
+                              </span>
+                            </div>
+
+                            {/* Switch Concept in Focus View */}
+                            {brief && (
+                              <div className="flex items-center gap-1 bg-sapphire-bg p-1 rounded-xl border border-sapphire-border text-text-xs">
+                                <button
+                                  onClick={() => handleConceptSelect("A")}
+                                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedConcept !== "B"
+                                      ? "bg-sapphire-surface text-sapphire-dark shadow-sm"
+                                      : "text-sapphire-muted hover:text-sapphire-dark"
+                                  }`}
+                                >
+                                  Concept A
+                                </button>
+                                <button
+                                  onClick={() => handleConceptSelect("B")}
+                                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
+                                    selectedConcept === "B"
+                                      ? "bg-sapphire-surface text-sapphire-dark shadow-sm"
+                                      : "text-sapphire-muted hover:text-sapphire-dark"
+                                  }`}
+                                >
+                                  Concept B
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                            {/* Artwork Preview */}
+                            <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-md">
+                              {activeHeroConcept?.image_url ? (
+                                <>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={activeHeroConcept.image_url}
+                                    alt="Hero Instagram Visual"
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => setActiveImageModal(activeHeroConcept.image_url!)}
+                                      className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors"
+                                      title="Enlarge Asset"
+                                    >
+                                      <Maximize2 className="w-4 h-4" />
+                                    </button>
+                                    <a
+                                      href={activeHeroConcept.image_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors"
+                                      title="Download High Res"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
+                                  <FileText className="w-8 h-8 stroke-1" />
+                                  <p className="text-text-xs font-medium">No artwork generated yet.</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Design Blueprint Inspector & Copy */}
+                            <div className="space-y-4">
+                              {/* Design Blueprint Matrix */}
+                              <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-2.5 text-text-xs">
+                                <span className="font-semibold text-sapphire-dark uppercase tracking-wider text-[10px]">
+                                  Design Intelligence Blueprint
+                                </span>
+                                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                  <div>
+                                    <span className="text-sapphire-muted">Hook Font:</span>{" "}
+                                    <span className="font-mono text-sapphire-dark font-medium">
+                                      {bp?.font_family_hook || "Playfair Display"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-sapphire-muted">Body Font:</span>{" "}
+                                    <span className="font-mono text-sapphire-dark font-medium">
+                                      {bp?.font_family_body || "Plus Jakarta Sans"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-sapphire-muted">Archetype:</span>{" "}
+                                    <span className="text-sapphire-terracotta font-medium">
+                                      {bp?.archetype?.replace("_", " ") || "Editorial Magazine"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-sapphire-muted">Contrast Scrim:</span>{" "}
+                                    <span className="text-sapphire-dark font-medium">
+                                      {bp?.scrim_intensity || "Medium"}
+                                    </span>
+                                  </div>
+                                </div>
+                                {bp?.negative_space_directive && (
+                                  <p className="text-[10px] text-sapphire-muted pt-1 border-t border-sapphire-border/50">
+                                    <strong className="text-sapphire-dark">Spatial Void:</strong>{" "}
+                                    {bp.negative_space_directive}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Instagram Caption Draft */}
+                              {activeHeroConcept && (
+                                <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-2 text-text-xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold text-sapphire-dark">
+                                      Instagram Caption & Hashtags
+                                    </span>
+                                    <span className="text-[10px] text-sapphire-muted font-mono">
+                                      {activeHeroConcept.caption_instagram.length} chars
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-sapphire-dark/90 leading-relaxed whitespace-pre-line line-clamp-5 font-sans">
+                                    {activeHeroConcept.caption_instagram}
+                                  </p>
+                                  <button
+                                    onClick={() =>
+                                      copyToClipboard(
+                                        activeHeroConcept.caption_instagram,
+                                        `cap-hero-${activeHeroKey}`
+                                      )
+                                    }
+                                    className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium text-[11px] pt-1"
+                                  >
+                                    {copiedId === `cap-hero-${activeHeroKey}` ? (
+                                      <Check className="w-3 h-3 text-sapphire-green" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                    <span>Copy Instagram Caption</span>
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Approval Action */}
+                              {brief && (
+                                <button
+                                  onClick={() => setShowApprovalModal(true)}
+                                  className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                >
+                                  <Mail className="w-3.5 h-3.5" />
+                                  <span>Approve & Deliver Package ({activeHeroConcept?.label})</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
             </div>
           </div>
         </aside>
       </div>
+
+      {/* Brand Switcher Modal */}
+      <BrandSwitcherModal
+        isOpen={isBrandModalOpen}
+        onClose={() => setIsBrandModalOpen(false)}
+        activeBrandName={activeBrand}
+        onSelectBrand={(b) => {
+          setActiveBrand(b.name);
+          setActiveBrandProfile(b);
+        }}
+      />
+
+      {/* Brand Brain & Settings Drawer */}
+      <BrandBrainDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        brand={activeBrandProfile}
+        onSavePreferences={(prefs, email) => {
+          setActiveBrandProfile((prev) => ({
+            ...prev,
+            learned_preferences: prefs,
+          }));
+          if (email) setRecipientEmail(email);
+        }}
+      />
 
       {/* Dedicated Agent Telemetry & Logs Drawer */}
       <LogDrawer
@@ -1550,4 +1918,14 @@ export default function SapphireWorkspace() {
       />
     </div>
   );
+}
+
+// Helper to resolve hero critique in Focus View
+function selectedHeroKey(
+  selected: "A" | "B" | null,
+  critiqueA: CriticResult | null,
+  critiqueB: CriticResult | null
+): CriticResult | null {
+  if (selected === "B") return critiqueB;
+  return critiqueA;
 }
