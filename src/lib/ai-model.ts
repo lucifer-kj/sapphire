@@ -1,8 +1,14 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 
+const googleApiKey =
+  process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+  "";
+
+
 export const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
+  apiKey: googleApiKey,
 });
 
 export const groq = createGroq({
@@ -14,55 +20,57 @@ export const groq = createGroq({
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return google("gemini-3.7-flash");
+  if (googleApiKey) {
+    return google("gemini-2.5-flash");
   }
   return groq("llama-3.3-70b-versatile");
 }
 
+
 export function getReasoningFallbackModel() {
-  if (process.env.GROQ_API_KEY) {
-    return groq("llama-3.3-70b-versatile");
+  if (googleApiKey) {
+    return google("gemini-2.5-flash");
   }
-  return google("gemini-3.7-flash");
+  return groq("llama-3.3-70b-versatile");
 }
 
 /**
- * Ultra-Fast Light Task Model (Gemini 3.1 Flash Lite primary, Groq fallback)
+ * Ultra-Fast Light Task Model (Gemini 2.5 Flash primary, Groq fallback)
  * Used for: High-Speed Intent Parsing, Fast Concept Refinements
  */
 export function getLightModel() {
-  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    return google("gemini-3.1-flash-lite");
+  if (googleApiKey) {
+    return google("gemini-2.5-flash");
   }
   return groq("llama-3.3-70b-versatile");
 }
 
 export function getLightFallbackModel() {
-  if (process.env.GROQ_API_KEY) {
-    return groq("llama-3.3-70b-versatile");
+  if (googleApiKey) {
+    return google("gemini-2.5-flash");
   }
-  return google("gemini-3.1-flash-lite");
+  return groq("llama-3.3-70b-versatile");
 }
 
 /**
- * Multimodal Vision Model (Gemini 3.7 Flash)
+ * Multimodal Vision Model (Gemini 2.5 Flash)
  * Used for: Reference image stylistic breakdown & visual palette extraction
  */
 export function getVisionModel() {
-  return google("gemini-3.7-flash");
+  return google("gemini-2.5-flash");
 }
 
 /**
- * Critic & Brand Guard Model (Groq Llama 3.3 70B primary, Gemini 3.7 Flash fallback)
+ * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Groq fallback)
  * Used for: Fast structured compliance auditing & brand scorecards
  */
 export function getCriticModel() {
-  if (process.env.GROQ_API_KEY) {
-    return groq("llama-3.3-70b-versatile");
+  if (googleApiKey) {
+    return google("gemini-2.5-flash");
   }
-  return google("gemini-3.7-flash");
+  return groq("llama-3.3-70b-versatile");
 }
+
 
 /**
  * Compatibility aliases

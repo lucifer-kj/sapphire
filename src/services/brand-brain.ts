@@ -77,6 +77,8 @@ export const DEFAULT_BRAND_SEED: Omit<BrandProfile, "id" | "created_at" | "updat
 /**
  * Service class for Brand Brain storage, context retrieval, and preference tracking.
  */
+import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
+
 export class BrandBrainService {
   /**
    * Retrieves all registered brand profiles.
@@ -89,28 +91,32 @@ export class BrandBrainService {
         .select("*")
         .order("name", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching brands from Supabase:", error);
-        return [DEFAULT_BRAND_SEED];
+      if (error || !data || data.length === 0) {
+        return PRECONFIGURED_BRANDS;
       }
 
-      if (!data || data.length === 0) {
-        return [DEFAULT_BRAND_SEED];
-      }
-
-      return data.map((item) => BrandProfileSchema.parse(item));
+      const dbBrands = data.map((item) => BrandProfileSchema.parse(item));
+      return [...PRECONFIGURED_BRANDS, ...dbBrands.filter(b => !PRECONFIGURED_BRANDS.some(p => p.id === b.id))];
     } catch (err) {
       console.warn("Falling back to in-memory brand seed:", err);
-      return [DEFAULT_BRAND_SEED];
+      return PRECONFIGURED_BRANDS;
     }
   }
 
   /**
-   * Retrieves a specific Brand Profile by ID or returns the default brand seed.
+   * Retrieves a specific Brand Profile by ID or slug or returns the default brand seed.
    */
   static async getBrandById(brandId?: string): Promise<BrandProfile> {
     if (!brandId) {
-      return DEFAULT_BRAND_SEED;
+      return PRECONFIGURED_BRANDS[0];
+    }
+
+    // Check preconfigured brands by ID or name
+    const preconfigured = PRECONFIGURED_BRANDS.find(
+      (b) => b.id === brandId || b.name.toLowerCase() === brandId.toLowerCase()
+    );
+    if (preconfigured) {
+      return preconfigured;
     }
 
     try {
@@ -122,15 +128,16 @@ export class BrandBrainService {
         .single();
 
       if (error || !data) {
-        return DEFAULT_BRAND_SEED;
+        return PRECONFIGURED_BRANDS[0];
       }
 
       return BrandProfileSchema.parse(data);
     } catch (err) {
       console.warn(`Fallback to default brand for ID ${brandId}:`, err);
-      return DEFAULT_BRAND_SEED;
+      return PRECONFIGURED_BRANDS[0];
     }
   }
+
 
   /**
    * Creates or updates a Brand Profile in the durable database.

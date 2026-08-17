@@ -40,74 +40,73 @@ export class ImageGenerationService {
     let model = "@cf/black-forest-labs/flux-1-schnell";
     let status: "success" | "fallback" = "success";
 
-    // 1. Primary: Cloudflare Workers AI FLUX 1 Schnell
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+    // 1. Primary: High-Fidelity Pollinations FLUX Realism (~2.4s, 1080×1350 photorealism)
+    try {
+      rawPhotoUrl = await this.fetchPollinationsBase64(
+        fullPrompt,
+        seed,
+        negativePrompt,
+        "flux-realism"
+      );
+      if (rawPhotoUrl) {
+        provider = "Pollinations AI (Flux)";
+        model = "flux-realism";
+        status = "success";
+      }
+    } catch (polErr) {
+      console.warn("Pollinations FLUX Realism primary error, trying Cloudflare:", polErr);
+    }
 
-    if (accountId && apiToken) {
-      try {
-        rawPhotoUrl = await this.generateWithCloudflareFlux(
-          fullPrompt,
-          accountId,
-          apiToken
-        );
-        if (rawPhotoUrl) {
-          provider = "Cloudflare Workers AI (Flux)";
-          model = "@cf/black-forest-labs/flux-1-schnell";
-          status = "success";
+    // 2. Secondary: Cloudflare Workers AI FLUX 1 Schnell (10k Neurons/day)
+    if (!rawPhotoUrl) {
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+      if (accountId && apiToken) {
+        try {
+          rawPhotoUrl = await this.generateWithCloudflareFlux(
+            fullPrompt,
+            accountId,
+            apiToken
+          );
+          if (rawPhotoUrl) {
+            provider = "Cloudflare Workers AI (Flux)";
+            model = "@cf/black-forest-labs/flux-1-schnell";
+            status = "fallback";
+          }
+        } catch (cfErr) {
+          console.warn("Cloudflare FLUX fallback error:", cfErr);
         }
-      } catch (cfErr) {
-        console.warn("Cloudflare FLUX generation fallback:", cfErr);
       }
     }
 
-    // 2. Fallback: Server-Side Pollinations AI Flux Fetch
+    // 3. Tertiary: Fast Pollinations Turbo
     if (!rawPhotoUrl) {
       try {
         rawPhotoUrl = await this.fetchPollinationsBase64(
           fullPrompt,
           seed,
-          negativePrompt
+          negativePrompt,
+          "turbo"
         );
         if (rawPhotoUrl) {
           provider = "Pollinations AI (Flux)";
-          model = "flux";
+          model = "turbo";
           status = "fallback";
         }
-      } catch (polErr) {
-        console.warn("Pollinations fallback:", polErr);
-      }
-    }
-
-    // 3. Fallback: Google Gemini Nano Banana
-    if (!rawPhotoUrl) {
-      const candidateKeys = [
-        process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY,
-        process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      ].filter(Boolean) as string[];
-
-      for (const apiKey of candidateKeys) {
-        for (const m of ["gemini-3.1-flash-image", "gemini-2.5-flash-image"]) {
-          try {
-            rawPhotoUrl = await this.generateWithNanoBanana(
-              fullPrompt,
-              m,
-              apiKey,
-              referenceImageDataUrl
-            );
-            if (rawPhotoUrl) {
-              provider = "Nano Banana 2";
-              model = m;
-              status = "fallback";
-              break;
-            }
-          } catch {}
-        }
-        if (rawPhotoUrl) break;
+      } catch (turboErr) {
+        console.warn("Pollinations Turbo fallback error:", turboErr);
       }
     }
 
     // 4. Guaranteed Direct URL Fallback
+    if (!rawPhotoUrl) {
+      rawPhotoUrl = this.buildPollinationsUrl(fullPrompt, seed, negativePrompt, "flux-realism");
+      provider = "Pollinations AI (Flux)";
+      model = "flux-realism";
+      status = "fallback";
+    }
+
     if (!rawPhotoUrl) {
       rawPhotoUrl = this.buildPollinationsUrl(fullPrompt, seed, negativePrompt);
       provider = "Pollinations AI (Flux)";
@@ -252,11 +251,12 @@ export class ImageGenerationService {
   private static async fetchPollinationsBase64(
     prompt: string,
     seed: number,
-    negativePrompt?: string
+    negativePrompt?: string,
+    model: string = "flux-realism"
   ): Promise<string | null> {
-    const url = this.buildPollinationsUrl(prompt, seed, negativePrompt);
+    const url = this.buildPollinationsUrl(prompt, seed, negativePrompt, model);
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(14000),
     });
 
     if (!res.ok) return null;
@@ -276,7 +276,8 @@ export class ImageGenerationService {
   static buildPollinationsUrl(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
-    negativePrompt?: string
+    negativePrompt?: string,
+    model: string = "flux-realism"
   ): string {
     const apiKey = process.env.POLLINATIONS_API_KEY || "";
 
@@ -297,7 +298,7 @@ export class ImageGenerationService {
       height: "1350",
       nologo: "true",
       seed: seed.toString(),
-      model: "flux",
+      model: model,
     });
 
     if (apiKey) {
@@ -306,4 +307,5 @@ export class ImageGenerationService {
 
     return `${baseUrl}?${queryParams.toString()}`;
   }
+
 }

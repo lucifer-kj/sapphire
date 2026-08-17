@@ -378,6 +378,127 @@ export class CampaignWorkflow {
       details: { critiqueA, critiqueB },
     });
 
+    // 8. Bounded Critic Auto-Remediation Loop (<80 score threshold)
+    let finalCritiqueA = critiqueA;
+    let finalCritiqueB = critiqueB;
+
+    const threshold = 80;
+    const needsRemediationA = critiqueA.brand_alignment_score < threshold || critiqueA.visual_score < threshold;
+    const needsRemediationB = critiqueB.brand_alignment_score < threshold || critiqueB.visual_score < threshold;
+
+    if (needsRemediationA || needsRemediationB) {
+      await onProgress?.({
+        step: 5,
+        totalSteps: 6,
+        stage: "critic_audit",
+        agentName: "Critic Auto-Remediation Active (<80 Score Detected)",
+        provider: "Groq LLaMA 3.3 70B + FLUX Realism",
+        model: "llama-3.3-70b-versatile",
+        status: "active",
+        summary: `Auto-repairing ${[
+          needsRemediationA ? `Concept A (Score: ${critiqueA.brand_alignment_score}/100)` : null,
+          needsRemediationB ? `Concept B (Score: ${critiqueB.brand_alignment_score}/100)` : null,
+        ]
+          .filter(Boolean)
+          .join(" & ")} with targeted prompt engineering...`,
+      });
+
+      const remediationTasks: Promise<void>[] = [];
+
+      if (needsRemediationA) {
+        remediationTasks.push(
+          (async () => {
+            try {
+              const directiveA = CriticAgent.generateRemediationDirective(brief.concept_a, brand, critiqueA);
+              const remediatedLayersA = await PromptEngineerAgent.decomposeAndEngineerPrompt(
+                brief.concept_a,
+                brand,
+                intent,
+                research,
+                referenceAnalysis,
+                directiveA
+              );
+              const remSeedA = seedA + 100;
+              const remImgA = await ImageGenerationService.generateImageUrlWithMeta(
+                remediatedLayersA.blended_composite_prompt,
+                remSeedA,
+                refStyle,
+                remediatedLayersA.negative_constraints,
+                referenceImage,
+                brief.concept_a.design_blueprint
+              );
+              brief.concept_a.image_url = remImgA.url;
+              finalCritiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand);
+              logger.log({
+                agent: "CriticAutoRemediation (Concept A)",
+                provider: "Groq",
+                model: "llama-3.3-70b-versatile",
+                status: "success",
+                durationMs: 0,
+                summary: `Concept A auto-remediated: Score improved ${critiqueA.brand_alignment_score} -> ${finalCritiqueA.brand_alignment_score}/100.`,
+              });
+            } catch (err) {
+              console.warn("Auto-remediation pass for Concept A failed, retaining initial concept:", err);
+            }
+          })()
+        );
+      }
+
+      if (needsRemediationB) {
+        remediationTasks.push(
+          (async () => {
+            try {
+              const directiveB = CriticAgent.generateRemediationDirective(brief.concept_b, brand, critiqueB);
+              const remediatedLayersB = await PromptEngineerAgent.decomposeAndEngineerPrompt(
+                brief.concept_b,
+                brand,
+                intent,
+                research,
+                referenceAnalysis,
+                directiveB
+              );
+              const remSeedB = seedB + 100;
+              const remImgB = await ImageGenerationService.generateImageUrlWithMeta(
+                remediatedLayersB.blended_composite_prompt,
+                remSeedB,
+                refStyle,
+                remediatedLayersB.negative_constraints,
+                referenceImage,
+                brief.concept_b.design_blueprint
+              );
+              brief.concept_b.image_url = remImgB.url;
+              finalCritiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand);
+              logger.log({
+                agent: "CriticAutoRemediation (Concept B)",
+                provider: "Groq",
+                model: "llama-3.3-70b-versatile",
+                status: "success",
+                durationMs: 0,
+                summary: `Concept B auto-remediated: Score improved ${critiqueB.brand_alignment_score} -> ${finalCritiqueB.brand_alignment_score}/100.`,
+              });
+
+            } catch (err) {
+              console.warn("Auto-remediation pass for Concept B failed, retaining initial concept:", err);
+            }
+          })()
+        );
+      }
+
+      await Promise.all(remediationTasks);
+
+      await onProgress?.({
+        step: 5,
+        totalSteps: 6,
+        stage: "critic_audit",
+        agentName: "Critic Auto-Remediation Complete",
+        provider: "Groq / Gemini",
+        model: "llama-3.3-70b-versatile",
+        status: "success",
+        durationMs: Date.now() - criticStart,
+        summary: `Remediation Complete: Concept A (${finalCritiqueA.brand_alignment_score}/100) • Concept B (${finalCritiqueB.brand_alignment_score}/100)`,
+        details: { critiqueA: finalCritiqueA, critiqueB: finalCritiqueB },
+      });
+    }
 
     // 9. Persist Campaign, Concepts, Critiques & Versions in Supabase
     let campaignId = "local-campaign-" + Date.now();
@@ -415,7 +536,7 @@ export class CampaignWorkflow {
             image_prompt: promptEngineeredA.optimized_image_prompt,
             caption_instagram: brief.concept_a.caption_instagram,
             caption_linkedin: brief.concept_a.caption_linkedin,
-            visual_brief_summary: `${brief.concept_a.visual_style} [${brief.concept_a.design_blueprint?.archetype} / ${brief.concept_a.design_blueprint?.font_family_hook}] | Alignment Score: ${critiqueA.brand_alignment_score}/100`,
+            visual_brief_summary: `${brief.concept_a.visual_style} [${brief.concept_a.design_blueprint?.archetype} / ${brief.concept_a.design_blueprint?.font_family_hook}] | Alignment Score: ${finalCritiqueA.brand_alignment_score}/100`,
             status: "critiqued",
           })
           .select()
@@ -444,7 +565,7 @@ export class CampaignWorkflow {
             image_prompt: promptEngineeredB.optimized_image_prompt,
             caption_instagram: brief.concept_b.caption_instagram,
             caption_linkedin: brief.concept_b.caption_linkedin,
-            visual_brief_summary: `${brief.concept_b.visual_style} [${brief.concept_b.design_blueprint?.archetype} / ${brief.concept_b.design_blueprint?.font_family_hook}] | Alignment Score: ${critiqueB.brand_alignment_score}/100`,
+            visual_brief_summary: `${brief.concept_b.visual_style} [${brief.concept_b.design_blueprint?.archetype} / ${brief.concept_b.design_blueprint?.font_family_hook}] | Alignment Score: ${finalCritiqueB.brand_alignment_score}/100`,
             status: "critiqued",
           })
           .select()
@@ -488,9 +609,10 @@ export class CampaignWorkflow {
       research,
       referenceAnalysis,
       brief,
-      critiqueA,
-      critiqueB,
+      critiqueA: finalCritiqueA,
+      critiqueB: finalCritiqueB,
       logs: logger.getLogs(),
     };
   }
 }
+

@@ -45,9 +45,12 @@ import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
 import { WorkflowLogEntry } from "@/lib/schema/telemetry";
 import { LogDrawer } from "@/components/telemetry/log-drawer";
-import { BrandSwitcherModal, PRECONFIGURED_BRANDS } from "@/components/brand/brand-switcher-modal";
+import { WorkspaceModal } from "@/components/workspace/workspace-modal";
+
+import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
+
 import { AgentPlanning, PlanStep } from "@/components/ui/agent-planning";
 import { ImageGeneration } from "@/components/ui/image-generation";
 
@@ -316,7 +319,24 @@ export default function SapphireWorkspace() {
     ]);
   };
 
-  // Keyboard shortcut listener: Ctrl+B (Settings), Ctrl+Alt+B (Right Panel), Ctrl+N (New Conversation)
+  // Load workspace from URL parameter (?workspace=...) on initial load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const wsParam = params.get("workspace");
+      if (wsParam) {
+        const found = PRECONFIGURED_BRANDS.find(
+          (b) => b.id === wsParam || b.name.toLowerCase() === wsParam.toLowerCase()
+        );
+        if (found) {
+          setActiveBrandProfile(found);
+          setActiveBrand(found.name);
+        }
+      }
+    }
+  }, []);
+
+  // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel), Ctrl+N (New Campaign), Ctrl+W (Workspace Hub)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
@@ -331,6 +351,11 @@ export default function SapphireWorkspace() {
         }
       }
 
+      if (isCtrlOrCmd && key === "w") {
+        e.preventDefault();
+        setIsBrandModalOpen((prev) => !prev);
+      }
+
       if (isCtrlOrCmd && key === "n") {
         e.preventDefault();
         handleNewConversation();
@@ -340,6 +365,7 @@ export default function SapphireWorkspace() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeBrand]);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -838,16 +864,20 @@ export default function SapphireWorkspace() {
 
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
-          {/* Interactive Brand Switcher Button */}
+          {/* Interactive Workspace Switcher Button */}
           <button
             onClick={() => setIsBrandModalOpen(true)}
-            title="Switch Brand Profile"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline"
+            title="Switch Brand Workspace (Ctrl+W)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline group"
           >
             <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
             <span className="max-w-[170px] truncate">{activeBrand}</span>
+            <span className="text-[10px] font-mono text-sapphire-muted hidden sm:inline-block px-1 rounded bg-sapphire-subtle">
+              Ctrl+W
+            </span>
             <ChevronDown className="w-3.5 h-3.5 text-sapphire-muted" />
           </button>
+
         </div>
 
         <div className="hidden lg:flex items-center gap-2 text-text-xs text-sapphire-muted">
@@ -1905,16 +1935,17 @@ export default function SapphireWorkspace() {
         </aside>
       </div>
 
-      {/* Brand Switcher Modal */}
-      <BrandSwitcherModal
+      {/* Workspace Hub Switcher Modal (Ctrl+W) */}
+      <WorkspaceModal
         isOpen={isBrandModalOpen}
         onClose={() => setIsBrandModalOpen(false)}
-        activeBrandName={activeBrand}
+        activeBrand={activeBrandProfile}
         onSelectBrand={(b) => {
           setActiveBrand(b.name);
           setActiveBrandProfile(b);
         }}
       />
+
 
       {/* Brand Brain & Settings Drawer */}
       <BrandBrainDrawer

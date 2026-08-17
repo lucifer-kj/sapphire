@@ -68,4 +68,38 @@ LinkedIn Caption: "${concept.caption_linkedin}"`;
       }
     }
   }
+
+  /**
+   * Synthesizes an explicit prompt remediation directive based on critic flaws to guide auto-regeneration.
+   */
+  static generateRemediationDirective(
+    concept: ConceptItem,
+    brand: BrandProfile,
+    critique: CriticResult
+  ): string {
+    const issues: string[] = [];
+
+    if (critique.forbidden_phrases_found && critique.forbidden_phrases_found.length > 0) {
+      issues.push(`CRITICAL: Remove forbidden words: ${critique.forbidden_phrases_found.join(", ")}`);
+    }
+
+    if (critique.suggestions && critique.suggestions.length > 0) {
+      issues.push(`Actionable Fixes: ${critique.suggestions.slice(0, 3).join("; ")}`);
+    }
+
+    if (critique.critique_notes && critique.critique_notes.length > 0) {
+      issues.push(`Critic Notes: ${critique.critique_notes.slice(0, 2).join("; ")}`);
+    }
+
+    if (critique.visual_score < 80) {
+      issues.push("Visual Improvement: Enforce clearer subject separation, cleaner lighting, and wider negative space void.");
+    }
+
+    if (critique.brand_alignment_score < 80) {
+      issues.push(`Brand Alignment: Deepen alignment with brand tone "${brand.voice.tone}" and positioning "${brand.positioning}".`);
+    }
+
+    return issues.join("\n") || "Ensure cleaner composition and stricter brand tone alignment.";
+  }
 }
+
