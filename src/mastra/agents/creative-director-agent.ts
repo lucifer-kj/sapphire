@@ -3,12 +3,17 @@ import { CreativeBriefSchema, CreativeBrief, UserIntent, ResearchContext } from 
 import { BrandProfile } from "@/lib/schema/brand";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
-import { DEFAULT_ARCHETYPE_CONFIGS, DesignArchetype } from "@/lib/design-system/archetypes";
+import {
+  DEFAULT_ARCHETYPE_CONFIGS,
+  DesignArchetype,
+  DESIGN_KNOWLEDGE_GRAPH,
+} from "@/lib/design-system/archetypes";
 
 export class CreativeDirectorAgent {
   /**
    * Generates two genuinely distinct A/B creative concepts with complete Canva-quality
    * Design Blueprints (typography, copy, layout archetypes, and negative space conditioning).
+   * Programmatically assigns two DIFFERENT archetypes to guarantee structural diversity.
    */
   static async developCreativeBrief(
     intent: UserIntent,
@@ -16,10 +21,43 @@ export class CreativeDirectorAgent {
     brand: BrandProfile,
     referenceAnalysis?: ReferenceImageAnalysis | null
   ): Promise<CreativeBrief> {
-    const detectedArchetype = referenceAnalysis?.detected_archetype || "editorial_magazine";
+    const allArchetypes: DesignArchetype[] = [
+      "editorial_magazine",
+      "conceptual_split",
+      "comparison_split",
+      "vintage_poster",
+      "saas_dotgrid",
+    ];
+
+    // 1. Determine Archetype A based on reference image or brand affinity
+    const detectedArchetype = referenceAnalysis?.detected_archetype;
+    const affinities = brand.learned_preferences?.archetype_affinity || {};
+
+    let archA: DesignArchetype = detectedArchetype || "editorial_magazine";
+    if (!detectedArchetype && Object.keys(affinities).length > 0) {
+      const sorted = [...allArchetypes].sort(
+        (a, b) => (affinities[b] ?? 0.5) - (affinities[a] ?? 0.5)
+      );
+      archA = sorted[0];
+    }
+
+    // 2. Programmatically select a contrasting Archetype B
+    const remaining = allArchetypes.filter((a) => a !== archA);
+    const archB: DesignArchetype =
+      archA === "editorial_magazine"
+        ? "conceptual_split"
+        : archA === "conceptual_split"
+        ? "editorial_magazine"
+        : remaining[0];
+
     const refPalette = referenceAnalysis?.color_palette?.length
       ? referenceAnalysis.color_palette
       : [brand.voice.tone, "#D97757", "#FAF9F5", "#141413"];
+
+    const pairingA = DESIGN_KNOWLEDGE_GRAPH.typography_pairings[archA];
+    const pairingB = DESIGN_KNOWLEDGE_GRAPH.typography_pairings[archB];
+    const spatialA = DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting[archA];
+    const spatialB = DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting[archB];
 
     const referencePrompt = referenceAnalysis
       ? `VISUAL REFERENCE ATTACHED BY USER:
@@ -29,31 +67,42 @@ export class CreativeDirectorAgent {
 - Color Palette: ${refPalette.join(", ")}
 - Composition: ${referenceAnalysis.composition}
 - Negative Space Zone: ${referenceAnalysis.negative_space_zone || "Upper 40% open area"}`
-      : `No reference image attached. Select 2 contrasting design archetypes from:
-1. 'editorial_magazine' (Warm depth-of-field, elegant typography, lifestyle/food/hospitality)
-2. 'conceptual_split' (Asymmetric 50/50, punchy 2-tone headline highlight, B2B/ideas)
-3. 'comparison_split' (Side-by-side Before/After, duality, feature comparison)
-4. 'vintage_poster' (Neo-vintage organic, clean cream studio canvas, badge stamps)
-5. 'saas_dotgrid' (Modern dot-grid matrix, 3D cards, UI micro-chrome)`;
+      : "No reference image attached.";
 
     const systemPrompt = `You are Sapphire's Elite AI Creative Director & Art Director.
-Your task is to build a comprehensive Creative Brief containing TWO distinct A/B concepts for ${brand.name} (${brand.industry}) based on the user's request: "${intent.event}".
+Your task is to build a comprehensive Creative Brief containing TWO structurally distinct A/B concepts for ${brand.name} (${brand.industry}) based on the user's request: "${intent.event}".
 
-${referencePrompt}
+BRAND LEARNED TASTE VECTORS:
+- Preferred Typography Density: ${brand.learned_preferences?.typography_density_preference || "balanced"}
+- Preferred Visual Temperature: ${brand.learned_preferences?.visual_temperature_preference || "warm_golden"}
+- Top Archetype Affinities: ${JSON.stringify(affinities)}
+
+PROGRAMMATIC ARCHETYPE ASSIGNMENT:
+- Concept A MUST use Archetype: "${archA}" (${pairingA.style})
+  - Recommended Hook Font: "${pairingA.hookFont}", Body Font: "${pairingA.bodyFont}"
+  - Spatial Negative Space Requirement: "${spatialA.cameraDirective}"
+- Concept B MUST use Archetype: "${archB}" (${pairingB.style})
+  - Recommended Hook Font: "${pairingB.hookFont}", Body Font: "${pairingB.bodyFont}"
+  - Spatial Negative Space Requirement: "${spatialB.cameraDirective}"
 
 CRITICAL RULES FOR CANVA-QUALITY POST DESIGN:
 1. For each concept, you MUST populate the "design_blueprint" object:
-   - "archetype": Choose the best matching archetype (one of 'editorial_magazine', 'conceptual_split', 'comparison_split', 'vintage_poster', 'saas_dotgrid'). Concept A and B must explore DIFFERENT archetypes.
-   - "headline": Ultra-punchy 2-5 word hook (e.g. "Tasty Morning Joy", "Building A Brand Without Strategy?", "Fresh Daily Choice").
-   - "subheadline": 1-2 sentence supporting value proposition or descriptive nuance.
-   - "category_pill": Uppercase tag (e.g. "SPECIAL EDITION", "MARKETING STRATEGY", "ORGANIC HARVEST").
-   - "brand_tagline": Short memorable slogan (e.g. "Brewed for you . served on ice.").
+   - "archetype": Strictly use the assigned archetype ("${archA}" for Concept A, "${archB}" for Concept B).
+   - "headline": Ultra-punchy 2-5 word hook (e.g. "Tasty Morning Joy", "Building A Brand Without Strategy?", "Fresh Daily Choice"). Max 60 chars.
+   - "subheadline": 1-2 sentence supporting value proposition or descriptive nuance. Max 180 chars.
+   - "category_pill": Uppercase tag (e.g. "SPECIAL EDITION", "MARKETING STRATEGY", "ORGANIC HARVEST"). Max 30 chars.
+   - "brand_tagline": Short memorable slogan (e.g. "Brewed for you . served on ice."). Max 60 chars.
    - "value_props": 3 quick bullet items (e.g. ["Step in.", "Sip slow.", "Stay awhile."]).
-   - "cta_text": Action button text (e.g. "Order Online ➔", "Swipe Left ➔", "Explore Itineraries ➔").
+   - "cta_text": Action button text (e.g. "Order Online ➔", "Swipe Left ➔", "Explore Itineraries ➔"). Max 30 chars.
    - "social_handle": Brand handle (e.g. "@${brand.name.toLowerCase().replace(/\s+/g, "")}").
-   - "negative_space_directive": Explicit spatial instruction to leave room for typography (e.g. "Leave upper 40% clean for headline").
+   - "font_family_hook": Use "${pairingA.hookFont}" for Concept A, "${pairingB.hookFont}" for Concept B.
+   - "font_family_body": Use "${pairingA.bodyFont}" for Concept A, "${pairingB.bodyFont}" for Concept B.
+   - "highlighted_keywords": 1-2 important words from the headline to highlight in brand accent color.
+   - "negative_space_directive": Explicit spatial instruction matching the assigned archetype.
 2. The "image_prompt" MUST describe the photographic/visual scene, explicitly instructing the AI model to respect the negative space.
-3. Captions for Instagram and LinkedIn must be polished and platform-tailored.`;
+3. Captions for Instagram and LinkedIn must be polished and platform-tailored.
+
+${referencePrompt}`;
 
     const promptText = `Event/Request: ${intent.event}
 Objective: ${intent.objective}
@@ -85,20 +134,16 @@ Brand Voice Tone: ${brand.voice.tone}`;
             .trim() || "Signature Expedition";
         const hashtagTopic = topic.replace(/[^\w]/g, "");
 
-        const archA: DesignArchetype = detectedArchetype || "editorial_magazine";
-        const archB: DesignArchetype =
-          archA === "editorial_magazine" ? "conceptual_split" : "editorial_magazine";
-
         return {
           campaign_title: `${topic} Campaign — ${brand.name}`,
           concept_a: {
-            label: `Concept A — Editorial ${topic} Story`,
+            label: `Concept A — ${DEFAULT_ARCHETYPE_CONFIGS[archA].name}`,
             creative_direction: `High-end editorial composition focusing on atmosphere, authenticity, and visual depth for ${topic}.`,
-            visual_style: `Editorial magazine photography with warm ambient lighting`,
-            composition: `Subject framed in lower-center third, leaving upper 40% clean and uncluttered.`,
+            visual_style: `Editorial photography with warm ambient lighting and crisp negative space`,
+            composition: spatialA.cameraDirective,
             lighting: "Soft directional golden hour side-lighting.",
             color_palette: ["#D97757", "#FAF9F5", "#141413"],
-            image_prompt: `Studio editorial commercial photography, vertical 4:5 portrait of ${topic}, warm natural ambient lighting, rich color tones, leaving upper 40% clean for typography, 8k resolution`,
+            image_prompt: `Studio commercial photography, vertical 4:5 portrait of ${topic}, warm natural ambient lighting, rich color tones, ${spatialA.cameraDirective}, photorealistic 8k`,
             caption_instagram: `Discover the art of intentional storytelling. Experience ${topic} with ${brand.name}. ✨ #${hashtagTopic} #SapphireCreative`,
             caption_linkedin: `Strategic creative positioning drives meaningful brand connection. Introducing our campaign for ${topic}.`,
             design_blueprint: {
@@ -111,17 +156,22 @@ Brand Voice Tone: ${brand.voice.tone}`;
               cta_text: "Explore Collection ➔",
               social_handle: `@${brand.name.toLowerCase().replace(/\s+/g, "")}`,
               brand_name: brand.name,
-              negative_space_directive: DEFAULT_ARCHETYPE_CONFIGS[archA].negativeSpaceDirective,
+              font_family_hook: pairingA.hookFont,
+              font_family_body: pairingA.bodyFont,
+              highlighted_keywords: [topic.split(" ")[0] || "Reimagined"],
+              font_scale: "regular",
+              scrim_intensity: "medium",
+              negative_space_directive: spatialA.cameraDirective,
             },
           },
           concept_b: {
-            label: `Concept B — Conceptual ${topic} Showcase`,
+            label: `Concept B — ${DEFAULT_ARCHETYPE_CONFIGS[archB].name}`,
             creative_direction: `Bold asymmetric visual metaphor with high-contrast typography and dynamic brand punchline for ${topic}.`,
             visual_style: `Modern asymmetric studio photography with crisp contrast`,
-            composition: `Visual subject placed on left 50%, right 50% open for text hierarchy.`,
+            composition: spatialB.cameraDirective,
             lighting: "Clean high-key studio light with soft fill.",
             color_palette: ["#D97757", "#FAF9F5", "#141413"],
-            image_prompt: `High-concept studio photography, vertical 4:5 shot of ${topic}, subject anchored to the left 50% on clean seamless backdrop, right 50% empty for text, 8k resolution`,
+            image_prompt: `High-concept studio photography, vertical 4:5 shot of ${topic}, ${spatialB.cameraDirective}, photorealistic 8k`,
             caption_instagram: `Redefining what is possible. Meet the next evolution of ${topic}. 🚀 #${hashtagTopic} #Innovation`,
             caption_linkedin: `Transforming perspective through world-class execution. Explore ${brand.name}'s latest strategic release for ${topic}.`,
             design_blueprint: {
@@ -131,10 +181,15 @@ Brand Voice Tone: ${brand.voice.tone}`;
               category_pill: "STRATEGY & INSIGHTS",
               brand_tagline: "Precision execution . proven results.",
               value_props: ["Step forward.", "Build faster.", "Lead the category."],
-              cta_text: "Read Full Case Study ➔",
+              cta_text: "Read Case Study ➔",
               social_handle: `@${brand.name.toLowerCase().replace(/\s+/g, "")}`,
               brand_name: brand.name,
-              negative_space_directive: DEFAULT_ARCHETYPE_CONFIGS[archB].negativeSpaceDirective,
+              font_family_hook: pairingB.hookFont,
+              font_family_body: pairingB.bodyFont,
+              highlighted_keywords: [topic.split(" ")[0] || "Power"],
+              font_scale: "regular",
+              scrim_intensity: "heavy",
+              negative_space_directive: spatialB.cameraDirective,
             },
           },
         };
@@ -142,3 +197,4 @@ Brand Voice Tone: ${brand.voice.tone}`;
     }
   }
 }
+

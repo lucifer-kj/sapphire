@@ -24,10 +24,26 @@ async function downloadFonts() {
       name: "Inter-Regular.ttf",
       url: "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf",
     },
+    {
+      name: "PlayfairDisplay-Bold.ttf",
+      url: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-700-normal.ttf",
+    },
+    {
+      name: "PlayfairDisplay-Italic.ttf",
+      url: "https://cdn.jsdelivr.net/fontsource/fonts/playfair-display@latest/latin-700-italic.ttf",
+    },
+    {
+      name: "Outfit-Bold.ttf",
+      url: "https://cdn.jsdelivr.net/fontsource/fonts/outfit@latest/latin-700-normal.ttf",
+    },
   ];
 
   for (const font of fontFiles) {
     const filePath = path.join(fontsDir, font.name);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).size > 1000) {
+      console.log(`⚡ ${font.name} already exists.`);
+      continue;
+    }
     console.log(`Downloading ${font.name}...`);
     const res = await fetch(font.url);
     if (res.ok) {

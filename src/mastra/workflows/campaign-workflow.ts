@@ -175,9 +175,12 @@ export class CampaignWorkflow {
       model: imgResultA.model,
       status: imgResultA.status,
       durationMs: imgResultA.durationMs,
-      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms [Archetype: ${brief.concept_a.design_blueprint?.archetype || "editorial"}].`,
+      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms [Archetype: ${brief.concept_a.design_blueprint?.archetype || "editorial"} | Font: ${brief.concept_a.design_blueprint?.font_family_hook || "Playfair"}].`,
       details: {
         archetype: brief.concept_a.design_blueprint?.archetype,
+        fontHook: brief.concept_a.design_blueprint?.font_family_hook,
+        fontBody: brief.concept_a.design_blueprint?.font_family_body,
+        keywords: brief.concept_a.design_blueprint?.highlighted_keywords,
         layers: promptEngineeredA.layers,
         blendedPrompt: promptEngineeredA.optimized_image_prompt,
         negativePrompt: promptEngineeredA.negative_prompt,
@@ -200,9 +203,12 @@ export class CampaignWorkflow {
       model: imgResultB.model,
       status: imgResultB.status,
       durationMs: imgResultB.durationMs,
-      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms [Archetype: ${brief.concept_b.design_blueprint?.archetype || "editorial"}].`,
+      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms [Archetype: ${brief.concept_b.design_blueprint?.archetype || "editorial"} | Font: ${brief.concept_b.design_blueprint?.font_family_hook || "Plus Jakarta"}].`,
       details: {
         archetype: brief.concept_b.design_blueprint?.archetype,
+        fontHook: brief.concept_b.design_blueprint?.font_family_hook,
+        fontBody: brief.concept_b.design_blueprint?.font_family_body,
+        keywords: brief.concept_b.design_blueprint?.highlighted_keywords,
         layers: promptEngineeredB.layers,
         blendedPrompt: promptEngineeredB.optimized_image_prompt,
         negativePrompt: promptEngineeredB.negative_prompt,
@@ -246,7 +252,7 @@ export class CampaignWorkflow {
             image_prompt: promptEngineeredA.optimized_image_prompt,
             caption_instagram: brief.concept_a.caption_instagram,
             caption_linkedin: brief.concept_a.caption_linkedin,
-            visual_brief_summary: `${brief.concept_a.visual_style} | Alignment Score: ${critiqueA.brand_alignment_score}/100`,
+            visual_brief_summary: `${brief.concept_a.visual_style} [${brief.concept_a.design_blueprint?.archetype} / ${brief.concept_a.design_blueprint?.font_family_hook}] | Alignment Score: ${critiqueA.brand_alignment_score}/100`,
             status: "critiqued",
           })
           .select()
@@ -275,7 +281,7 @@ export class CampaignWorkflow {
             image_prompt: promptEngineeredB.optimized_image_prompt,
             caption_instagram: brief.concept_b.caption_instagram,
             caption_linkedin: brief.concept_b.caption_linkedin,
-            visual_brief_summary: `${brief.concept_b.visual_style} | Alignment Score: ${critiqueB.brand_alignment_score}/100`,
+            visual_brief_summary: `${brief.concept_b.visual_style} [${brief.concept_b.design_blueprint?.archetype} / ${brief.concept_b.design_blueprint?.font_family_hook}] | Alignment Score: ${critiqueB.brand_alignment_score}/100`,
             status: "critiqued",
           })
           .select()

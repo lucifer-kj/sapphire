@@ -12,14 +12,23 @@ export type DesignArchetype = z.infer<typeof DesignArchetypeEnum>;
 
 export const DesignBlueprintSchema = z.object({
   archetype: DesignArchetypeEnum,
-  headline: z.string(),
-  subheadline: z.string(),
-  category_pill: z.string().optional(),
-  brand_tagline: z.string().optional(),
-  value_props: z.array(z.string()).optional(),
-  cta_text: z.string().default("Learn More ➔"),
-  social_handle: z.string().default("@sapphire"),
-  brand_name: z.string().default("Sapphire"),
+  headline: z.string().max(60, "Headline should be concise (max 60 chars)"),
+  subheadline: z.string().max(180, "Subheadline should be concise (max 180 chars)"),
+  category_pill: z.string().max(30).optional(),
+  brand_tagline: z.string().max(60).optional(),
+  value_props: z.array(z.string().max(50)).optional(),
+  cta_text: z.string().max(30).default("Learn More ➔"),
+  social_handle: z.string().max(30).default("@sapphire"),
+  brand_name: z.string().max(40).default("Sapphire"),
+  font_family_hook: z
+    .enum(["Plus Jakarta Sans", "Inter", "Playfair Display", "Outfit"])
+    .default("Plus Jakarta Sans"),
+  font_family_body: z
+    .enum(["Plus Jakarta Sans", "Inter", "Outfit"])
+    .default("Plus Jakarta Sans"),
+  highlighted_keywords: z.array(z.string()).default([]),
+  font_scale: z.enum(["compact", "regular", "large"]).default("regular"),
+  scrim_intensity: z.enum(["subtle", "medium", "heavy"]).default("medium"),
   color_tokens: z
     .object({
       primary_text: z.string().default("#FAF7F2"),
@@ -42,53 +51,151 @@ export const DesignBlueprintSchema = z.object({
 
 export type DesignBlueprint = z.infer<typeof DesignBlueprintSchema>;
 
+export const DESIGN_KNOWLEDGE_GRAPH = {
+  typography_pairings: {
+    editorial_magazine: {
+      hookFont: "Playfair Display" as const,
+      bodyFont: "Plus Jakarta Sans" as const,
+      style: "High-contrast Luxury Editorial Serif + Clean Sans",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-1.5px",
+      lineHeight: 1.12,
+    },
+    conceptual_split: {
+      hookFont: "Plus Jakarta Sans" as const,
+      bodyFont: "Inter" as const,
+      style: "Modern Grotesk Sans + Two-Tone Keyword Highlight",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-2px",
+      lineHeight: 1.15,
+    },
+    comparison_split: {
+      hookFont: "Inter" as const,
+      bodyFont: "Inter" as const,
+      style: "High-Readability Dual Column Sans",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-1px",
+      lineHeight: 1.2,
+    },
+    vintage_poster: {
+      hookFont: "Outfit" as const,
+      bodyFont: "Plus Jakarta Sans" as const,
+      style: "Warm Organic Display + Balanced Sans",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "2px",
+      lineHeight: 1.1,
+    },
+    saas_dotgrid: {
+      hookFont: "Plus Jakarta Sans" as const,
+      bodyFont: "Inter" as const,
+      style: "Sharp B2B Tech Grotesk + Micro-Chrome",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-1.5px",
+      lineHeight: 1.15,
+    },
+  },
+  spatial_budgeting: {
+    editorial_magazine: {
+      voidRegion: "Upper 40% (y: 0% to 40%)",
+      subjectPlacement: "Lower-center third (y: 50% to 100%)",
+      cameraDirective:
+        "Shot on 80mm f/2.2 lens, shallow depth of field, warm ambient bokeh in upper 40%, clean void for headline overlay",
+    },
+    conceptual_split: {
+      voidRegion: "Right 50% (x: 50% to 100%)",
+      subjectPlacement: "Left 50% (x: 0% to 50%)",
+      cameraDirective:
+        "High-key studio shot, subject isolated on left 45%, clean seamless off-white cyclorama backdrop on right 55%",
+    },
+    comparison_split: {
+      voidRegion: "Top 25% and bottom 20% safe zones",
+      subjectPlacement: "Dual contrasting subjects split across vertical center line",
+      cameraDirective:
+        "Commercial studio composition, 50/50 vertical division with neutral seamless background",
+    },
+    vintage_poster: {
+      voidRegion: "150px outer margin borders on all 4 sides",
+      subjectPlacement: "Centered hero product/subject",
+      cameraDirective:
+        "Top-down clean studio flat-lay or 45-degree angle on warm cream background with generous clean margins",
+    },
+    saas_dotgrid: {
+      voidRegion: "Top-left quadrant (x: 0% to 65%, y: 0% to 50%)",
+      subjectPlacement: "Bottom-right quadrant (x: 45% to 100%, y: 40% to 100%)",
+      cameraDirective:
+        "Isometric 3D product showcase angled in lower-right, clean deep slate-navy void in upper-left",
+    },
+  },
+  color_science: {
+    distribution: "60% background photo / 30% neutral typography canvas / 10% high-chroma brand accent",
+    scrim_multi_stop: {
+      subtle:
+        "linear-gradient(to bottom, rgba(20,20,19,0.55) 0%, rgba(20,20,19,0.2) 30%, rgba(0,0,0,0) 55%, rgba(20,20,19,0.7) 100%)",
+      medium:
+        "linear-gradient(to bottom, rgba(20,10,5,0.75) 0%, rgba(20,10,5,0.3) 30%, rgba(0,0,0,0) 50%, rgba(20,10,5,0.4) 75%, rgba(20,10,5,0.9) 100%)",
+      heavy:
+        "linear-gradient(to bottom, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.55) 35%, rgba(0,0,0,0.1) 60%, rgba(15,23,42,0.95) 100%)",
+    },
+  },
+} as const;
+
 export const DEFAULT_ARCHETYPE_CONFIGS: Record<
   DesignArchetype,
   {
     name: string;
     negativeSpaceDirective: string;
-    suggestedFont: string;
+    suggestedFont: "Plus Jakarta Sans" | "Inter" | "Playfair Display" | "Outfit";
+    suggestedBodyFont: "Plus Jakarta Sans" | "Inter" | "Outfit";
     scrimGradient: string;
   }
 > = {
   editorial_magazine: {
     name: "Editorial Magazine Cover",
     negativeSpaceDirective:
-      "Subject positioned in the lower-center third, leaving the upper 40% clean and uncluttered with ambient background bokeh for typography.",
-    suggestedFont: "Plus Jakarta Sans",
-    scrimGradient:
-      "linear-gradient(to bottom, rgba(20,10,5,0.7) 0%, rgba(20,10,5,0.15) 25%, rgba(0,0,0,0) 45%, rgba(0,0,0,0) 65%, rgba(20,10,5,0.8) 100%)",
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.editorial_magazine.cameraDirective,
+    suggestedFont: "Playfair Display",
+    suggestedBodyFont: "Plus Jakarta Sans",
+    scrimGradient: DESIGN_KNOWLEDGE_GRAPH.color_science.scrim_multi_stop.medium,
   },
   conceptual_split: {
     name: "Conceptual Asymmetric Split",
     negativeSpaceDirective:
-      "Visual subject positioned strictly on the left 50% on a clean seamless light backdrop, leaving the right 50% completely empty for typography.",
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.conceptual_split.cameraDirective,
     suggestedFont: "Plus Jakarta Sans",
+    suggestedBodyFont: "Inter",
     scrimGradient:
-      "linear-gradient(to right, rgba(0,0,0,0) 40%, rgba(20,20,19,0.7) 70%, rgba(20,20,19,0.95) 100%)",
+      "linear-gradient(to right, rgba(20,20,19,0.15) 0%, rgba(20,20,19,0.75) 45%, rgba(20,20,19,0.96) 100%)",
   },
   comparison_split: {
     name: "Side-by-Side Comparison",
     negativeSpaceDirective:
-      "Split composition with two contrasting subjects on the left and right halves against clean seamless backgrounds.",
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.comparison_split.cameraDirective,
     suggestedFont: "Inter",
+    suggestedBodyFont: "Inter",
     scrimGradient:
-      "linear-gradient(to bottom, rgba(20,20,19,0.6) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(20,20,19,0.85) 100%)",
+      "linear-gradient(to bottom, rgba(250,249,245,0.95) 0%, rgba(250,249,245,0.45) 25%, rgba(0,0,0,0) 50%, rgba(20,20,19,0.88) 100%)",
   },
   vintage_poster: {
     name: "Neo-Vintage Poster",
     negativeSpaceDirective:
-      "Clean studio shot centered on warm cream seamless background with generous 150px clean margins on all sides.",
-    suggestedFont: "Plus Jakarta Sans",
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.vintage_poster.cameraDirective,
+    suggestedFont: "Outfit",
+    suggestedBodyFont: "Plus Jakarta Sans",
     scrimGradient:
-      "linear-gradient(to bottom, rgba(30,15,10,0.4) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 75%, rgba(30,15,10,0.6) 100%)",
+      "linear-gradient(to bottom, rgba(250,247,238,0.94) 0%, rgba(250,247,238,0.35) 25%, rgba(0,0,0,0) 50%, rgba(250,247,238,0.88) 100%)",
   },
   saas_dotgrid: {
     name: "Modern SaaS Dot-Grid",
     negativeSpaceDirective:
-      "Product UI cards angled in the bottom-right quadrant with clean open space in the top-left quadrant for headline and subtext.",
-    suggestedFont: "Inter",
-    scrimGradient:
-      "linear-gradient(to bottom, rgba(15,23,42,0.6) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(15,23,42,0.85) 100%)",
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.saas_dotgrid.cameraDirective,
+    suggestedFont: "Plus Jakarta Sans",
+    suggestedBodyFont: "Inter",
+    scrimGradient: DESIGN_KNOWLEDGE_GRAPH.color_science.scrim_multi_stop.heavy,
   },
 };
+

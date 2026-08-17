@@ -62,6 +62,15 @@ export const DEFAULT_BRAND_SEED: Omit<BrandProfile, "id" | "created_at" | "updat
       source: "explicit_feedback",
     },
     color_preferences: [],
+    archetype_affinity: {
+      editorial_magazine: 0.85,
+      conceptual_split: 0.6,
+      comparison_split: 0.4,
+      vintage_poster: 0.7,
+      saas_dotgrid: 0.3,
+    },
+    typography_density_preference: "minimalist_punchy",
+    visual_temperature_preference: "warm_golden",
   },
 };
 

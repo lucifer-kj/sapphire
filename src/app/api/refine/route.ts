@@ -33,12 +33,20 @@ export async function POST(req: NextRequest) {
       brand
     );
 
-    // 3. Generate updated AI artwork via Nano Banana / Pollinations
+    const refinedBlueprint =
+      refinement.updated_design_blueprint || currentConcept.design_blueprint;
+
+    // 3. Generate updated AI artwork with Canva-grade Satori compositing
     const seed = Math.floor(Math.random() * 1000000);
-    const newImageUrl = await ImageGenerationService.generateImageUrl(
+    const imageResult = await ImageGenerationService.generateImageUrlWithMeta(
       refinement.updated_image_prompt,
-      seed
+      seed,
+      undefined,
+      undefined,
+      undefined,
+      refinedBlueprint
     );
+    const newImageUrl = imageResult.url;
 
     const newVersionNumber = Number(currentVersionNumber) + 1;
 
@@ -87,6 +95,7 @@ export async function POST(req: NextRequest) {
         image_url: newImageUrl,
         caption_instagram: refinement.updated_caption_instagram,
         caption_linkedin: refinement.updated_caption_linkedin,
+        design_blueprint: refinedBlueprint,
       },
     });
   } catch (error: any) {

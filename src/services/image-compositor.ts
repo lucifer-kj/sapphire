@@ -2,30 +2,200 @@ import fs from "fs";
 import path from "path";
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
-import { DesignBlueprint, DesignArchetype } from "@/lib/design-system/archetypes";
+import {
+  DesignBlueprint,
+  DesignArchetype,
+  DESIGN_KNOWLEDGE_GRAPH,
+} from "@/lib/design-system/archetypes";
 
-let cachedBoldFont: Buffer | null = null;
-let cachedRegularFont: Buffer | null = null;
+interface FontEntry {
+  name: string;
+  data: Buffer;
+  weight: 400 | 700;
+  style: "normal" | "italic";
+}
 
-function loadFonts(): { bold: Buffer; regular: Buffer } {
-  if (cachedBoldFont && cachedRegularFont) {
-    return { bold: cachedBoldFont, regular: cachedRegularFont };
+let cachedFontRegistry: FontEntry[] | null = null;
+
+function loadFontRegistry(): FontEntry[] {
+  if (cachedFontRegistry && cachedFontRegistry.length > 0) {
+    return cachedFontRegistry;
   }
 
   const fontsDir = path.resolve(process.cwd(), "src", "assets", "fonts");
-  const boldPath = path.join(fontsDir, "PlusJakartaSans-Bold.ttf");
-  const regPath = path.join(fontsDir, "PlusJakartaSans-Regular.ttf");
+  const fontDefinitions: Array<{
+    fileName: string;
+    name: string;
+    weight: 400 | 700;
+    style: "normal" | "italic";
+  }> = [
+    {
+      fileName: "PlusJakartaSans-Regular.ttf",
+      name: "Plus Jakarta Sans",
+      weight: 400,
+      style: "normal",
+    },
+    {
+      fileName: "PlusJakartaSans-Bold.ttf",
+      name: "Plus Jakarta Sans",
+      weight: 700,
+      style: "normal",
+    },
+    {
+      fileName: "Inter-Regular.ttf",
+      name: "Inter",
+      weight: 400,
+      style: "normal",
+    },
+    {
+      fileName: "Inter-Bold.ttf",
+      name: "Inter",
+      weight: 700,
+      style: "normal",
+    },
+    {
+      fileName: "PlayfairDisplay-Bold.ttf",
+      name: "Playfair Display",
+      weight: 700,
+      style: "normal",
+    },
+    {
+      fileName: "PlayfairDisplay-Italic.ttf",
+      name: "Playfair Display",
+      weight: 700,
+      style: "italic",
+    },
+    {
+      fileName: "Outfit-Bold.ttf",
+      name: "Outfit",
+      weight: 700,
+      style: "normal",
+    },
+  ];
 
-  if (fs.existsSync(boldPath) && fs.existsSync(regPath)) {
-    cachedBoldFont = fs.readFileSync(boldPath);
-    cachedRegularFont = fs.readFileSync(regPath);
-  } else {
-    // Fallback: create empty buffers to prevent fatal crash
-    cachedBoldFont = Buffer.alloc(0);
-    cachedRegularFont = Buffer.alloc(0);
+  const loaded: FontEntry[] = [];
+
+  for (const def of fontDefinitions) {
+    const fullPath = path.join(fontsDir, def.fileName);
+    if (fs.existsSync(fullPath)) {
+      const buffer = fs.readFileSync(fullPath);
+      if (buffer.length > 500) {
+        loaded.push({
+          name: def.name,
+          data: buffer,
+          weight: def.weight,
+          style: def.style,
+        });
+      }
+    }
   }
 
-  return { bold: cachedBoldFont, regular: cachedRegularFont };
+  cachedFontRegistry = loaded;
+  return cachedFontRegistry;
+}
+
+/**
+ * Calculates adaptive font size & line height for Satori to prevent canvas clipping/overflow.
+ * Tests against long words, ALL CAPS strings, non-English text, and emojis.
+ */
+function calculateHeadlineSize(
+  headline: string,
+  scale: "compact" | "regular" | "large" = "regular",
+  baseMaxPx = 60,
+  minPx = 34
+): { fontSize: string; lineHeight: string } {
+  const text = (headline || "").trim();
+  const len = text.length;
+  const words = text.split(/\s+/);
+  const maxWordLen = Math.max(...words.map((w) => w.length), 0);
+
+  let targetPx = baseMaxPx;
+  if (scale === "compact") targetPx = Math.round(baseMaxPx * 0.85);
+  if (scale === "large") targetPx = Math.round(baseMaxPx * 1.15);
+
+  const isAllCaps = text.length > 0 && text === text.toUpperCase() && /[A-Z]/.test(text);
+  const effectiveLen = isAllCaps ? len * 1.25 : len;
+
+  if (effectiveLen > 45 || maxWordLen > 12) {
+    targetPx = Math.max(minPx, Math.round(targetPx * 0.65));
+  } else if (effectiveLen > 30 || maxWordLen > 9) {
+    targetPx = Math.max(minPx, Math.round(targetPx * 0.8));
+  } else if (effectiveLen > 20) {
+    targetPx = Math.max(minPx, Math.round(targetPx * 0.9));
+  }
+
+  return {
+    fontSize: `${targetPx}px`,
+    lineHeight: targetPx > 48 ? "1.1" : "1.2",
+  };
+}
+
+/**
+ * Renders headline elements with highlighted keywords wrapped in accent coloring.
+ */
+function renderHeadlineElements(
+  headline: string,
+  highlightedKeywords: string[] = [],
+  accentColor: string,
+  defaultColor: string,
+  hookFont: string,
+  fontSize: string,
+  lineHeight: string
+) {
+  if (!highlightedKeywords || highlightedKeywords.length === 0) {
+    return {
+      type: "span",
+      props: {
+        style: {
+          fontFamily: hookFont,
+          fontSize,
+          lineHeight,
+          fontWeight: 700,
+          color: defaultColor,
+          letterSpacing: "-1px",
+          display: "flex",
+          flexWrap: "wrap",
+        },
+        children: headline,
+      },
+    };
+  }
+
+  const cleanKeywords = highlightedKeywords.map((k) => k.trim().toLowerCase());
+  const words = headline.split(" ");
+
+  const children = words.map((word) => {
+    const cleanWord = word.replace(/[^\w]/g, "").toLowerCase();
+    const isHighlighted = cleanKeywords.includes(cleanWord);
+
+    return {
+      type: "span",
+      props: {
+        style: {
+          color: isHighlighted ? accentColor : defaultColor,
+          marginRight: "10px",
+          fontWeight: 700,
+        },
+        children: word,
+      },
+    };
+  });
+
+  return {
+    type: "div",
+    props: {
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        fontFamily: hookFont,
+        fontSize,
+        lineHeight,
+        fontWeight: 700,
+        letterSpacing: "-1px",
+      },
+      children,
+    },
+  };
 }
 
 export class ImageCompositor {
@@ -38,9 +208,9 @@ export class ImageCompositor {
     bgImageDataUrl: string,
     blueprint: DesignBlueprint
   ): Promise<string> {
-    const { bold, regular } = loadFonts();
+    const fontRegistry = loadFontRegistry();
 
-    if (!bold.length || !regular.length) {
+    if (fontRegistry.length === 0) {
       console.warn("Fonts missing in src/assets/fonts/, returning raw background.");
       return bgImageDataUrl;
     }
@@ -51,10 +221,12 @@ export class ImageCompositor {
       const svg = await satori(templateElement as any, {
         width: 1080,
         height: 1350,
-        fonts: [
-          { name: "Plus Jakarta Sans", data: regular, weight: 400, style: "normal" },
-          { name: "Plus Jakarta Sans", data: bold, weight: 700, style: "normal" },
-        ],
+        fonts: fontRegistry.map((f) => ({
+          name: f.name,
+          data: f.data,
+          weight: f.weight,
+          style: f.style,
+        })),
       });
 
       const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1080 } });
@@ -89,10 +261,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 1: Editorial Magazine (e.g. Tasty Morning Joy)
+  // Archetype 1: Editorial Magazine (Luxury, Hospitality, Food, Boutique Travel)
   // -------------------------------------------------------------
   private static buildEditorialTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Playfair Display";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 56, 34);
 
     return {
       type: "div",
@@ -106,7 +281,7 @@ export class ImageCompositor {
           padding: "65px 70px 50px 70px",
           backgroundColor: "#141413",
           color: "#FAF7F2",
-          fontFamily: "Plus Jakarta Sans",
+          fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
         },
@@ -127,7 +302,7 @@ export class ImageCompositor {
               },
             },
           },
-          // 2. Editorial Scrim
+          // 2. Multi-Stop Logarithmic Scrim
           {
             type: "div",
             props: {
@@ -138,7 +313,7 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(20,10,5,0.7) 0%, rgba(20,10,5,0.15) 25%, rgba(0,0,0,0) 45%, rgba(0,0,0,0) 65%, rgba(20,10,5,0.8) 100%)",
+                  "linear-gradient(to bottom, rgba(20,10,5,0.78) 0%, rgba(20,10,5,0.3) 25%, rgba(0,0,0,0) 45%, rgba(20,10,5,0.5) 70%, rgba(20,10,5,0.92) 100%)",
               },
             },
           },
@@ -166,11 +341,12 @@ export class ImageCompositor {
                         type: "span",
                         props: {
                           style: {
-                            fontSize: "46px",
+                            fontFamily: hookFont,
+                            fontSize: "44px",
                             fontWeight: 700,
-                            letterSpacing: "-1.5px",
+                            letterSpacing: "-1px",
                             color: "#FAF7F2",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                            textShadow: "0 2px 10px rgba(0,0,0,0.6)",
                           },
                           children: bp.brand_name,
                         },
@@ -193,10 +369,11 @@ export class ImageCompositor {
                             type: "span",
                             props: {
                               style: {
-                                fontSize: "24px",
+                                fontFamily: bodyFont,
+                                fontSize: "22px",
                                 fontWeight: 700,
                                 color: "#FAF7F2",
-                                textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
                               },
                               children: bp.brand_tagline,
                             },
@@ -225,16 +402,17 @@ export class ImageCompositor {
                       props: {
                         style: {
                           display: "flex",
-                          backgroundColor: "rgba(255, 255, 255, 0.18)",
-                          border: "1px solid rgba(255, 255, 255, 0.4)",
+                          backgroundColor: "rgba(255, 255, 255, 0.22)",
+                          border: "1px solid rgba(255, 255, 255, 0.45)",
                           borderRadius: "9999px",
                           padding: "10px 28px",
                           color: "#FFFFFF",
-                          fontSize: "20px",
+                          fontFamily: bodyFont,
+                          fontSize: "18px",
                           fontWeight: 700,
                           letterSpacing: "3px",
                           textTransform: "uppercase",
-                          textShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                          textShadow: "0 2px 8px rgba(0,0,0,0.5)",
                         },
                         children: `✦ ${bp.category_pill} ✦`,
                       },
@@ -271,25 +449,30 @@ export class ImageCompositor {
                           style: {
                             display: "flex",
                             flexDirection: "column",
-                            fontSize: "28px",
+                            fontSize: "26px",
                             fontWeight: 700,
                             lineHeight: "1.35",
                             color: "#FAF7F2",
-                            maxWidth: "460px",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.6)",
+                            maxWidth: "480px",
+                            textShadow: "0 2px 10px rgba(0,0,0,0.7)",
                           },
                           children: [
-                            {
-                              type: "span",
-                              props: {
-                                style: { fontSize: "36px", color: accentColor, marginBottom: "4px" },
-                                children: bp.headline,
-                              },
-                            },
+                            renderHeadlineElements(
+                              bp.headline,
+                              bp.highlighted_keywords,
+                              accentColor,
+                              accentColor,
+                              hookFont,
+                              fontSize,
+                              lineHeight
+                            ),
                             ...(bp.value_props && bp.value_props.length
                               ? bp.value_props.slice(0, 3).map((vp) => ({
                                   type: "span",
-                                  props: { children: vp },
+                                  props: {
+                                    style: { fontFamily: bodyFont, marginTop: "6px" },
+                                    children: `• ${vp}`,
+                                  },
                                 }))
                               : []),
                           ],
@@ -302,15 +485,23 @@ export class ImageCompositor {
                           style: {
                             display: "flex",
                             flexDirection: "column",
-                            fontSize: "24px",
+                            fontSize: "22px",
                             fontWeight: 600,
                             lineHeight: "1.35",
                             color: "#FAF7F2",
-                            maxWidth: "440px",
+                            maxWidth: "420px",
                             textAlign: "right",
-                            textShadow: "0 2px 10px rgba(0,0,0,0.6)",
+                            textShadow: "0 2px 10px rgba(0,0,0,0.7)",
                           },
-                          children: [{ type: "span", props: { children: bp.subheadline } }],
+                          children: [
+                            {
+                              type: "span",
+                              props: {
+                                style: { fontFamily: bodyFont },
+                                children: bp.subheadline,
+                              },
+                            },
+                          ],
                         },
                       },
                     ],
@@ -324,7 +515,7 @@ export class ImageCompositor {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      borderTop: "1px solid rgba(255,255,255,0.3)",
+                      borderTop: "1px solid rgba(255,255,255,0.35)",
                       paddingTop: "18px",
                       color: "#FAF7F2",
                     },
@@ -333,10 +524,11 @@ export class ImageCompositor {
                         type: "span",
                         props: {
                           style: {
+                            fontFamily: bodyFont,
                             fontSize: "22px",
                             fontWeight: 700,
                             letterSpacing: "1px",
-                            textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                            textShadow: "0 2px 8px rgba(0,0,0,0.6)",
                           },
                           children: bp.social_handle,
                         },
@@ -350,10 +542,11 @@ export class ImageCompositor {
                             backgroundColor: accentColor,
                             padding: "10px 24px",
                             borderRadius: "8px",
-                            fontSize: "20px",
+                            fontFamily: bodyFont,
+                            fontSize: "18px",
                             fontWeight: 700,
                             color: "#FFFFFF",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
                           },
                           children: bp.cta_text,
                         },
@@ -370,10 +563,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 2: Conceptual Split (e.g. Building Brand Without Strategy)
+  // Archetype 2: Conceptual Split (B2B, Marketing, Strategy, Ideas)
   // -------------------------------------------------------------
   private static buildConceptualSplitTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 60, 36);
 
     return {
       type: "div",
@@ -387,7 +583,7 @@ export class ImageCompositor {
           padding: "70px 70px 50px 70px",
           backgroundColor: "#141413",
           color: "#FAF7F2",
-          fontFamily: "Plus Jakarta Sans",
+          fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
         },
@@ -417,7 +613,7 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to right, rgba(20,20,19,0.2) 0%, rgba(20,20,19,0.7) 45%, rgba(20,20,19,0.92) 100%)",
+                  "linear-gradient(to right, rgba(20,20,19,0.15) 0%, rgba(20,20,19,0.75) 45%, rgba(20,20,19,0.96) 100%)",
               },
             },
           },
@@ -472,25 +668,21 @@ export class ImageCompositor {
                 gap: "24px",
               },
               children: [
-                {
-                  type: "h1",
-                  props: {
-                    style: {
-                      fontSize: "64px",
-                      fontWeight: 700,
-                      lineHeight: "1.15",
-                      color: "#FFFFFF",
-                      maxWidth: "600px",
-                      margin: 0,
-                    },
-                    children: bp.headline,
-                  },
-                },
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FFFFFF",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
                 {
                   type: "p",
                   props: {
                     style: {
-                      fontSize: "28px",
+                      fontFamily: bodyFont,
+                      fontSize: "26px",
                       fontWeight: 500,
                       lineHeight: "1.4",
                       color: "#B0AEA5",
@@ -512,7 +704,7 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                borderTop: "1px solid rgba(255,255,255,0.2)",
+                borderTop: "1px solid rgba(255,255,255,0.25)",
                 paddingTop: "20px",
               },
               children: [
@@ -532,7 +724,7 @@ export class ImageCompositor {
                       backgroundColor: accentColor,
                       padding: "12px 28px",
                       borderRadius: "10px",
-                      fontSize: "22px",
+                      fontSize: "20px",
                       fontWeight: 700,
                       color: "#FFFFFF",
                     },
@@ -548,10 +740,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 3: Comparison Split (e.g. Without SEO vs With SEO)
+  // Archetype 3: Comparison Split (Before/After, Versus, Growth)
   // -------------------------------------------------------------
   private static buildComparisonSplitTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Inter";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 54, 32);
 
     return {
       type: "div",
@@ -565,7 +760,7 @@ export class ImageCompositor {
           padding: "60px 60px 40px 60px",
           backgroundColor: "#FAF9F5",
           color: "#141413",
-          fontFamily: "Plus Jakarta Sans",
+          fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
         },
@@ -595,7 +790,7 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(250,249,245,0.92) 0%, rgba(250,249,245,0.4) 25%, rgba(0,0,0,0) 50%, rgba(20,20,19,0.85) 100%)",
+                  "linear-gradient(to bottom, rgba(250,249,245,0.95) 0%, rgba(250,249,245,0.45) 25%, rgba(0,0,0,0) 50%, rgba(20,20,19,0.88) 100%)",
               },
             },
           },
@@ -613,14 +808,19 @@ export class ImageCompositor {
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "32px", fontWeight: 700, color: "#141413" },
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "32px",
+                      fontWeight: 700,
+                      color: "#141413",
+                    },
                     children: bp.brand_name,
                   },
                 },
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "22px", fontWeight: 600, color: "#787670" },
+                    style: { fontSize: "20px", fontWeight: 600, color: "#787670" },
                     children: bp.social_handle,
                   },
                 },
@@ -640,26 +840,24 @@ export class ImageCompositor {
                 gap: "12px",
               },
               children: [
-                {
-                  type: "h1",
-                  props: {
-                    style: {
-                      fontSize: "56px",
-                      fontWeight: 700,
-                      color: "#141413",
-                      margin: 0,
-                    },
-                    children: bp.headline,
-                  },
-                },
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#141413",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
                 {
                   type: "p",
                   props: {
                     style: {
-                      fontSize: "26px",
+                      fontFamily: bodyFont,
+                      fontSize: "24px",
                       fontWeight: 500,
                       color: "#4B4944",
-                      maxWidth: "700px",
+                      maxWidth: "720px",
                       margin: 0,
                     },
                     children: bp.subheadline,
@@ -683,7 +881,7 @@ export class ImageCompositor {
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "24px", fontWeight: 700 },
+                    style: { fontSize: "22px", fontWeight: 700 },
                     children: bp.brand_tagline || bp.headline,
                   },
                 },
@@ -696,7 +894,7 @@ export class ImageCompositor {
                       backgroundColor: accentColor,
                       padding: "10px 24px",
                       borderRadius: "8px",
-                      fontSize: "20px",
+                      fontSize: "18px",
                       fontWeight: 700,
                       color: "#FFFFFF",
                     },
@@ -712,10 +910,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 4: Vintage Poster (e.g. Fresh Daily Healthy Choice)
+  // Archetype 4: Vintage Poster (DTC, Organic, Wellness, Heritage)
   // -------------------------------------------------------------
   private static buildVintagePosterTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Outfit";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 62, 34);
 
     return {
       type: "div",
@@ -729,7 +930,7 @@ export class ImageCompositor {
           padding: "60px 65px 45px 65px",
           backgroundColor: "#FAF7EE",
           color: "#1E4D2B",
-          fontFamily: "Plus Jakarta Sans",
+          fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
         },
@@ -759,7 +960,7 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(250,247,238,0.92) 0%, rgba(250,247,238,0.3) 25%, rgba(0,0,0,0) 50%, rgba(250,247,238,0.85) 100%)",
+                  "linear-gradient(to bottom, rgba(250,247,238,0.94) 0%, rgba(250,247,238,0.35) 25%, rgba(0,0,0,0) 50%, rgba(250,247,238,0.88) 100%)",
               },
             },
           },
@@ -776,26 +977,22 @@ export class ImageCompositor {
                 gap: "8px",
               },
               children: [
-                {
-                  type: "h1",
-                  props: {
-                    style: {
-                      fontSize: "68px",
-                      fontWeight: 700,
-                      letterSpacing: "4px",
-                      textTransform: "uppercase",
-                      color: "#1E4D2B",
-                      margin: 0,
-                    },
-                    children: bp.headline,
-                  },
-                },
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#1E4D2B",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
                 bp.category_pill
                   ? {
                       type: "span",
                       props: {
                         style: {
-                          fontSize: "30px",
+                          fontFamily: hookFont,
+                          fontSize: "26px",
                           fontWeight: 600,
                           letterSpacing: "2px",
                           color: accentColor,
@@ -823,7 +1020,12 @@ export class ImageCompositor {
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "20px", fontWeight: 700, letterSpacing: "2px" },
+                    style: {
+                      fontFamily: bodyFont,
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      letterSpacing: "1px",
+                    },
                     children: bp.subheadline,
                   },
                 },
@@ -831,7 +1033,8 @@ export class ImageCompositor {
                   type: "span",
                   props: {
                     style: {
-                      fontSize: "20px",
+                      fontFamily: hookFont,
+                      fontSize: "18px",
                       fontWeight: 700,
                       border: "2px solid #1E4D2B",
                       borderRadius: "9999px",
@@ -849,10 +1052,13 @@ export class ImageCompositor {
   }
 
   // -------------------------------------------------------------
-  // Archetype 5: SaaS Dot-Grid (e.g. LinkedIn Sales Tools)
+  // Archetype 5: SaaS Dot-Grid (Dev tools, AI Apps, Productivity)
   // -------------------------------------------------------------
   private static buildSaaSTemplate(bgUrl: string, bp: DesignBlueprint) {
     const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 60, 36);
 
     return {
       type: "div",
@@ -866,7 +1072,7 @@ export class ImageCompositor {
           padding: "70px 70px 50px 70px",
           backgroundColor: "#0F172A",
           color: "#F8FAFC",
-          fontFamily: "Plus Jakarta Sans",
+          fontFamily: bodyFont,
           position: "relative",
           overflow: "hidden",
         },
@@ -896,7 +1102,7 @@ export class ImageCompositor {
                 width: "1080px",
                 height: "1350px",
                 background:
-                  "linear-gradient(to bottom, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.4) 30%, rgba(0,0,0,0) 60%, rgba(15,23,42,0.92) 100%)",
+                  "linear-gradient(to bottom, rgba(15,23,42,0.94) 0%, rgba(15,23,42,0.45) 30%, rgba(0,0,0,0) 60%, rgba(15,23,42,0.94) 100%)",
               },
             },
           },
@@ -914,7 +1120,12 @@ export class ImageCompositor {
                 {
                   type: "span",
                   props: {
-                    style: { fontSize: "28px", fontWeight: 700, letterSpacing: "2px" },
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "26px",
+                      fontWeight: 700,
+                      letterSpacing: "2px",
+                    },
                     children: bp.brand_name.toUpperCase(),
                   },
                 },
@@ -925,11 +1136,11 @@ export class ImageCompositor {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      width: "48px",
-                      height: "48px",
+                      width: "44px",
+                      height: "44px",
                       borderRadius: "50%",
                       border: "2px solid #64748B",
-                      fontSize: "24px",
+                      fontSize: "20px",
                     },
                     children: "➔",
                   },
@@ -948,24 +1159,21 @@ export class ImageCompositor {
                 maxWidth: "720px",
               },
               children: [
-                {
-                  type: "h1",
-                  props: {
-                    style: {
-                      fontSize: "64px",
-                      fontWeight: 700,
-                      lineHeight: "1.15",
-                      color: "#F8FAFC",
-                      margin: 0,
-                    },
-                    children: bp.headline,
-                  },
-                },
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#F8FAFC",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
                 {
                   type: "p",
                   props: {
                     style: {
-                      fontSize: "26px",
+                      fontFamily: bodyFont,
+                      fontSize: "24px",
                       fontWeight: 500,
                       color: "#94A3B8",
                       lineHeight: "1.4",
@@ -996,11 +1204,11 @@ export class ImageCompositor {
                       props: {
                         style: {
                           display: "flex",
-                          backgroundColor: "rgba(255,255,255,0.1)",
+                          backgroundColor: "rgba(255,255,255,0.12)",
                           border: "1px solid rgba(255,255,255,0.3)",
                           padding: "8px 20px",
                           borderRadius: "9999px",
-                          fontSize: "18px",
+                          fontSize: "16px",
                           fontWeight: 700,
                         },
                         children: bp.category_pill,
@@ -1016,7 +1224,7 @@ export class ImageCompositor {
                       backgroundColor: accentColor,
                       padding: "10px 24px",
                       borderRadius: "8px",
-                      fontSize: "20px",
+                      fontSize: "18px",
                       fontWeight: 700,
                       color: "#FFFFFF",
                     },
@@ -1031,3 +1239,4 @@ export class ImageCompositor {
     };
   }
 }
+

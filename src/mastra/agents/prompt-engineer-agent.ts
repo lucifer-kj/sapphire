@@ -37,10 +37,11 @@ export class PromptEngineerAgent {
       : "No user reference image attached.";
 
     const systemPrompt = `You are Sapphire's Principal Prompt Engineer for Hybrid Multi-Layer AI Photography & Canva-Grade Compositing.
-Your task is to deconstruct the creative concept into 3 isolated aspect layers and then synthesize a master composite prompt for Cloudflare FLUX 1 Schnell.
+Your task is to deconstruct the creative concept into 3 isolated aspect layers and then synthesize a master composite prompt for Cloudflare FLUX 1 Schnell and Pollinations Flux.
 
-CRITICAL SPATIAL BUDGETING DIRECTIVE:
-"${spatialDirective}"
+CRITICAL 4-ZONE SPATIAL ART DIRECTION FORMULA:
+Every master prompt must follow: [Camera/Lens Specs] + [Subject Position & Action] + [Negative Space Void Zone] + [Lighting & Ambient Color Grading]
+Explicit Spatial Directive: "${spatialDirective}"
 The AI photography must leave dedicated clean/dark/open negative space so our Satori vector layout engine can overlay headlines, pills, and brand badges cleanly.
 
 BRAND VISUAL DNA:
@@ -53,16 +54,15 @@ ${refContext}
 
 LAYER DECOMPOSITION GUIDELINES:
 1. environment_background_layer:
-   - Specific architectural landmarks, textures, and ambient background details.
-   - Must explicitly describe the background lighting and atmosphere in the negative space zone.
+   - Architectural backdrop, textures, and clean background details strictly located in the negative space zone.
 2. subject_asset_layer:
-   - Primary subject/product/traveler with specific positioning matching the spatial directive.
+   - Primary subject/product/traveler with specific framing and anchor coordinates matching the spatial directive.
 3. atmospheric_grading_layer:
    - Precise lighting direction (e.g. golden hour side-light, soft studio key light), brand color harmony (${colorList}), and natural depth-of-field.
 4. blended_composite_prompt:
-   - Master prompt starting with "Studio commercial photography, vertical 4:5 portrait composition for social media," or "Editorial travel photography, vertical 4:5 portrait," integrating environment, subject placement, lighting, and negative space into an 8k photo.
+   - Master prompt starting with "Studio commercial photography, vertical 4:5 portrait composition for social media," or "Editorial lifestyle photography, vertical 4:5 portrait," integrating lens (e.g. 50mm f/1.8 or 80mm f/2.2), subject placement, ambient lighting, and strict negative space void into an 8k photo.
 5. negative_constraints:
-   - Guardrails: "text, typography, watermark, logo, blurry, oversaturated, generic stock photo, distorted hands, cartoon".`;
+   - Mandatory Guardrails: "busy background, center clutter, text, typography, watermark, logo, crowded frame, blurry, oversaturated, generic stock photo, distorted hands, cartoon".`;
 
     const promptText = `Campaign Event: ${intent.event}
 Concept Label: ${concept.label}
@@ -104,7 +104,7 @@ Spatial Requirement: ${spatialDirective}`;
           subject_asset_layer: `Central hero subject for ${topic} framed according to spatial rules.`,
           atmospheric_grading_layer: `Golden hour side-lighting with soft ambient shadows, harmonious warm color palette (${colorList}), and natural depth of field.`,
           blended_composite_prompt: `Editorial commercial photography, vertical 4:5 portrait composition for social media, ${topic}, ${style}, ${mood} atmosphere, warm golden hour side-lighting, harmonious palette of ${colorList}, ${spatialDirective}, shot on 35mm f/1.8 lens, natural depth of field, crisp micro-contrast, photorealistic 8k`,
-          negative_constraints: "text, typography, watermark, logo, blurry, oversaturated, generic stock photo, distorted hands, cartoon",
+          negative_constraints: "busy background, center clutter, text, typography, watermark, logo, crowded frame, blurry, oversaturated, generic stock photo, distorted hands, cartoon",
           technical_camera_specs: "Shot on 35mm f/1.8 lens, golden hour lighting, 4:5 aspect ratio, 8k",
         };
       }

@@ -40,6 +40,19 @@ export const LearnedPreferencesSchema = z.object({
   preferred_caption_styles: z.array(PreferenceItemSchema).default([]),
   logo_prominence: PreferenceItemSchema.optional(),
   color_preferences: z.array(PreferenceItemSchema).default([]),
+  archetype_affinity: z.record(z.string(), z.number()).default({
+    editorial_magazine: 0.5,
+    conceptual_split: 0.5,
+    comparison_split: 0.5,
+    vintage_poster: 0.5,
+    saas_dotgrid: 0.5,
+  }),
+  typography_density_preference: z
+    .enum(["minimalist_punchy", "detailed_value_props", "balanced"])
+    .default("balanced"),
+  visual_temperature_preference: z
+    .enum(["warm_golden", "neutral_studio", "cool_dark", "vibrant_contrast"])
+    .default("warm_golden"),
 });
 
 export const BrandProfileSchema = z.object({
