@@ -155,7 +155,7 @@ export class CampaignWorkflow {
       (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100, Visual Score: ${c.visual_score}/100.`
     );
 
-    // 8. Multi-Layer Image Generation & Multimodal Blending (Nano Banana 2 primary, Pollinations Flux fallback)
+    // 8. Hybrid Photography & Canva-Grade Compositing (Cloudflare FLUX 1 Schnell + Satori Resvg)
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
@@ -165,7 +165,8 @@ export class CampaignWorkflow {
       seedA,
       refStyle,
       promptEngineeredA.negative_prompt,
-      referenceImage
+      referenceImage,
+      brief.concept_a.design_blueprint
     );
     brief.concept_a.image_url = imgResultA.url;
     logger.log({
@@ -174,8 +175,9 @@ export class CampaignWorkflow {
       model: imgResultA.model,
       status: imgResultA.status,
       durationMs: imgResultA.durationMs,
-      summary: `Concept A artwork rendered via ${imgResultA.provider} (${imgResultA.model}) in ${imgResultA.durationMs}ms.`,
+      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms [Archetype: ${brief.concept_a.design_blueprint?.archetype || "editorial"}].`,
       details: {
+        archetype: brief.concept_a.design_blueprint?.archetype,
         layers: promptEngineeredA.layers,
         blendedPrompt: promptEngineeredA.optimized_image_prompt,
         negativePrompt: promptEngineeredA.negative_prompt,
@@ -188,7 +190,8 @@ export class CampaignWorkflow {
       seedB,
       refStyle,
       promptEngineeredB.negative_prompt,
-      referenceImage
+      referenceImage,
+      brief.concept_b.design_blueprint
     );
     brief.concept_b.image_url = imgResultB.url;
     logger.log({
@@ -197,8 +200,9 @@ export class CampaignWorkflow {
       model: imgResultB.model,
       status: imgResultB.status,
       durationMs: imgResultB.durationMs,
-      summary: `Concept B artwork rendered via ${imgResultB.provider} (${imgResultB.model}) in ${imgResultB.durationMs}ms.`,
+      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms [Archetype: ${brief.concept_b.design_blueprint?.archetype || "editorial"}].`,
       details: {
+        archetype: brief.concept_b.design_blueprint?.archetype,
         layers: promptEngineeredB.layers,
         blendedPrompt: promptEngineeredB.optimized_image_prompt,
         negativePrompt: promptEngineeredB.negative_prompt,

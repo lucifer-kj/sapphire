@@ -114,6 +114,39 @@ export default function SapphireWorkspace() {
     },
   ]);
 
+  // Cloudflare Workers AI Daily Quota Tracking State
+  const [quotaInfo, setQuotaInfo] = useState<{
+    configured: boolean;
+    totalNeurons: number;
+    limit: number;
+    remainingNeurons: number;
+    estimatedPostsRemaining: number;
+    requestsToday: number;
+    percentUsed: number;
+    resetsIn: string;
+    provider: string;
+  } | null>(null);
+  const [isRefreshingQuota, setIsRefreshingQuota] = useState(false);
+
+  const fetchQuota = async () => {
+    try {
+      setIsRefreshingQuota(true);
+      const res = await fetch("/api/quota");
+      const data = await res.json();
+      if (data.success && data.quota) {
+        setQuotaInfo(data.quota);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch quota:", err);
+    } finally {
+      setIsRefreshingQuota(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuota();
+  }, []);
+
   // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -156,8 +189,10 @@ export default function SapphireWorkspace() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: targetConcept.image_prompt,
+          prompt: targetConcept.optimized_image_prompt || targetConcept.image_prompt,
           styleOverride: referenceAnalysis ? referenceAnalysis.photography_style : undefined,
+          designBlueprint: targetConcept.design_blueprint,
+          referenceImage: referenceImage,
         }),
       });
 
@@ -922,6 +957,43 @@ export default function SapphireWorkspace() {
                   </div>
                 </div>
               </form>
+            </div>
+
+            {/* Daily Quota Status Widget (Left Sidebar Bottom) */}
+            <div className="px-4 py-2 bg-sapphire-surface border-t border-sapphire-border flex items-center justify-between text-[11px] text-sapphire-muted select-none shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
+                <span className="font-semibold text-sapphire-dark">
+                  Cloudflare FLUX:
+                </span>
+                <span className="text-sapphire-dark font-medium">
+                  {quotaInfo
+                    ? `${quotaInfo.remainingNeurons.toLocaleString()} / 10,000 Neurons`
+                    : "Connecting..."}
+                </span>
+                {quotaInfo && (
+                  <span className="text-sapphire-muted font-mono hidden md:inline">
+                    (~{quotaInfo.estimatedPostsRemaining} Posts Left)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-sapphire-muted flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-sapphire-muted" />
+                  Resets {quotaInfo?.resetsIn || "00:00 UTC"}
+                </span>
+                <button
+                  type="button"
+                  onClick={fetchQuota}
+                  disabled={isRefreshingQuota}
+                  title="Refresh Live Cloudflare Quota"
+                  className="p-1 rounded hover:bg-sapphire-bg text-sapphire-muted hover:text-sapphire-dark transition-colors"
+                >
+                  <RefreshCw
+                    className={`w-3 h-3 ${isRefreshingQuota ? "animate-spin" : ""}`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </main>

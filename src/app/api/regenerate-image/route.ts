@@ -4,7 +4,7 @@ import { ImageGenerationService } from "@/services/image-generation";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, styleOverride } = body;
+    const { prompt, styleOverride, designBlueprint, referenceImage } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
     const result = await ImageGenerationService.generateImageUrlWithMeta(
       prompt,
       seed,
-      styleOverride
+      styleOverride,
+      undefined,
+      referenceImage,
+      designBlueprint
     );
 
     return NextResponse.json({

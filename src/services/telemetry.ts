@@ -21,6 +21,7 @@ export class ExecutionLogger {
     provider:
       | "Groq"
       | "Google Gemini"
+      | "Cloudflare Workers AI (Flux)"
       | "Pollinations AI"
       | "Pollinations AI (Flux)"
       | "System"

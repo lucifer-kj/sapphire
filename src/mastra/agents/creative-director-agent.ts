@@ -3,11 +3,12 @@ import { CreativeBriefSchema, CreativeBrief, UserIntent, ResearchContext } from 
 import { BrandProfile } from "@/lib/schema/brand";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
+import { DEFAULT_ARCHETYPE_CONFIGS, DesignArchetype } from "@/lib/design-system/archetypes";
 
 export class CreativeDirectorAgent {
   /**
-   * Generates two genuinely distinct A/B creative concepts with image generation prompts and captions.
-   * Uses Reasoning Model (Groq Llama 3.3 70B primary, Gemini Flash fallback) for superior creative depth.
+   * Generates two genuinely distinct A/B creative concepts with complete Canva-quality
+   * Design Blueprints (typography, copy, layout archetypes, and negative space conditioning).
    */
   static async developCreativeBrief(
     intent: UserIntent,
@@ -15,33 +16,44 @@ export class CreativeDirectorAgent {
     brand: BrandProfile,
     referenceAnalysis?: ReferenceImageAnalysis | null
   ): Promise<CreativeBrief> {
+    const detectedArchetype = referenceAnalysis?.detected_archetype || "editorial_magazine";
+    const refPalette = referenceAnalysis?.color_palette?.length
+      ? referenceAnalysis.color_palette
+      : [brand.voice.tone, "#D97757", "#FAF9F5", "#141413"];
+
     const referencePrompt = referenceAnalysis
       ? `VISUAL REFERENCE ATTACHED BY USER:
-- Style: ${referenceAnalysis.photography_style}
+- Detected Design Archetype: ${detectedArchetype}
+- Photography Style: ${referenceAnalysis.photography_style}
 - Mood: ${referenceAnalysis.mood}
-- Color Palette: ${referenceAnalysis.color_palette.join(", ")}
+- Color Palette: ${refPalette.join(", ")}
 - Composition: ${referenceAnalysis.composition}
-- Subject: ${referenceAnalysis.visual_subject}
-- Key Elements: ${referenceAnalysis.key_elements.join(", ")}
+- Negative Space Zone: ${referenceAnalysis.negative_space_zone || "Upper 40% open area"}`
+      : `No reference image attached. Select 2 contrasting design archetypes from:
+1. 'editorial_magazine' (Warm depth-of-field, elegant typography, lifestyle/food/hospitality)
+2. 'conceptual_split' (Asymmetric 50/50, punchy 2-tone headline highlight, B2B/ideas)
+3. 'comparison_split' (Side-by-side Before/After, duality, feature comparison)
+4. 'vintage_poster' (Neo-vintage organic, clean cream studio canvas, badge stamps)
+5. 'saas_dotgrid' (Modern dot-grid matrix, 3D cards, UI micro-chrome)`;
 
-CRITICAL MANDATE: You MUST mirror and incorporate the reference image's visual style (${referenceAnalysis.photography_style}), mood (${referenceAnalysis.mood}), and color palette directly into the "image_prompt" fields for BOTH Concept A and Concept B!`
-      : "No reference image attached by user.";
-
-    const systemPrompt = `You are Sapphire's Autonomous AI Creative Director.
-Your task is to build a structured Creative Brief containing TWO distinct A/B concepts for ${brand.name} (${brand.industry}) based on the user's specific request: "${intent.event}".
+    const systemPrompt = `You are Sapphire's Elite AI Creative Director & Art Director.
+Your task is to build a comprehensive Creative Brief containing TWO distinct A/B concepts for ${brand.name} (${brand.industry}) based on the user's request: "${intent.event}".
 
 ${referencePrompt}
 
-RULES:
-1. Concept A must focus on "Emotional Storytelling & Authentic Human Experience".
-2. Concept B must focus on "Premium Editorial Positioning & High Visual Impact".
-3. Provide a highly specific "image_prompt" for each concept. The image prompt MUST explicitly describe:
-   - The user's requested subject/destination: "${intent.event}".
-   - Visual style (e.g. ${referenceAnalysis ? referenceAnalysis.photography_style : "cinematic editorial photography"}).
-   - Atmosphere, scenery, lighting, and color palette.
-   - Zero text overlay, zero logos.
-4. Captions for Instagram must include a compelling hook, story body, CTA, and relevant hashtags.
-5. Captions for LinkedIn must maintain a professional, insightful tone.`;
+CRITICAL RULES FOR CANVA-QUALITY POST DESIGN:
+1. For each concept, you MUST populate the "design_blueprint" object:
+   - "archetype": Choose the best matching archetype (one of 'editorial_magazine', 'conceptual_split', 'comparison_split', 'vintage_poster', 'saas_dotgrid'). Concept A and B must explore DIFFERENT archetypes.
+   - "headline": Ultra-punchy 2-5 word hook (e.g. "Tasty Morning Joy", "Building A Brand Without Strategy?", "Fresh Daily Choice").
+   - "subheadline": 1-2 sentence supporting value proposition or descriptive nuance.
+   - "category_pill": Uppercase tag (e.g. "SPECIAL EDITION", "MARKETING STRATEGY", "ORGANIC HARVEST").
+   - "brand_tagline": Short memorable slogan (e.g. "Brewed for you . served on ice.").
+   - "value_props": 3 quick bullet items (e.g. ["Step in.", "Sip slow.", "Stay awhile."]).
+   - "cta_text": Action button text (e.g. "Order Online ➔", "Swipe Left ➔", "Explore Itineraries ➔").
+   - "social_handle": Brand handle (e.g. "@${brand.name.toLowerCase().replace(/\s+/g, "")}").
+   - "negative_space_directive": Explicit spatial instruction to leave room for typography (e.g. "Leave upper 40% clean for headline").
+2. The "image_prompt" MUST describe the photographic/visual scene, explicitly instructing the AI model to respect the negative space.
+3. Captions for Instagram and LinkedIn must be polished and platform-tailored.`;
 
     const promptText = `Event/Request: ${intent.event}
 Objective: ${intent.objective}
@@ -67,36 +79,63 @@ Brand Voice Tone: ${brand.voice.tone}`;
         });
         return result.object;
       } catch (err2) {
-        const topic = intent.event.replace(/^(make a post for|create a post for|promote|a post about)/gi, "").trim() || "Travel Expedition";
+        const topic =
+          intent.event
+            .replace(/^(make a post for|create a post for|promote|a post about)/gi, "")
+            .trim() || "Signature Expedition";
         const hashtagTopic = topic.replace(/[^\w]/g, "");
 
-        const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : "Cinematic editorial travel photography";
-        const refMood = referenceAnalysis ? referenceAnalysis.mood : "Warm and aspirational";
-        const refPalette = referenceAnalysis && referenceAnalysis.color_palette.length ? referenceAnalysis.color_palette : ["#D97757", "#FAF9F5", "#141413"];
+        const archA: DesignArchetype = detectedArchetype || "editorial_magazine";
+        const archB: DesignArchetype =
+          archA === "editorial_magazine" ? "conceptual_split" : "editorial_magazine";
 
         return {
           campaign_title: `${topic} Campaign — ${brand.name}`,
           concept_a: {
-            label: `Concept A — Emotional ${topic} Journey`,
-            creative_direction: `Focuses on genuine human connection, shared family moments, and immersive atmosphere in ${topic}. Mood: ${refMood}.`,
-            visual_style: `${refStyle} with ${refMood} atmosphere`,
-            composition: `Candid perspective of family and travelers enjoying authentic moments in ${topic}, Rule of Thirds depth of field.`,
-            lighting: "Soft ambient golden hour glow, natural warmth.",
-            color_palette: refPalette,
-            image_prompt: `${refStyle}, ${topic}, family enjoying vacation in ${topic}, ${refMood} lighting, scenic landscape background, highly detailed, 8k`,
-            caption_instagram: `Every journey tells a story. Discover the magical beauty and timeless culture of ${topic} with ${brand.name}. Unforgettable family moments await. ✨ #Travel${hashtagTopic} #${hashtagTopic} #VagabondTravel #FamilyVacation`,
-            caption_linkedin: `Experiential travel creates lasting perspective. ${brand.name} is proud to present curated luxury family expeditions to ${topic}. Where will your next journey take you?`,
+            label: `Concept A — Editorial ${topic} Story`,
+            creative_direction: `High-end editorial composition focusing on atmosphere, authenticity, and visual depth for ${topic}.`,
+            visual_style: `Editorial magazine photography with warm ambient lighting`,
+            composition: `Subject framed in lower-center third, leaving upper 40% clean and uncluttered.`,
+            lighting: "Soft directional golden hour side-lighting.",
+            color_palette: ["#D97757", "#FAF9F5", "#141413"],
+            image_prompt: `Studio editorial commercial photography, vertical 4:5 portrait of ${topic}, warm natural ambient lighting, rich color tones, leaving upper 40% clean for typography, 8k resolution`,
+            caption_instagram: `Discover the art of intentional storytelling. Experience ${topic} with ${brand.name}. ✨ #${hashtagTopic} #SapphireCreative`,
+            caption_linkedin: `Strategic creative positioning drives meaningful brand connection. Introducing our campaign for ${topic}.`,
+            design_blueprint: {
+              archetype: archA,
+              headline: `${topic} Reimagined`,
+              subheadline: `Crafted for those who appreciate pure distinction and effortless elegance.`,
+              category_pill: "SPECIAL FEATURE",
+              brand_tagline: "Designed for impact . made to last.",
+              value_props: ["Crafted in detail.", "Pure ingredients.", "Uncompromising quality."],
+              cta_text: "Explore Collection ➔",
+              social_handle: `@${brand.name.toLowerCase().replace(/\s+/g, "")}`,
+              brand_name: brand.name,
+              negative_space_directive: DEFAULT_ARCHETYPE_CONFIGS[archA].negativeSpaceDirective,
+            },
           },
           concept_b: {
-            label: `Concept B — Editorial ${topic} Showcase`,
-            creative_direction: `High-fashion architectural and landscape composition showcasing the iconic aesthetic of ${topic}. Style: ${refStyle}.`,
-            visual_style: `${refStyle} layout with high-contrast editorial composition`,
-            composition: `Sweeping panoramic perspective of landmark architecture and serene landscapes in ${topic}.`,
-            lighting: "Diffused morning sunlight with crisp micro-contrast.",
-            color_palette: refPalette,
-            image_prompt: `${refStyle}, ${topic}, breathtaking scenery and landmark architecture of ${topic}, morning light, Vogue travel style, photorealistic 8k`,
-            caption_instagram: `A tapestry of landscapes, culture, and endless horizons. Celebrate ${topic} with our hand-crafted travel itineraries. 📍 #${hashtagTopic} #EditorialTravel #VagabondExpeditions`,
-            caption_linkedin: `Elevating experiential travel through world-class destination curation. ${brand.name} presents our exclusive campaign collection for ${topic}.`,
+            label: `Concept B — Conceptual ${topic} Showcase`,
+            creative_direction: `Bold asymmetric visual metaphor with high-contrast typography and dynamic brand punchline for ${topic}.`,
+            visual_style: `Modern asymmetric studio photography with crisp contrast`,
+            composition: `Visual subject placed on left 50%, right 50% open for text hierarchy.`,
+            lighting: "Clean high-key studio light with soft fill.",
+            color_palette: ["#D97757", "#FAF9F5", "#141413"],
+            image_prompt: `High-concept studio photography, vertical 4:5 shot of ${topic}, subject anchored to the left 50% on clean seamless backdrop, right 50% empty for text, 8k resolution`,
+            caption_instagram: `Redefining what is possible. Meet the next evolution of ${topic}. 🚀 #${hashtagTopic} #Innovation`,
+            caption_linkedin: `Transforming perspective through world-class execution. Explore ${brand.name}'s latest strategic release for ${topic}.`,
+            design_blueprint: {
+              archetype: archB,
+              headline: `The Power of ${topic}`,
+              subheadline: `Why settling for average limits your potential — and how to elevate everything.`,
+              category_pill: "STRATEGY & INSIGHTS",
+              brand_tagline: "Precision execution . proven results.",
+              value_props: ["Step forward.", "Build faster.", "Lead the category."],
+              cta_text: "Read Full Case Study ➔",
+              social_handle: `@${brand.name.toLowerCase().replace(/\s+/g, "")}`,
+              brand_name: brand.name,
+              negative_space_directive: DEFAULT_ARCHETYPE_CONFIGS[archB].negativeSpaceDirective,
+            },
           },
         };
       }

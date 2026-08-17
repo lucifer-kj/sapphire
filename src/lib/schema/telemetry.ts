@@ -7,6 +7,7 @@ export const WorkflowLogEntrySchema = z.object({
   provider: z.enum([
     "Groq",
     "Google Gemini",
+    "Cloudflare Workers AI (Flux)",
     "Pollinations AI",
     "Pollinations AI (Flux)",
     "System",

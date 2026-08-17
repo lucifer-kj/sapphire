@@ -1,92 +1,138 @@
+import { DesignBlueprint } from "@/lib/design-system/archetypes";
+import { ImageCompositor } from "./image-compositor";
+
 export interface ImageGenResult {
   url: string;
-  provider: "Nano Banana 2" | "Pollinations AI (Flux)" | "Puter.js";
+  provider:
+    | "Cloudflare Workers AI (Flux)"
+    | "Nano Banana 2"
+    | "Pollinations AI (Flux)"
+    | "Puter.js";
   model: string;
   durationMs: number;
   status: "success" | "fallback";
 }
 
 /**
- * Production-Grade Image Generation Service:
- * 1. Primary: Google Gemini Nano Banana (gemini-3.1-flash-image) with multi-key support.
+ * Production-Grade Hybrid Image Generation & Canva Compositing Service:
+ * 1. Primary AI Photography: Cloudflare Workers AI FLUX 1 Schnell (~2.2s, 10,000 free Neurons/day).
  * 2. Instant Fast Fallback: Pollinations AI Flux (Server-Side Fetch → Base64 Data URL, ~3.3s).
- * 3. Tertiary: Puter.js driver fallback if configured.
+ * 3. Tertiary: Google Gemini Nano Banana (gemini-3.1-flash-image).
+ * 4. Design Layer: Satori + Resvg JSX-to-PNG Vector Compositor (~150ms).
  */
 export class ImageGenerationService {
   /**
-   * Generates a high-quality 4:5 social media image and returns execution metadata + base64 data URL.
+   * Generates a high-quality 4:5 social media post with AI photography and Satori vector typography.
    */
   static async generateImageUrlWithMeta(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
     styleOverride?: string,
     negativePrompt?: string,
-    referenceImageDataUrl?: string | null
+    referenceImageDataUrl?: string | null,
+    designBlueprint?: DesignBlueprint
   ): Promise<ImageGenResult> {
     const start = performance.now();
     const fullPrompt = styleOverride ? `${styleOverride}, ${prompt}` : prompt;
 
-    // 1. Try Google Gemini Nano Banana (if key has active quota/billing)
-    const candidateKeys = [
-      process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY,
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    ].filter(Boolean) as string[];
+    let rawPhotoUrl: string | null = null;
+    let provider: ImageGenResult["provider"] = "Cloudflare Workers AI (Flux)";
+    let model = "@cf/black-forest-labs/flux-1-schnell";
+    let status: "success" | "fallback" = "success";
 
-    for (const apiKey of candidateKeys) {
-      for (const model of ["gemini-3.1-flash-image", "gemini-2.5-flash-image"]) {
-        try {
-          const nanoBananaUrl = await this.generateWithNanoBanana(
-            fullPrompt,
-            model,
-            apiKey,
-            referenceImageDataUrl
-          );
-          if (nanoBananaUrl) {
-            const durationMs = Math.round(performance.now() - start);
-            return {
-              url: nanoBananaUrl,
-              provider: "Nano Banana 2",
-              model,
-              durationMs,
-              status: "success",
-            };
-          }
-        } catch {
-          // Fall through quietly to instant Pollinations Flux fallback
+    // 1. Primary: Cloudflare Workers AI FLUX 1 Schnell
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (accountId && apiToken) {
+      try {
+        rawPhotoUrl = await this.generateWithCloudflareFlux(
+          fullPrompt,
+          accountId,
+          apiToken
+        );
+        if (rawPhotoUrl) {
+          provider = "Cloudflare Workers AI (Flux)";
+          model = "@cf/black-forest-labs/flux-1-schnell";
+          status = "success";
         }
+      } catch (cfErr) {
+        console.warn("Cloudflare FLUX generation fallback:", cfErr);
       }
     }
 
-    // 2. Primary Fast Fallback: Server-Side Pollinations AI Flux Fetch
-    try {
-      const pollinationsDataUrl = await this.fetchPollinationsBase64(
-        fullPrompt,
-        seed,
-        negativePrompt
-      );
-      if (pollinationsDataUrl) {
-        const durationMs = Math.round(performance.now() - start);
-        return {
-          url: pollinationsDataUrl,
-          provider: "Pollinations AI (Flux)",
-          model: "flux",
-          durationMs,
-          status: "fallback",
-        };
+    // 2. Fallback: Server-Side Pollinations AI Flux Fetch
+    if (!rawPhotoUrl) {
+      try {
+        rawPhotoUrl = await this.fetchPollinationsBase64(
+          fullPrompt,
+          seed,
+          negativePrompt
+        );
+        if (rawPhotoUrl) {
+          provider = "Pollinations AI (Flux)";
+          model = "flux";
+          status = "fallback";
+        }
+      } catch (polErr) {
+        console.warn("Pollinations fallback:", polErr);
       }
-    } catch (err) {
-      console.warn("Pollinations server-side fetch warning:", err);
     }
 
-    // 3. Guaranteed Direct URL Fallback
-    const directUrl = this.buildPollinationsUrl(fullPrompt, seed, negativePrompt);
+    // 3. Fallback: Google Gemini Nano Banana
+    if (!rawPhotoUrl) {
+      const candidateKeys = [
+        process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY,
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      ].filter(Boolean) as string[];
+
+      for (const apiKey of candidateKeys) {
+        for (const m of ["gemini-3.1-flash-image", "gemini-2.5-flash-image"]) {
+          try {
+            rawPhotoUrl = await this.generateWithNanoBanana(
+              fullPrompt,
+              m,
+              apiKey,
+              referenceImageDataUrl
+            );
+            if (rawPhotoUrl) {
+              provider = "Nano Banana 2";
+              model = m;
+              status = "fallback";
+              break;
+            }
+          } catch {}
+        }
+        if (rawPhotoUrl) break;
+      }
+    }
+
+    // 4. Guaranteed Direct URL Fallback
+    if (!rawPhotoUrl) {
+      rawPhotoUrl = this.buildPollinationsUrl(fullPrompt, seed, negativePrompt);
+      provider = "Pollinations AI (Flux)";
+      model = "flux";
+      status = "fallback";
+    }
+
+    // 5. Apply Satori Canva-Grade Design Compositor if blueprint is provided
+    let finalUrl = rawPhotoUrl;
+    if (designBlueprint && rawPhotoUrl.startsWith("data:")) {
+      try {
+        finalUrl = await ImageCompositor.composite(rawPhotoUrl, designBlueprint);
+      } catch (compErr) {
+        console.warn("ImageCompositor fallback:", compErr);
+        finalUrl = rawPhotoUrl;
+      }
+    }
+
     const durationMs = Math.round(performance.now() - start);
     return {
-      url: directUrl,
-      provider: "Pollinations AI (Flux)",
-      model: "flux",
+      url: finalUrl,
+      provider,
+      model,
       durationMs,
-      status: "fallback",
+      status,
     };
   }
 
@@ -96,14 +142,63 @@ export class ImageGenerationService {
   static async generateImageUrl(
     prompt: string,
     seed: number = Math.floor(Math.random() * 1000000),
-    styleOverride?: string
+    styleOverride?: string,
+    designBlueprint?: DesignBlueprint
   ): Promise<string> {
-    const res = await this.generateImageUrlWithMeta(prompt, seed, styleOverride);
+    const res = await this.generateImageUrlWithMeta(
+      prompt,
+      seed,
+      styleOverride,
+      undefined,
+      undefined,
+      designBlueprint
+    );
     return res.url;
   }
 
   /**
-   * Generates image using Google's Nano Banana models (generateContent with IMAGE modality).
+   * Generates photorealistic image using Cloudflare Workers AI FLUX 1 Schnell.
+   */
+  private static async generateWithCloudflareFlux(
+    prompt: string,
+    accountId: string,
+    apiToken: string
+  ): Promise<string | null> {
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const data = await res.json();
+      const base64 = data.result?.image;
+      if (base64) {
+        return `data:image/jpeg;base64,${base64}`;
+      }
+    } else if (contentType.includes("image/")) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > 500) {
+        return `data:${contentType};base64,${buf.toString("base64")}`;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Generates image using Google's Nano Banana models.
    */
   private static async generateWithNanoBanana(
     prompt: string,
@@ -112,7 +207,6 @@ export class ImageGenerationService {
     referenceImageDataUrl?: string | null
   ): Promise<string | null> {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
     const parts: any[] = [{ text: prompt }];
 
     if (referenceImageDataUrl && referenceImageDataUrl.startsWith("data:")) {
@@ -139,9 +233,7 @@ export class ImageGenerationService {
       signal: AbortSignal.timeout(8000),
     });
 
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
 
     const data = await res.json();
     const partsList = data?.candidates?.[0]?.content?.parts || [];
@@ -156,7 +248,6 @@ export class ImageGenerationService {
 
   /**
    * Performs server-side fetch from Pollinations Flux and converts to a base64 data URL.
-   * Runs in ~3-4 seconds, eliminating CORS and client-side network timeouts.
    */
   private static async fetchPollinationsBase64(
     prompt: string,
@@ -168,16 +259,12 @@ export class ImageGenerationService {
       signal: AbortSignal.timeout(12000),
     });
 
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
 
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    if (buffer.length < 500) {
-      return null;
-    }
+    if (buffer.length < 500) return null;
 
     const mimeType = res.headers.get("content-type") || "image/jpeg";
     return `data:${mimeType};base64,${buffer.toString("base64")}`;
@@ -204,7 +291,6 @@ export class ImageGenerationService {
     }
 
     const encodedPrompt = encodeURIComponent(cleanPrompt);
-
     const baseUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
     const queryParams = new URLSearchParams({
       width: "1080",

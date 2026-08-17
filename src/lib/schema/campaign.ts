@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DesignBlueprintSchema } from "../design-system/archetypes";
 
 export const UserIntentSchema = z.object({
   event: z.string().default("General Promotion"),
@@ -30,6 +31,7 @@ export const ConceptItemSchema = z.object({
   image_url: z.string().optional(),
   caption_instagram: z.string(),
   caption_linkedin: z.string(),
+  design_blueprint: DesignBlueprintSchema.optional(),
 });
 
 export const CreativeBriefSchema = z.object({

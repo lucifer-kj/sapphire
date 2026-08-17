@@ -79,6 +79,13 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
             Nano Banana 2 ({model})
           </span>
         );
+      case "Cloudflare Workers AI (Flux)":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-orange-50 text-orange-700 border border-orange-200">
+            <Sparkles className="w-3 h-3" />
+            Cloudflare FLUX ({model.split("/").pop()})
+          </span>
+        );
       case "Pollinations AI":
       case "Pollinations AI (Flux)":
         return (
