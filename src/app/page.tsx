@@ -836,25 +836,25 @@ export default function SapphireWorkspace() {
 
       {/* Lightbox Preview Modal */}
       {activeImageModal && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-[90vh] bg-sapphire-surface border border-sapphire-border rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-            <div className="h-10 px-4 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface select-none">
-              <span className="text-text-xs font-semibold text-sapphire-dark">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-[90vh] bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="h-12 px-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/90 select-none">
+              <span className="text-text-xs font-semibold text-zinc-100">
                 High Resolution Artwork Preview
               </span>
               <button
                 onClick={() => setActiveImageModal(null)}
-                className="p-1 rounded hover:bg-sapphire-subtle text-sapphire-muted hover:text-sapphire-dark transition-colors"
+                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-sapphire-bg">
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-zinc-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={activeImageModal}
                 alt="Enlarged Artwork Preview"
-                className="max-h-[75vh] w-auto object-contain rounded-lg shadow-lg"
+                className="max-h-[75vh] w-auto object-contain rounded-xl shadow-lg"
               />
             </div>
           </div>
@@ -863,27 +863,27 @@ export default function SapphireWorkspace() {
 
       {/* Human Approval & Instagram Delivery Modal (100% Instagram-First) */}
       {showApprovalModal && selectedConcept && brief && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative max-w-md w-full bg-sapphire-surface border border-sapphire-border rounded-2xl shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-sapphire-border pb-3">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative max-w-md w-full bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-sapphire-terracotta" />
-                <h3 className="font-semibold text-text-sm text-sapphire-dark">
+                <h3 className="font-semibold text-text-sm text-zinc-100">
                   Human Approval & Instagram Delivery
                 </h3>
               </div>
               <button
                 onClick={() => setShowApprovalModal(false)}
-                className="p-1 rounded text-sapphire-muted hover:text-sapphire-dark"
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-2 text-text-xs text-sapphire-muted">
+            <div className="space-y-2 text-text-xs text-zinc-400 leading-relaxed">
               <p>
                 You are approving{" "}
-                <strong className="font-semibold text-sapphire-dark">
+                <strong className="font-semibold text-zinc-100">
                   {selectedConcept === "A" ? brief.concept_a.label : brief.concept_b.label}
                 </strong>
                 .
@@ -895,7 +895,7 @@ export default function SapphireWorkspace() {
 
             <form onSubmit={handleDeliverPackage} className="space-y-3 pt-2">
               <div className="space-y-1">
-                <label className="text-text-xs font-semibold text-sapphire-dark">
+                <label className="text-text-xs font-semibold text-zinc-200">
                   Recipient Email Address
                 </label>
                 <input
@@ -903,7 +903,7 @@ export default function SapphireWorkspace() {
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
                   placeholder="Leave empty to use .env.local RESEND_TO_EMAIL"
-                  className="w-full p-2.5 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-bg outline-none focus:border-white/30 text-sapphire-dark placeholder:text-sapphire-muted/60"
+                  className="w-full p-2.5 text-text-xs rounded-xl border border-white/10 bg-zinc-950 outline-none focus:border-white/30 text-zinc-100 placeholder:text-zinc-500"
                 />
               </div>
 
@@ -911,14 +911,14 @@ export default function SapphireWorkspace() {
                 <button
                   type="button"
                   onClick={() => setShowApprovalModal(false)}
-                  className="px-3 py-2 rounded-lg border border-sapphire-border text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle text-sapphire-dark transition-colors"
+                  className="px-3.5 py-2 rounded-xl border border-white/10 text-text-xs font-medium bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isDelivering}
-                  className="px-4 py-2 rounded-lg bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1.5 shadow-sm transition-all"
+                  className="px-4 py-2 rounded-xl bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1.5 shadow-sm transition-all"
                 >
                   {isDelivering ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -936,43 +936,42 @@ export default function SapphireWorkspace() {
       )}
 
       {/* 1. Main Top Application Header Bar */}
-      <header className="h-12 border-b border-sapphire-border bg-sapphire-surface px-4 flex items-center justify-between shrink-0 select-none z-10">
+      <header className="h-12 border-b border-white/5 bg-zinc-950/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0 select-none z-10">
         <div className="flex items-center gap-3">
           <Link href="/workspaces" className="flex items-center gap-2.5 group" title="Sapphire Workspaces">
-            <div className="w-6 h-6 rounded-md overflow-hidden border border-sapphire-border bg-sapphire-surface flex items-center justify-center p-0.5 shadow-hairline group-hover:border-sapphire-terracotta transition-colors">
+            <div className="w-6 h-6 rounded-md overflow-hidden border border-white/10 bg-zinc-900 flex items-center justify-center p-0.5 shadow-sm group-hover:border-sapphire-terracotta transition-colors">
               <img src="/logo.png" alt="Sapphire" className="w-full h-full object-contain" />
             </div>
-            <span className="font-semibold text-text-sm tracking-tight text-sapphire-dark">
+            <span className="font-semibold text-text-sm tracking-tight text-zinc-100">
               Sapphire
             </span>
           </Link>
 
-          <div className="h-4 w-[0.5px] bg-sapphire-border" />
+          <div className="h-4 w-[1px] bg-white/5" />
 
           {/* Active Workspace Pill Linking to /workspaces */}
           <Link
             href="/workspaces"
             title="Switch Workspace or Manage Clients"
-            className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline group"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-text-xs font-medium bg-transparent hover:bg-zinc-900 border border-transparent hover:border-white/5 text-zinc-300 hover:text-zinc-100 transition-all group"
           >
-            <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
-            <span className="max-w-[160px] truncate font-semibold">{activeBrandProfile.name}</span>
-            <span className="text-[10px] text-sapphire-muted group-hover:text-sapphire-terracotta transition-colors flex items-center gap-0.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="max-w-[160px] truncate font-medium">{activeBrandProfile.name}</span>
+            <span className="text-[10px] text-zinc-500 group-hover:text-sapphire-terracotta transition-colors flex items-center gap-0.5">
               <span>Switch</span>
               <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </Link>
         </div>
 
-
         {/* Center: Platform Switcher Segmented Control */}
-        <div className="hidden md:flex items-center bg-sapphire-bg p-0.5 rounded-xl border border-sapphire-border text-text-xs font-medium shadow-inner">
+        <div className="hidden md:flex items-center bg-zinc-900 p-0.5 rounded-xl border border-white/5 text-text-xs font-medium shadow-inner">
           <button
             onClick={() => setActivePlatform("instagram")}
             className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
               activePlatform === "instagram"
-                ? "bg-sapphire-surface text-sapphire-dark font-semibold shadow-xs"
-                : "text-sapphire-muted hover:text-sapphire-dark"
+                ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
+                : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <span>📷 Instagram</span>
@@ -988,12 +987,12 @@ export default function SapphireWorkspace() {
             }}
             className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
               activePlatform === "linkedin"
-                ? "bg-sapphire-surface text-sapphire-dark font-semibold shadow-xs"
-                : "text-sapphire-muted hover:text-sapphire-dark"
+                ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
+                : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <span>💼 LinkedIn</span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-sapphire-subtle text-sapphire-muted font-mono">
+            <span className="text-[9px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-500 font-mono">
               Coming Soon
             </span>
           </button>
@@ -1015,7 +1014,7 @@ export default function SapphireWorkspace() {
 
           <button
             onClick={() => setIsLogsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-colors border border-sapphire-border text-sapphire-dark"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-text-xs font-medium bg-zinc-900/60 hover:bg-zinc-900 transition-colors border border-white/5 text-zinc-300 hover:text-zinc-100"
             title="Open Live Agent Telemetry & Logs"
           >
             <Activity className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1027,11 +1026,11 @@ export default function SapphireWorkspace() {
             )}
           </button>
 
-          <div className="h-4 w-[0.5px] bg-sapphire-border" />
+          <div className="h-4 w-[1px] bg-white/5" />
 
           <button
             onClick={handleNewConversation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-text-xs font-medium bg-sapphire-dark text-sapphire-bg hover:bg-white hover:text-black transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-text-xs font-medium bg-zinc-100 text-zinc-950 hover:bg-white transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Campaign</span>
@@ -1043,7 +1042,7 @@ export default function SapphireWorkspace() {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Floating Cognitive Learning Toast */}
         {learningToast && (
-          <div className="absolute top-4 right-4 z-40 bg-sapphire-surface border border-sapphire-terracotta/30 text-sapphire-dark px-4 py-2.5 rounded-2xl shadow-xl animate-fade-in flex items-center gap-2 text-text-xs font-medium">
+          <div className="absolute top-4 right-4 z-40 bg-zinc-900 border border-sapphire-terracotta/30 text-zinc-100 px-4 py-2.5 rounded-2xl shadow-xl animate-fade-in flex items-center gap-2 text-text-xs font-medium">
             <Sparkles className="w-4 h-4 text-sapphire-terracotta shrink-0" />
             <span>{learningToast}</span>
           </div>
@@ -1051,19 +1050,19 @@ export default function SapphireWorkspace() {
 
         {/* LEFT PANEL: Navigation, Asset Gallery & History */}
         <aside
-          className={`border-r border-sapphire-border bg-sapphire-surface flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
+          className={`border-r border-white/5 bg-zinc-950 flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
             isLeftOpen ? "w-[270px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
           }`}
         >
           <div className="w-[270px] flex flex-col h-full">
             {/* Header Row 1: Brand Logo & App Title */}
-            <div className="h-12 px-3.5 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface">
+            <div className="h-12 px-3.5 border-b border-white/5 flex items-center justify-between bg-zinc-950">
               <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 rounded-md overflow-hidden border border-sapphire-border bg-sapphire-surface flex items-center justify-center p-0.5 shadow-hairline">
+                <div className="w-6 h-6 rounded-md overflow-hidden border border-white/10 bg-zinc-900 flex items-center justify-center p-0.5 shadow-sm">
                   <img src="/logo.png" alt="Sapphire" className="w-full h-full object-contain" />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-text-xs tracking-tight text-sapphire-dark">
+                  <span className="font-bold text-text-xs tracking-tight text-zinc-100">
                     Sapphire
                   </span>
                   <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-sapphire-terracotta/10 text-sapphire-terracotta font-semibold">
@@ -1074,23 +1073,23 @@ export default function SapphireWorkspace() {
               <button
                 onClick={() => setIsLeftOpen(false)}
                 title="Collapse Left Panel (Ctrl+B)"
-                className="p-1 rounded-md text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-transparent hover:border-sapphire-border"
+                className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
               >
                 <PanelLeftClose className="w-4 h-4" />
               </button>
             </div>
 
             {/* Header Row 2: Active Workspace & Key Details */}
-            <div className="px-3.5 py-2.5 border-b border-sapphire-border/80 bg-sapphire-bg/50 flex items-center justify-between">
+            <div className="px-3.5 py-2.5 border-b border-white/5 bg-zinc-900/30 flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-sapphire-surface border border-sapphire-border flex items-center justify-center font-bold text-[10px] text-sapphire-dark shrink-0 shadow-hairline">
+                <div className="w-6 h-6 rounded-lg bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-[10px] text-zinc-200 shrink-0">
                   {activeBrandProfile.name.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-text-xs font-semibold text-sapphire-dark leading-tight">
+                  <p className="truncate text-text-xs font-semibold text-zinc-200 leading-tight">
                     {activeBrandProfile.name}
                   </p>
-                  <span className="text-[10px] text-sapphire-muted truncate block">
+                  <span className="text-[10px] text-zinc-400 truncate block">
                     {activeBrandProfile.industry}
                   </span>
                 </div>
@@ -1098,23 +1097,23 @@ export default function SapphireWorkspace() {
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 title="Brand Brain Settings"
-                className="p-1 text-sapphire-muted hover:text-sapphire-dark rounded-md hover:bg-sapphire-subtle transition-colors"
+                className="p-1 text-zinc-400 hover:text-zinc-200 rounded-md hover:bg-zinc-900 transition-colors"
               >
                 <Sliders className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Clean + New Campaign Button */}
-            <div className="p-3 border-b border-sapphire-border">
+            <div className="p-3 border-b border-white/5">
               <button
                 onClick={handleNewConversation}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-text-xs font-medium text-sapphire-dark transition-colors shadow-hairline"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 text-text-xs font-medium text-zinc-300 hover:text-zinc-100 transition-colors shadow-sm"
               >
                 <span className="flex items-center gap-2">
                   <Plus className="w-3.5 h-3.5 text-sapphire-terracotta" />
                   <span>New Campaign</span>
                 </span>
-                <span className="text-[10px] text-sapphire-muted bg-sapphire-surface px-1.5 py-0.5 rounded border border-sapphire-border">
+                <span className="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded border border-white/5">
                   Ctrl+N
                 </span>
               </button>
@@ -1125,7 +1124,7 @@ export default function SapphireWorkspace() {
               {/* Workspace Gallery Section */}
               {savedCampaigns.some((c) => c.raw?.brief?.concept_a?.image_url) && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-sapphire-muted px-1">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400 px-1">
                     <span>CREATIVE GALLERY</span>
                     <span className="font-mono text-[10px]">
                       {savedCampaigns.filter((c) => c.raw?.brief?.concept_a?.image_url).length} Assets
@@ -1142,7 +1141,7 @@ export default function SapphireWorkspace() {
                             key={c.id}
                             onClick={() => handleSelectCampaign(c)}
                             title={c.campaign_title}
-                            className="aspect-[4/5] rounded-lg overflow-hidden border border-sapphire-border bg-sapphire-bg cursor-pointer hover:border-sapphire-terracotta transition-all relative group"
+                            className="aspect-[4/5] rounded-lg overflow-hidden border border-white/5 bg-zinc-900 cursor-pointer hover:border-sapphire-terracotta transition-all relative group"
                           >
                             <img
                               src={img}
@@ -1160,19 +1159,19 @@ export default function SapphireWorkspace() {
               <div className="pt-1">
                 <Link
                   href="/workspaces"
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-text-xs font-medium text-sapphire-dark transition-all shadow-hairline group"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/5 hover:border-white/10 text-text-xs font-medium text-zinc-300 hover:text-zinc-100 transition-all shadow-sm group"
                 >
                   <span className="flex items-center gap-2">
                     <Layers className="w-3.5 h-3.5 text-sapphire-terracotta group-hover:scale-110 transition-transform" />
                     <span>Switch Workspace</span>
                   </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-sapphire-muted group-hover:text-sapphire-dark group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
 
               {/* Chronological Campaign Stream with Thumbnails & Pagination & Delete Action */}
-              <div className="space-y-2 pt-2 border-t border-sapphire-border/50">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-sapphire-muted px-1">
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400 px-1">
                   <span>RECENT SESSIONS</span>
                   <span className="font-mono text-[10px]">
                     {savedCampaigns.length} total
@@ -1193,8 +1192,8 @@ export default function SapphireWorkspace() {
                               onClick={() => handleSelectCampaign(c)}
                               className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer group ${
                                 isActive
-                                  ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
-                                  : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
+                                  ? "bg-zinc-900 text-zinc-100 font-semibold border border-white/10 shadow-sm"
+                                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/70 border border-transparent"
                               }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1202,18 +1201,18 @@ export default function SapphireWorkspace() {
                                   <img
                                     src={thumb}
                                     alt=""
-                                    className="w-8 h-10 rounded-md object-cover border border-sapphire-border shrink-0"
+                                    className="w-8 h-10 rounded-md object-cover border border-white/5 shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-8 h-10 rounded-md bg-sapphire-bg border border-sapphire-border flex items-center justify-center shrink-0 text-sapphire-muted">
+                                  <div className="w-8 h-10 rounded-md bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0 text-zinc-500">
                                     <MessageSquare className="w-3.5 h-3.5" />
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <p className="truncate text-text-xs text-sapphire-dark font-medium leading-tight">
+                                  <p className="truncate text-text-xs text-zinc-200 font-medium leading-tight">
                                     {c.campaign_title}
                                   </p>
-                                  <span className="text-[10px] text-sapphire-muted/80 block pt-0.5">
+                                  <span className="text-[10px] text-zinc-500 block pt-0.5">
                                     {new Date(c.created_at).toLocaleDateString(undefined, {
                                       month: "short",
                                       day: "numeric",
@@ -1226,7 +1225,7 @@ export default function SapphireWorkspace() {
                               <button
                                 onClick={(e) => handleDeleteSession(e, c.id)}
                                 title="Delete session history (preserves gallery assets)"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-sapphire-muted hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
+                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/40 transition-all shrink-0"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -1237,11 +1236,11 @@ export default function SapphireWorkspace() {
 
                     {/* Pagination Controls */}
                     {savedCampaigns.length > CHATS_PER_PAGE && (
-                      <div className="flex items-center justify-between pt-2 px-1 text-[11px] text-sapphire-muted border-t border-sapphire-border/40">
+                      <div className="flex items-center justify-between pt-2 px-1 text-[11px] text-zinc-500 border-t border-white/5">
                         <button
                           disabled={chatPage === 1}
                           onClick={() => setChatPage((p) => Math.max(1, p - 1))}
-                          className="px-2 py-0.5 rounded border border-sapphire-border bg-sapphire-bg disabled:opacity-40 disabled:pointer-events-none hover:text-sapphire-dark"
+                          className="px-2 py-0.5 rounded border border-white/5 bg-zinc-900 disabled:opacity-40 disabled:pointer-events-none hover:text-zinc-200"
                         >
                           Prev
                         </button>
@@ -1251,7 +1250,7 @@ export default function SapphireWorkspace() {
                         <button
                           disabled={chatPage >= Math.ceil(savedCampaigns.length / CHATS_PER_PAGE)}
                           onClick={() => setChatPage((p) => p + 1)}
-                          className="px-2 py-0.5 rounded border border-sapphire-border bg-sapphire-bg disabled:opacity-40 disabled:pointer-events-none hover:text-sapphire-dark"
+                          className="px-2 py-0.5 rounded border border-white/5 bg-zinc-900 disabled:opacity-40 disabled:pointer-events-none hover:text-zinc-200"
                         >
                           Next
                         </button>
@@ -1259,9 +1258,9 @@ export default function SapphireWorkspace() {
                     )}
                   </>
                 ) : (
-                  <div className="p-4 text-center text-sapphire-muted text-text-xs border border-dashed border-sapphire-border rounded-xl">
+                  <div className="p-4 text-center text-zinc-500 text-text-xs border border-white/5 bg-zinc-900/30 rounded-xl">
                     <p className="font-medium">No previous campaigns.</p>
-                    <p className="text-[10px] pt-1 text-sapphire-muted/70">
+                    <p className="text-[10px] pt-1 text-zinc-500">
                       Submit a prompt to create artwork.
                     </p>
                   </div>
@@ -1269,26 +1268,25 @@ export default function SapphireWorkspace() {
               </div>
             </div>
 
-
             {/* Minimalist Bottom Footer: Micro-Quota Tracker */}
-            <div className="p-3 border-t border-sapphire-border bg-sapphire-surface space-y-2">
+            <div className="p-3 border-t border-white/5 bg-zinc-950/50 space-y-2">
               <div
                 onClick={() => setIsSettingsOpen(true)}
-                className="group cursor-pointer p-2 rounded-xl bg-sapphire-bg/70 hover:bg-sapphire-subtle border border-sapphire-border transition-all"
+                className="group cursor-pointer p-2.5 rounded-xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/5 transition-all"
                 title="Click to manage Brand Brain & Quotas"
               >
-                <div className="flex items-center justify-between text-[11px] font-medium text-sapphire-dark pb-1">
+                <div className="flex items-center justify-between text-[11px] font-medium text-zinc-200 pb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Zap className="w-3 h-3 text-sapphire-terracotta" />
                     <span>
                       {quotaInfo ? `${quotaInfo.remainingNeurons.toLocaleString()} Neurons` : "Daily Quota"}
                     </span>
                   </span>
-                  <span className="text-[10px] font-mono text-sapphire-muted group-hover:text-sapphire-dark">
+                  <span className="text-[10px] font-mono text-zinc-500 group-hover:text-zinc-300">
                     {quotaInfo ? `${quotaInfo.estimatedPostsRemaining} left` : "Free Tier"}
                   </span>
                 </div>
-                <div className="w-full bg-sapphire-border rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-sapphire-terracotta h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(100, quotaInfo?.percentUsed || 16)}%` }}
@@ -1298,6 +1296,7 @@ export default function SapphireWorkspace() {
             </div>
           </div>
         </aside>
+
 
 
 
@@ -1329,20 +1328,20 @@ export default function SapphireWorkspace() {
 
           {/* Centered Conversation Area */}
           <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="max-w-2xl mx-auto space-y-4">
+            <div className="max-w-3xl lg:max-w-4xl mx-auto space-y-6">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`p-4 rounded-2xl border transition-all ${
+                  className={`p-5 rounded-2xl transition-all ${
                     msg.role === "user"
-                      ? "bg-sapphire-surface border-sapphire-border ml-8 shadow-sm"
+                      ? "bg-zinc-900/70 border border-white/5 ml-6 md:ml-16 text-zinc-300 shadow-sm"
                       : msg.role === "system"
-                      ? "bg-sapphire-surface/60 border-sapphire-border text-sapphire-muted text-text-xs"
-                      : "bg-sapphire-surface border-sapphire-border mr-8 shadow-sm"
+                      ? "bg-zinc-900/40 border border-white/5 text-zinc-400 text-text-xs"
+                      : "bg-zinc-900/85 bg-gradient-to-br from-sapphire-terracotta/[0.03] to-transparent border border-white/5 mr-6 md:mr-16 shadow-md"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-sapphire-muted font-medium mb-1.5">
-                    <span className="flex items-center gap-1.5 font-semibold text-sapphire-dark">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400 font-medium mb-2">
+                    <span className="flex items-center gap-1.5 font-semibold text-zinc-200">
                       {msg.role === "user" ? (
                         "You"
                       ) : (
@@ -1352,9 +1351,9 @@ export default function SapphireWorkspace() {
                         </>
                       )}
                     </span>
-                    <span>{msg.timestamp}</span>
+                    <span className="text-zinc-500">{msg.timestamp}</span>
                   </div>
-                  <p className="text-text-sm text-sapphire-dark/95 leading-relaxed whitespace-pre-wrap font-sans">
+                  <p className="text-[13px] md:text-text-sm text-zinc-200 leading-relaxed md:leading-7 whitespace-pre-wrap font-sans">
                     {msg.content}
                   </p>
                 </div>
@@ -1362,55 +1361,55 @@ export default function SapphireWorkspace() {
 
               {/* Multimodal Visual Blueprint Manifest Card */}
               {referenceAnalysis && (
-                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-3 shadow-sm animate-fade-in">
-                  <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted border-b border-sapphire-border pb-2.5">
-                    <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
+                <div className="border border-white/5 rounded-2xl p-5 bg-zinc-900/80 space-y-3.5 shadow-md animate-fade-in">
+                  <div className="flex items-center justify-between text-text-xs font-medium text-zinc-400 border-b border-white/5 pb-2.5">
+                    <span className="flex items-center gap-1.5 text-zinc-200 font-semibold">
                       <Layers className="w-3.5 h-3.5 text-sapphire-terracotta" />
                       Visual Blueprint Manifest
                     </span>
-                    <span className="text-sapphire-green font-medium flex items-center gap-1 text-[11px]">
+                    <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Synthesized
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-text-xs">
-                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
-                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
                         Camera & Optics
                       </span>
-                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
                         {referenceAnalysis.camera_optics || referenceAnalysis.photography_style}
                       </p>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
-                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
                         Lighting Vector
                       </span>
-                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
                         {referenceAnalysis.lighting_vector || referenceAnalysis.lighting}
                       </p>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
-                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
                         Negative Space Budget
                       </span>
-                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
                         {referenceAnalysis.spatial_negative_space_plan || referenceAnalysis.negative_space_zone || "Upper 40% reserved for headline typography"}
                       </p>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
-                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
                         Palette Anchors
                       </span>
                       <div className="flex items-center gap-1.5 pt-0.5">
                         {(referenceAnalysis.color_palette_anchors || referenceAnalysis.color_palette).slice(0, 4).map((c, i) => (
-                          <div key={i} className="flex items-center gap-1 bg-sapphire-surface px-1.5 py-0.5 rounded border border-sapphire-border">
-                            <div className="w-2.5 h-2.5 rounded-full border border-black/10 shadow-xs" style={{ backgroundColor: c }} />
-                            <span className="font-mono text-[9px] text-sapphire-dark">{c}</span>
+                          <div key={i} className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded border border-white/5">
+                            <div className="w-2.5 h-2.5 rounded-full border border-white/10 shadow-xs" style={{ backgroundColor: c }} />
+                            <span className="font-mono text-[9px] text-zinc-300">{c}</span>
                           </div>
                         ))}
                       </div>
@@ -1419,20 +1418,19 @@ export default function SapphireWorkspace() {
                 </div>
               )}
 
-
               {research && (
-                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2.5 shadow-sm">
-                  <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
-                    <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
+                <div className="border border-white/5 rounded-2xl p-5 bg-zinc-900/80 space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between text-text-xs font-medium text-zinc-400">
+                    <span className="flex items-center gap-1.5 text-zinc-200 font-semibold">
                       <Search className="w-3.5 h-3.5 text-sapphire-blue" />
                       Research Synthesis
                     </span>
-                    <span className="text-sapphire-green font-medium flex items-center gap-1 text-[11px]">
+                    <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Complete
                     </span>
                   </div>
-                  <p className="text-text-xs text-sapphire-dark/90 leading-relaxed">{research.summary}</p>
+                  <p className="text-text-xs text-zinc-300 leading-relaxed md:leading-6">{research.summary}</p>
                 </div>
               )}
 
@@ -1450,18 +1448,17 @@ export default function SapphireWorkspace() {
                   className="animate-in fade-in duration-300"
                 />
               )}
-
             </div>
           </div>
 
-          {/* Centered Composer Input (Claude Minimalist Style) */}
-          <div className="p-4 border-t border-sapphire-border bg-sapphire-bg/90 backdrop-blur-md">
-            <div className="max-w-2xl w-full mx-auto">
-              <form onSubmit={handleSubmit} className="space-y-2">
+          {/* Centered Composer Input (Claude Minimalist Elevated Style) */}
+          <div className="p-4 border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
+            <div className="max-w-3xl lg:max-w-4xl w-full mx-auto">
+              <form onSubmit={handleSubmit} className="space-y-2.5">
                 {/* Multi-Asset Visual Ingredients Manifest Bar */}
                 {referenceImages.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-sapphire-surface border border-sapphire-border animate-fade-in shadow-xs">
-                    <span className="text-[10px] font-mono font-semibold uppercase text-sapphire-muted px-1">
+                  <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-zinc-900 border border-white/5 animate-fade-in shadow-sm">
+                    <span className="text-[10px] font-mono font-semibold uppercase text-zinc-400 px-1">
                       Visual Ingredients ({referenceImages.length}/3):
                     </span>
                     {referenceImages.map((img, idx) => {
@@ -1474,20 +1471,20 @@ export default function SapphireWorkspace() {
                       return (
                         <div
                           key={idx}
-                          className="flex items-center gap-1.5 bg-sapphire-bg border border-sapphire-border rounded-xl p-1 pr-2 shadow-xs group"
+                          className="flex items-center gap-1.5 bg-zinc-950 border border-white/5 rounded-xl p-1 pr-2 shadow-xs group"
                         >
                           <img
                             src={img}
                             alt=""
-                            className="w-6 h-6 rounded-lg object-cover border border-black/10 shrink-0"
+                            className="w-6 h-6 rounded-lg object-cover border border-white/10 shrink-0"
                           />
-                          <span className="text-[11px] font-medium text-sapphire-dark">
+                          <span className="text-[11px] font-medium text-zinc-200">
                             {ingredientTag}
                           </span>
                           <button
                             type="button"
                             onClick={() => removeReferenceImage(idx)}
-                            className="p-0.5 text-sapphire-muted hover:text-sapphire-dark rounded hover:bg-sapphire-subtle ml-0.5"
+                            className="p-0.5 text-zinc-500 hover:text-zinc-200 rounded hover:bg-zinc-800 ml-0.5"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -1497,23 +1494,23 @@ export default function SapphireWorkspace() {
                   </div>
                 )}
 
-                <div className="relative border border-sapphire-border rounded-2xl bg-sapphire-surface focus-within:border-white/20 transition-all p-3.5 shadow-md">
+                <div className="relative rounded-2xl bg-zinc-900 shadow-[0_0_25px_rgba(0,0,0,0.5)] border border-white/10 focus-within:border-white/20 transition-all p-3.5">
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe your Instagram post direction or stack visual ingredients (Product + Mood + Composition)..."
                     rows={3}
-                    className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-sapphire-dark placeholder:text-sapphire-muted font-sans"
+                    className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-zinc-100 placeholder:text-zinc-500 font-sans"
                   />
-                  <div className="flex items-center justify-between pt-2 border-t border-sapphire-border/50">
+                  <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
                     <button
                       type="button"
                       disabled={referenceImages.length >= 3}
                       onClick={() => fileInputRef.current?.click()}
-                      className={`p-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-text-xs ${
+                      className={`p-1.5 rounded-xl transition-colors flex items-center gap-1.5 text-text-xs ${
                         referenceImages.length > 0
                           ? "bg-sapphire-terracotta/20 text-sapphire-terracotta border border-sapphire-terracotta/30"
-                          : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
                       } disabled:opacity-40`}
                       title={referenceImages.length >= 3 ? "Maximum 3 visual ingredients attached" : "Attach visual ingredient (Subject, Mood, or Composition)"}
                     >
@@ -1546,17 +1543,18 @@ export default function SapphireWorkspace() {
           </div>
         </main>
 
+
         {/* RIGHT PANEL: Spatial Creative Canvas & A/B Concepts */}
         <aside
-          className={`border-l border-sapphire-border bg-sapphire-bg flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
+          className={`border-l border-white/5 bg-zinc-950 flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
             isRightOpen ? "flex-1 min-w-[340px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-l-0"
           }`}
         >
           <div className="flex flex-col h-full min-w-[340px]">
-            <div className="h-10 px-4 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface shrink-0">
+            <div className="h-12 px-4 border-b border-white/5 flex items-center justify-between bg-zinc-950/80 shrink-0">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-sapphire-muted" />
-                <h2 className="text-text-sm font-semibold text-sapphire-dark">
+                <Layers className="w-4 h-4 text-zinc-400" />
+                <h2 className="text-text-sm font-semibold text-zinc-100">
                   Spatial Creative Canvas (Instagram 4:5)
                 </h2>
               </div>
@@ -1564,10 +1562,10 @@ export default function SapphireWorkspace() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewMode((prev) => (prev === "ab" ? "focus" : "ab"))}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium border transition-colors ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-text-xs font-medium border transition-colors ${
                     viewMode === "focus"
                       ? "bg-sapphire-terracotta text-white border-sapphire-terracotta"
-                      : "border-sapphire-border bg-sapphire-surface hover:bg-sapphire-subtle text-sapphire-dark"
+                      : "border-white/5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100"
                   }`}
                   title="Toggle between A/B Dual Grid and Studio Focus View"
                 >
@@ -1577,7 +1575,7 @@ export default function SapphireWorkspace() {
                 <button
                   onClick={() => setIsRightOpen(false)}
                   title="Collapse Right Canvas (Ctrl+Alt+B)"
-                  className="p-1 rounded-md text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-transparent hover:border-sapphire-border"
+                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
                 >
                   <PanelRightClose className="w-4 h-4" />
                 </button>
@@ -1587,12 +1585,12 @@ export default function SapphireWorkspace() {
             {/* Spatial Canvas Content Area (Vertical Stack Layout with Generous Spacing) */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               <div className="max-w-2xl mx-auto space-y-8">
-                <div className="flex items-center justify-between border-b border-sapphire-border pb-3">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
                   <div>
-                    <h3 className="text-heading-md font-semibold text-sapphire-dark">
+                    <h3 className="text-heading-md font-semibold text-zinc-100">
                       {viewMode === "ab" ? "Instagram Creative Directions (Vertical Feed)" : "Studio Focus Inspector"}
                     </h3>
-                    <p className="text-text-xs text-sapphire-muted">
+                    <p className="text-text-xs text-zinc-400">
                       {brief
                         ? "1080×1350 Canva-grade visual compositions stacked with generous inspection space."
                         : "Generated visual artwork will render here stacked vertically upon prompt submission."}
@@ -1605,14 +1603,14 @@ export default function SapphireWorkspace() {
                   <div className="flex flex-col space-y-10">
                     {/* Concept A Card */}
                     <div
-                      className={`border rounded-2xl bg-sapphire-surface p-5 space-y-4 shadow-lg transition-all ${
+                      className={`border rounded-3xl bg-zinc-900/80 p-6 space-y-4 shadow-xl transition-all ${
                         selectedConcept === "A"
-                          ? "border-sapphire-terracotta ring-2 ring-sapphire-terracotta/40"
-                          : "border-sapphire-border hover:border-white/20"
+                          ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
+                          : "border-white/5 hover:border-white/15"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-text-sm font-semibold px-3 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark truncate max-w-[280px]">
+                        <span className="text-text-sm font-semibold px-3 py-1 rounded-xl bg-zinc-950 border border-white/5 text-zinc-100 truncate max-w-[280px]">
                           {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
                         </span>
                         <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
@@ -1622,17 +1620,17 @@ export default function SapphireWorkspace() {
 
                       {/* Brand Compliance Scorecard (Critic Agent) */}
                       {critiqueA && (
-                        <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-1.5 text-text-xs">
                           <div className="flex items-center justify-between font-semibold">
-                            <span className="flex items-center gap-1.5 text-sapphire-dark">
-                              <ShieldCheck className="w-4 h-4 text-sapphire-green" />
+                            <span className="flex items-center gap-1.5 text-zinc-200">
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
                               Brand Alignment Score
                             </span>
-                            <span className="text-sapphire-green font-bold text-text-xs">
+                            <span className="text-emerald-400 font-bold text-text-xs">
                               {critiqueA.brand_alignment_score}/100
                             </span>
                           </div>
-                          <p className="text-[11px] text-sapphire-muted leading-tight">
+                          <p className="text-[11px] text-zinc-400 leading-tight">
                             {critiqueA.critique_notes[0] || "Passed brand voice & visual compliance audit."}
                           </p>
                         </div>
@@ -1641,7 +1639,7 @@ export default function SapphireWorkspace() {
                       {/* Version History Strip */}
                       {historyConceptA.length > 0 && (
                         <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
-                          <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">Versions:</span>
                           {historyConceptA.map((v) => (
                             <button
                               key={v.versionNumber}
@@ -1649,10 +1647,10 @@ export default function SapphireWorkspace() {
                                 setActiveVersionA(v.versionNumber);
                                 setBrief((prev) => (prev ? { ...prev, concept_a: v.conceptItem } : null));
                               }}
-                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-medium transition-colors ${
                                 activeVersionA === v.versionNumber
-                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold"
-                                  : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
+                                  ? "bg-zinc-100 text-zinc-950 font-semibold shadow-sm"
+                                  : "bg-zinc-950 hover:bg-zinc-800 border border-white/5 text-zinc-400"
                               }`}
                             >
                               v{v.versionNumber}
@@ -1662,7 +1660,7 @@ export default function SapphireWorkspace() {
                       )}
 
                       {/* Image Preview Container with Live Loading Animation */}
-                      <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-inner flex items-center justify-center">
+                      <div className="relative aspect-[4/5] rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden group shadow-inner flex items-center justify-center">
                         {isRegeneratingA || (isLoading && !brief?.concept_a.image_url) ? (
                           <ImageGeneration
                             prompt={brief?.concept_a.image_prompt || prompt || "Artisanal espresso with golden hour lighting"}
@@ -1680,7 +1678,7 @@ export default function SapphireWorkspace() {
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-xs">
                               <button
                                 onClick={() => setActiveImageModal(brief.concept_a.image_url!)}
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Enlarge Image Preview"
                               >
                                 <Maximize2 className="w-4 h-4" />
@@ -1688,7 +1686,7 @@ export default function SapphireWorkspace() {
                               <button
                                 onClick={() => handleRegenerateImage("A")}
                                 disabled={isRegeneratingA}
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Regenerate Artwork"
                               >
                                 <RefreshCw className={`w-4 h-4 ${isRegeneratingA ? "animate-spin" : ""}`} />
@@ -1697,7 +1695,7 @@ export default function SapphireWorkspace() {
                                 href={brief.concept_a.image_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Open High Res Image"
                               >
                                 <Download className="w-4 h-4" />
@@ -1728,12 +1726,12 @@ export default function SapphireWorkspace() {
                             resolution="1080 × 1350"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
-                            <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
-                            <p className="text-text-xs font-semibold text-sapphire-dark">
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-zinc-500 space-y-2">
+                            <FileText className="w-8 h-8 stroke-1 text-zinc-600" />
+                            <p className="text-text-xs font-semibold text-zinc-300">
                               Concept A Visual Preview
                             </p>
-                            <p className="text-text-xs text-sapphire-muted max-w-[220px]">
+                            <p className="text-text-xs text-zinc-500 max-w-[220px]">
                               Submit a prompt to generate AI social media artwork.
                             </p>
                           </div>
@@ -1741,14 +1739,14 @@ export default function SapphireWorkspace() {
                       </div>
 
                       {brief && (
-                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 text-[11px] space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
-                            <span className="text-[10px] text-sapphire-muted font-mono">
+                            <p className="font-semibold text-zinc-200">Instagram Caption Draft:</p>
+                            <span className="text-[10px] text-zinc-500 font-mono">
                               {brief.concept_a.caption_instagram.length} chars
                             </span>
                           </div>
-                          <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
+                          <p className="text-zinc-300 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
                             {brief.concept_a.caption_instagram}
                           </p>
                           <button
@@ -1758,7 +1756,7 @@ export default function SapphireWorkspace() {
                             className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
                           >
                             {copiedId === "cap-a" ? (
-                              <Check className="w-3 h-3 text-sapphire-green" />
+                              <Check className="w-3 h-3 text-emerald-400" />
                             ) : (
                               <Copy className="w-3 h-3" />
                             )}
@@ -1769,15 +1767,15 @@ export default function SapphireWorkspace() {
 
                       {/* Refinement Overlay Form */}
                       {isRefining === "A" ? (
-                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
-                          <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950 border border-sapphire-terracotta/40 space-y-2">
+                          <div className="flex items-center justify-between text-text-xs font-semibold text-zinc-200">
                             <span className="flex items-center gap-1">
                               <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
                               Refine Concept A (v{activeVersionA})
                             </span>
                             <button
                               onClick={() => setIsRefining(null)}
-                              className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
+                              className="p-0.5 text-zinc-400 hover:text-zinc-200"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1787,19 +1785,19 @@ export default function SapphireWorkspace() {
                             value={refinementInput}
                             onChange={(e) => setRefinementInput(e.target.value)}
                             placeholder="e.g. Make lighting warmer & caption punchier..."
-                            className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
+                            className="w-full p-2.5 text-text-xs rounded-xl border border-white/10 bg-zinc-900 outline-none focus:border-white/30 text-zinc-100"
                           />
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => setIsRefining(null)}
-                              className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                              className="px-3 py-1 rounded-xl text-text-xs font-medium border border-white/10 hover:bg-zinc-800 text-zinc-300"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleRefineSubmit("A")}
                               disabled={!refinementInput.trim() || isRefinementLoading}
-                              className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                              className="px-3 py-1 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
                             >
                               {isRefinementLoading ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -1816,8 +1814,8 @@ export default function SapphireWorkspace() {
                               onClick={() => handleConceptSelect("A")}
                               className={`flex-1 py-2.5 rounded-xl text-text-xs font-medium transition-all ${
                                 selectedConcept === "A"
-                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
-                                  : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
+                                  ? "bg-zinc-100 text-zinc-950 font-semibold shadow-sm"
+                                  : "border border-white/5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100"
                               }`}
                             >
                               {selectedConcept === "A" ? "Concept A Selected" : "Select Concept A"}
@@ -1825,7 +1823,7 @@ export default function SapphireWorkspace() {
                             {brief && (
                               <button
                                 onClick={() => setIsRefining("A")}
-                                className="p-2.5 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                                className="p-2.5 rounded-xl border border-white/5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 text-text-xs font-medium flex items-center gap-1"
                                 title="Refine Concept A"
                               >
                                 <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -1849,14 +1847,14 @@ export default function SapphireWorkspace() {
 
                     {/* Concept B Card */}
                     <div
-                      className={`border rounded-2xl bg-sapphire-surface p-5 space-y-4 shadow-lg transition-all ${
+                      className={`border rounded-3xl bg-zinc-900/80 p-6 space-y-4 shadow-xl transition-all ${
                         selectedConcept === "B"
-                          ? "border-sapphire-terracotta ring-2 ring-sapphire-terracotta/40"
-                          : "border-sapphire-border hover:border-white/20"
+                          ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
+                          : "border-white/5 hover:border-white/15"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-text-sm font-semibold px-3 py-1 rounded-lg bg-sapphire-bg border border-sapphire-border text-sapphire-dark truncate max-w-[280px]">
+                        <span className="text-text-sm font-semibold px-3 py-1 rounded-xl bg-zinc-950 border border-white/5 text-zinc-100 truncate max-w-[280px]">
                           {brief ? brief.concept_b.label : "Concept B — Editorial India"}
                         </span>
                         <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
@@ -1866,17 +1864,17 @@ export default function SapphireWorkspace() {
 
                       {/* Brand Compliance Scorecard (Critic Agent) */}
                       {critiqueB && (
-                        <div className="p-3 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1.5 text-text-xs">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-1.5 text-text-xs">
                           <div className="flex items-center justify-between font-semibold">
-                            <span className="flex items-center gap-1.5 text-sapphire-dark">
-                              <ShieldCheck className="w-4 h-4 text-sapphire-green" />
+                            <span className="flex items-center gap-1.5 text-zinc-200">
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
                               Brand Alignment Score
                             </span>
-                            <span className="text-sapphire-green font-bold text-text-xs">
+                            <span className="text-emerald-400 font-bold text-text-xs">
                               {critiqueB.brand_alignment_score}/100
                             </span>
                           </div>
-                          <p className="text-[11px] text-sapphire-muted leading-tight">
+                          <p className="text-[11px] text-zinc-400 leading-tight">
                             {critiqueB.critique_notes[0] || "Passed brand voice & visual compliance audit."}
                           </p>
                         </div>
@@ -1885,7 +1883,7 @@ export default function SapphireWorkspace() {
                       {/* Version History Strip */}
                       {historyConceptB.length > 0 && (
                         <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1">
-                          <span className="text-[10px] text-sapphire-muted font-medium">Versions:</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">Versions:</span>
                           {historyConceptB.map((v) => (
                             <button
                               key={v.versionNumber}
@@ -1893,10 +1891,10 @@ export default function SapphireWorkspace() {
                                 setActiveVersionB(v.versionNumber);
                                 setBrief((prev) => (prev ? { ...prev, concept_b: v.conceptItem } : null));
                               }}
-                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-medium transition-colors ${
                                 activeVersionB === v.versionNumber
-                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold"
-                                  : "bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-sapphire-muted"
+                                  ? "bg-zinc-100 text-zinc-950 font-semibold shadow-sm"
+                                  : "bg-zinc-950 hover:bg-zinc-800 border border-white/5 text-zinc-400"
                               }`}
                             >
                               v{v.versionNumber}
@@ -1906,7 +1904,7 @@ export default function SapphireWorkspace() {
                       )}
 
                       {/* Image Preview Container with Live Loading Animation */}
-                      <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-inner flex items-center justify-center">
+                      <div className="relative aspect-[4/5] rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden group shadow-inner flex items-center justify-center">
                         {isRegeneratingB || (isLoading && !brief?.concept_b.image_url) ? (
                           <ImageGeneration
                             prompt={brief?.concept_b.image_prompt || prompt || "Editorial photography with bold typography"}
@@ -1924,7 +1922,7 @@ export default function SapphireWorkspace() {
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-xs">
                               <button
                                 onClick={() => setActiveImageModal(brief.concept_b.image_url!)}
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Enlarge Image Preview"
                               >
                                 <Maximize2 className="w-4 h-4" />
@@ -1932,7 +1930,7 @@ export default function SapphireWorkspace() {
                               <button
                                 onClick={() => handleRegenerateImage("B")}
                                 disabled={isRegeneratingB}
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Regenerate Artwork"
                               >
                                 <RefreshCw className={`w-4 h-4 ${isRegeneratingB ? "animate-spin" : ""}`} />
@@ -1941,7 +1939,7 @@ export default function SapphireWorkspace() {
                                 href={brief.concept_b.image_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-sapphire-border"
+                                className="p-2.5 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
                                 title="Open High Res Image"
                               >
                                 <Download className="w-4 h-4" />
@@ -1972,12 +1970,12 @@ export default function SapphireWorkspace() {
                             resolution="1080 × 1350"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
-                            <FileText className="w-8 h-8 stroke-1 text-sapphire-muted" />
-                            <p className="text-text-xs font-semibold text-sapphire-dark">
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-zinc-500 space-y-2">
+                            <FileText className="w-8 h-8 stroke-1 text-zinc-600" />
+                            <p className="text-text-xs font-semibold text-zinc-300">
                               Concept B Visual Preview
                             </p>
-                            <p className="text-text-xs text-sapphire-muted max-w-[220px]">
+                            <p className="text-text-xs text-zinc-500 max-w-[220px]">
                               Submit a prompt to generate AI social media artwork.
                             </p>
                           </div>
@@ -1985,14 +1983,14 @@ export default function SapphireWorkspace() {
                       </div>
 
                       {brief && (
-                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border text-[11px] space-y-2">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 text-[11px] space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="font-semibold text-sapphire-dark">Instagram Caption Draft:</p>
-                            <span className="text-[10px] text-sapphire-muted font-mono">
+                            <p className="font-semibold text-zinc-200">Instagram Caption Draft:</p>
+                            <span className="text-[10px] text-zinc-500 font-mono">
                               {brief.concept_b.caption_instagram.length} chars
                             </span>
                           </div>
-                          <p className="text-sapphire-dark/90 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
+                          <p className="text-zinc-300 leading-relaxed line-clamp-3 whitespace-pre-line font-sans">
                             {brief.concept_b.caption_instagram}
                           </p>
                           <button
@@ -2002,7 +2000,7 @@ export default function SapphireWorkspace() {
                             className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium pt-1"
                           >
                             {copiedId === "cap-b" ? (
-                              <Check className="w-3 h-3 text-sapphire-green" />
+                              <Check className="w-3 h-3 text-emerald-400" />
                             ) : (
                               <Copy className="w-3 h-3" />
                             )}
@@ -2013,15 +2011,15 @@ export default function SapphireWorkspace() {
 
                       {/* Refinement Overlay Form */}
                       {isRefining === "B" ? (
-                        <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-terracotta/40 space-y-2">
-                          <div className="flex items-center justify-between text-text-xs font-semibold text-sapphire-dark">
+                        <div className="p-3.5 rounded-2xl bg-zinc-950 border border-sapphire-terracotta/40 space-y-2">
+                          <div className="flex items-center justify-between text-text-xs font-semibold text-zinc-200">
                             <span className="flex items-center gap-1">
                               <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
                               Refine Concept B (v{activeVersionB})
                             </span>
                             <button
                               onClick={() => setIsRefining(null)}
-                              className="p-0.5 text-sapphire-muted hover:text-sapphire-dark"
+                              className="p-0.5 text-zinc-400 hover:text-zinc-200"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -2030,20 +2028,20 @@ export default function SapphireWorkspace() {
                             type="text"
                             value={refinementInput}
                             onChange={(e) => setRefinementInput(e.target.value)}
-                            placeholder="e.g. Make composition more dramatic & captions punchier..."
-                            className="w-full p-2 text-text-xs rounded-lg border border-sapphire-border bg-sapphire-surface outline-none focus:border-white/30 text-sapphire-dark"
+                            placeholder="e.g. Make lighting warmer & caption punchier..."
+                            className="w-full p-2.5 text-text-xs rounded-xl border border-white/10 bg-zinc-900 outline-none focus:border-white/30 text-zinc-100"
                           />
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => setIsRefining(null)}
-                              className="px-2.5 py-1 rounded-lg text-text-xs font-medium border border-sapphire-border hover:bg-sapphire-subtle"
+                              className="px-3 py-1 rounded-xl text-text-xs font-medium border border-white/10 hover:bg-zinc-800 text-zinc-300"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleRefineSubmit("B")}
                               disabled={!refinementInput.trim() || isRefinementLoading}
-                              className="px-3 py-1 rounded-lg bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
+                              className="px-3 py-1 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-medium hover:bg-opacity-90 disabled:opacity-40 flex items-center gap-1"
                             >
                               {isRefinementLoading ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -2060,8 +2058,8 @@ export default function SapphireWorkspace() {
                               onClick={() => handleConceptSelect("B")}
                               className={`flex-1 py-2.5 rounded-xl text-text-xs font-medium transition-all ${
                                 selectedConcept === "B"
-                                  ? "bg-sapphire-dark text-sapphire-bg font-semibold shadow-sm"
-                                  : "border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark"
+                                  ? "bg-zinc-100 text-zinc-950 font-semibold shadow-sm"
+                                  : "border border-white/5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100"
                               }`}
                             >
                               {selectedConcept === "B" ? "Concept B Selected" : "Select Concept B"}
@@ -2069,7 +2067,7 @@ export default function SapphireWorkspace() {
                             {brief && (
                               <button
                                 onClick={() => setIsRefining("B")}
-                                className="p-2.5 rounded-xl border border-sapphire-border bg-sapphire-subtle/50 hover:bg-sapphire-subtle text-sapphire-dark text-text-xs font-medium flex items-center gap-1"
+                                className="p-2.5 rounded-xl border border-white/5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 text-text-xs font-medium flex items-center gap-1"
                                 title="Refine Concept B"
                               >
                                 <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
@@ -2092,187 +2090,207 @@ export default function SapphireWorkspace() {
                     </div>
                   </div>
                 ) : (
+                  /* View Mode 2: Studio Focus View (Hero inspection with side-by-side thumbnail switcher) */
+                  <div className="space-y-6">
+                    {/* Focus Concept Switcher Segmented Tab */}
+                    <div className="flex items-center justify-center gap-3 p-1.5 rounded-2xl bg-zinc-900 border border-white/5 max-w-sm mx-auto shadow-inner">
+                      <button
+                        onClick={() => setSelectedConcept("A")}
+                        className={`flex-1 py-2 rounded-xl text-text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                          (selectedConcept === "A" || !selectedConcept)
+                            ? "bg-zinc-800 text-zinc-100 shadow-sm border border-white/5"
+                            : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-sapphire-blue" />
+                        <span>Direction A ({brief ? brief.concept_a.label.slice(0, 16) : "Concept A"}...)</span>
+                      </button>
+                      <button
+                        onClick={() => setSelectedConcept("B")}
+                        className={`flex-1 py-2 rounded-xl text-text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                          selectedConcept === "B"
+                            ? "bg-zinc-800 text-zinc-100 shadow-sm border border-white/5"
+                            : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-sapphire-terracotta" />
+                        <span>Direction B ({brief ? brief.concept_b.label.slice(0, 16) : "Concept B"}...)</span>
+                      </button>
+                    </div>
 
-                  /* View Mode 2: Studio Focus Inspector (Single Concept Hero View) */
-                  (() => {
-                    const activeHeroConcept =
-                      selectedConcept === "B"
-                        ? brief?.concept_b
-                        : brief?.concept_a;
-                    const activeHeroKey = selectedConcept === "B" ? "B" : "A";
-                    const activeHeroCritique =
-                      selectedHeroKey(selectedConcept, critiqueA, critiqueB);
-                    const bp = activeHeroConcept?.design_blueprint;
+                    {/* Active Hero Concept Focus Inspector Card */}
+                    {(() => {
+                      const activeHeroKey = selectedConcept === "B" ? "B" : "A";
+                      const activeHeroConcept = activeHeroKey === "B" ? brief?.concept_b : brief?.concept_a;
+                      const activeHeroCritique = activeHeroKey === "B" ? critiqueB : critiqueA;
+                      const activeHeroHistory = activeHeroKey === "B" ? historyConceptB : historyConceptA;
+                      const activeHeroVersion = activeHeroKey === "B" ? activeVersionB : activeVersionA;
+                      const activeHeroIsRegenerating = activeHeroKey === "B" ? isRegeneratingB : isRegeneratingA;
+                      const activeHeroImageError = activeHeroKey === "B" ? imageErrorB : imageErrorA;
 
-                    return (
-                      <div className="space-y-5">
-                        {/* Hero Card */}
-                        <div className="border border-sapphire-border rounded-2xl bg-sapphire-surface p-6 shadow-md space-y-5">
+                      return (
+                        <div className="border border-white/5 rounded-3xl bg-zinc-900/90 p-6 space-y-6 shadow-2xl">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-text-sm font-semibold text-sapphire-dark">
-                                {activeHeroConcept ? activeHeroConcept.label : "Instagram Hero Direction"}
-                              </span>
-                              <span className="text-[10px] text-sapphire-terracotta bg-sapphire-terracotta/10 px-2.5 py-0.5 rounded-full border border-sapphire-terracotta/20 font-mono">
-                                Concept {activeHeroKey}
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-3 h-3 rounded-full bg-sapphire-terracotta" />
+                              <span className="font-bold text-text-sm text-zinc-100">
+                                {activeHeroConcept ? activeHeroConcept.label : `Concept ${activeHeroKey}`}
                               </span>
                             </div>
+                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-800/40">
+                              Focus Inspector Active
+                            </span>
+                          </div>
 
-                            {/* Switch Concept in Focus View */}
-                            {brief && (
-                              <div className="flex items-center gap-1 bg-sapphire-bg p-1 rounded-xl border border-sapphire-border text-text-xs">
-                                <button
-                                  onClick={() => handleConceptSelect("A")}
-                                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedConcept !== "B"
-                                      ? "bg-sapphire-surface text-sapphire-dark shadow-sm"
-                                      : "text-sapphire-muted hover:text-sapphire-dark"
-                                  }`}
-                                >
-                                  Concept A
-                                </button>
-                                <button
-                                  onClick={() => handleConceptSelect("B")}
-                                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                                    selectedConcept === "B"
-                                      ? "bg-sapphire-surface text-sapphire-dark shadow-sm"
-                                      : "text-sapphire-muted hover:text-sapphire-dark"
-                                  }`}
-                                >
-                                  Concept B
-                                </button>
+                          {/* Hero 1080x1350 Canvas Stage */}
+                          <div className="relative aspect-[4/5] rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden group shadow-2xl flex items-center justify-center max-w-lg mx-auto">
+                            {activeHeroIsRegenerating || (isLoading && !activeHeroConcept?.image_url) ? (
+                              <ImageGeneration
+                                prompt={activeHeroConcept?.image_prompt || prompt || "Editorial photography with bold typography"}
+                                resolution="1080 × 1350"
+                              />
+                            ) : activeHeroConcept?.image_url && !activeHeroImageError ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={activeHeroConcept.image_url}
+                                  alt={`Concept ${activeHeroKey} Focus Preview`}
+                                  onError={() => {
+                                    if (activeHeroKey === "A") setImageErrorA(true);
+                                    else setImageErrorB(true);
+                                  }}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-xs">
+                                  <button
+                                    onClick={() => setActiveImageModal(activeHeroConcept.image_url!)}
+                                    className="p-3 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
+                                    title="Enlarge Image Preview"
+                                  >
+                                    <Maximize2 className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRegenerateImage(activeHeroKey)}
+                                    disabled={activeHeroIsRegenerating}
+                                    className="p-3 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
+                                    title="Regenerate Artwork"
+                                  >
+                                    <RefreshCw className={`w-5 h-5 ${activeHeroIsRegenerating ? "animate-spin" : ""}`} />
+                                  </button>
+                                  <a
+                                    href={activeHeroConcept.image_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-3 rounded-xl bg-zinc-900 text-zinc-200 hover:bg-zinc-800 transition-colors border border-white/10"
+                                    title="Open High Res Image"
+                                  >
+                                    <Download className="w-5 h-5" />
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-zinc-500 space-y-2">
+                                <FileText className="w-8 h-8 stroke-1 text-zinc-600" />
+                                <p className="text-text-xs font-semibold text-zinc-300">
+                                  Focus Visual Canvas
+                                </p>
+                                <p className="text-text-xs text-zinc-500 max-w-[220px]">
+                                  Submit a prompt to inspect artwork in Focus Mode.
+                                </p>
                               </div>
                             )}
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                            {/* Artwork Preview */}
-                            <div className="relative aspect-[4/5] rounded-2xl bg-sapphire-bg border border-sapphire-border overflow-hidden group shadow-md">
-                              {activeHeroConcept?.image_url ? (
-                                <>
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={activeHeroConcept.image_url}
-                                    alt="Hero Instagram Visual"
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() => setActiveImageModal(activeHeroConcept.image_url!)}
-                                      className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors"
-                                      title="Enlarge Asset"
-                                    >
-                                      <Maximize2 className="w-4 h-4" />
-                                    </button>
-                                    <a
-                                      href={activeHeroConcept.image_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="p-2.5 rounded-xl bg-sapphire-surface text-sapphire-dark hover:bg-sapphire-subtle transition-colors"
-                                      title="Download High Res"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </a>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-sapphire-muted space-y-2">
-                                  <FileText className="w-8 h-8 stroke-1" />
-                                  <p className="text-text-xs font-medium">No artwork generated yet.</p>
+                          {/* Hero Metadata & Critic Breakdown */}
+                          <div className="space-y-4 max-w-lg mx-auto">
+                            {activeHeroCritique && (
+                              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2 text-text-xs">
+                                <div className="flex items-center justify-between font-semibold">
+                                  <span className="flex items-center gap-1.5 text-zinc-200">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                    Brand Alignment & Readability Score
+                                  </span>
+                                  <span className="text-emerald-400 font-bold text-text-xs">
+                                    {activeHeroCritique.brand_alignment_score}/100
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Design Blueprint Inspector & Copy */}
-                            <div className="space-y-4">
-                              {/* Design Blueprint Matrix */}
-                              <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-2.5 text-text-xs">
-                                <span className="font-semibold text-sapphire-dark uppercase tracking-wider text-[10px]">
-                                  Design Intelligence Blueprint
-                                </span>
-                                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] text-zinc-400">
                                   <div>
-                                    <span className="text-sapphire-muted">Hook Font:</span>{" "}
-                                    <span className="font-mono text-sapphire-dark font-medium">
-                                      {bp?.font_family_hook || "Playfair Display"}
-                                    </span>
+                                    <span className="text-zinc-500">Visual Quality:</span>{" "}
+                                    <span className="font-semibold text-zinc-200">{activeHeroCritique.visual_score}/100</span>
                                   </div>
                                   <div>
-                                    <span className="text-sapphire-muted">Body Font:</span>{" "}
-                                    <span className="font-mono text-sapphire-dark font-medium">
-                                      {bp?.font_family_body || "Plus Jakarta Sans"}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-sapphire-muted">Archetype:</span>{" "}
-                                    <span className="text-sapphire-terracotta font-medium">
-                                      {bp?.archetype?.replace("_", " ") || "Editorial Magazine"}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-sapphire-muted">Contrast Scrim:</span>{" "}
-                                    <span className="text-sapphire-dark font-medium">
-                                      {bp?.scrim_intensity || "Medium"}
+                                    <span className="text-zinc-500">Voice Tone:</span>{" "}
+                                    <span className="font-semibold text-emerald-400">
+                                      {activeHeroCritique.voice_compliance ? "100% Compliant" : "Flagged"}
                                     </span>
                                   </div>
                                 </div>
-                                {bp?.negative_space_directive && (
-                                  <p className="text-[10px] text-sapphire-muted pt-1 border-t border-sapphire-border/50">
-                                    <strong className="text-sapphire-dark">Spatial Void:</strong>{" "}
-                                    {bp.negative_space_directive}
+                                {activeHeroCritique.critique_notes[0] && (
+                                  <p className="text-[11px] text-zinc-400 pt-1 border-t border-white/5 leading-relaxed">
+                                    {activeHeroCritique.critique_notes[0]}
                                   </p>
                                 )}
                               </div>
+                            )}
 
-                              {/* Instagram Caption Draft */}
-                              {activeHeroConcept && (
-                                <div className="p-3.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-2 text-text-xs">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-sapphire-dark">
-                                      Instagram Caption & Hashtags
-                                    </span>
-                                    <span className="text-[10px] text-sapphire-muted font-mono">
-                                      {activeHeroConcept.caption_instagram.length} chars
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-sapphire-dark/90 leading-relaxed whitespace-pre-line line-clamp-5 font-sans">
-                                    {activeHeroConcept.caption_instagram}
-                                  </p>
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(
-                                        activeHeroConcept.caption_instagram,
-                                        `cap-hero-${activeHeroKey}`
-                                      )
-                                    }
-                                    className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium text-[11px] pt-1"
-                                  >
-                                    {copiedId === `cap-hero-${activeHeroKey}` ? (
-                                      <Check className="w-3 h-3 text-sapphire-green" />
-                                    ) : (
-                                      <Copy className="w-3 h-3" />
-                                    )}
-                                    <span>Copy Instagram Caption</span>
-                                  </button>
+                            {/* Instagram Caption Draft */}
+                            {activeHeroConcept && (
+                              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2 text-text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-zinc-200">
+                                    Instagram Caption & Hashtags
+                                  </span>
+                                  <span className="text-[10px] text-zinc-500 font-mono">
+                                    {activeHeroConcept.caption_instagram.length} chars
+                                  </span>
                                 </div>
-                              )}
+                                <p className="text-[11px] text-zinc-300 leading-relaxed whitespace-pre-line line-clamp-5 font-sans">
+                                  {activeHeroConcept.caption_instagram}
+                                </p>
+                                <button
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      activeHeroConcept.caption_instagram,
+                                      `cap-hero-${activeHeroKey}`
+                                    )
+                                  }
+                                  className="flex items-center gap-1 text-sapphire-terracotta hover:underline font-medium text-[11px] pt-1"
+                                >
+                                  {copiedId === `cap-hero-${activeHeroKey}` ? (
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                  <span>Copy Instagram Caption</span>
+                                </button>
+                              </div>
+                            )}
 
-                              {/* Approval Action */}
-                              {brief && (
+                            {/* Action Bar */}
+                            {brief && (
+                              <div className="flex items-center gap-3 pt-2">
+                                <button
+                                  onClick={() => setIsRefining(activeHeroKey)}
+                                  className="flex-1 py-2.5 rounded-xl border border-white/10 bg-zinc-950 hover:bg-zinc-800 text-zinc-200 text-text-xs font-medium flex items-center justify-center gap-1.5 shadow-sm"
+                                >
+                                  <Wand2 className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                                  <span>Refine Direction {activeHeroKey}</span>
+                                </button>
                                 <button
                                   onClick={() => setShowApprovalModal(true)}
-                                  className="w-full py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                  className="flex-1 py-2.5 rounded-xl bg-sapphire-terracotta text-white text-text-xs font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-sm"
                                 >
                                   <Mail className="w-3.5 h-3.5" />
-                                  <span>Approve & Deliver Package ({activeHeroConcept?.label})</span>
+                                  <span>Approve Direction {activeHeroKey}</span>
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })()
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             </div>

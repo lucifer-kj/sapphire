@@ -261,22 +261,22 @@ export const WorkspaceOnboardingModal: React.FC<WorkspaceOnboardingModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sapphire-dark/60 backdrop-blur-md animate-fade-in">
-      <div className="bg-sapphire-bg border border-sapphire-border rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+      <div className="bg-zinc-950 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-zinc-100">
         {/* Modal Top Header */}
-        <div className="p-6 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface/80">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-900/90">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center text-sapphire-terracotta font-serif font-bold text-lg">
               S
             </div>
             <div>
-              <h2 className="font-serif font-semibold text-text-lg text-sapphire-dark">
+              <h2 className="font-serif font-semibold text-text-lg text-zinc-100">
                 {path === "select" && "Create Brand Workspace"}
                 {path === "personal" && "Personal Brand Calibration"}
                 {path === "client_extract" && (isExtracting ? "Autonomous Brand Extraction" : "Client Intelligence Intake")}
                 {path === "client_review" && "Review Extracted Brand DNA"}
               </h2>
-              <p className="text-text-xs text-sapphire-muted">
+              <p className="text-text-xs text-zinc-400">
                 {path === "select" && "Choose between personal creator profile or autonomous client website extraction."}
                 {path === "personal" && "Calibrate your personal visual style, typography, and tone."}
                 {path === "client_extract" && "Extract colors, typography, logos & voice rules directly from the client's URL."}
@@ -287,7 +287,7 @@ export const WorkspaceOnboardingModal: React.FC<WorkspaceOnboardingModalProps> =
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle transition-colors"
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -300,16 +300,16 @@ export const WorkspaceOnboardingModal: React.FC<WorkspaceOnboardingModalProps> =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
               <div
                 onClick={() => setPath("personal")}
-                className="group p-6 rounded-2xl border border-sapphire-border bg-sapphire-surface hover:border-sapphire-terracotta transition-all cursor-pointer space-y-4 hover:shadow-md"
+                className="group p-6 rounded-2xl border border-white/5 bg-zinc-900/60 hover:bg-zinc-900 hover:border-white/15 transition-all cursor-pointer space-y-4 hover:shadow-md"
               >
-                <div className="w-12 h-12 rounded-xl bg-sapphire-subtle flex items-center justify-center text-sapphire-dark group-hover:bg-sapphire-terracotta group-hover:text-white transition-all">
+                <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200 group-hover:bg-sapphire-terracotta group-hover:text-white transition-all">
                   <User className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-serif font-bold text-text-md text-sapphire-dark">
+                  <h3 className="font-serif font-bold text-text-md text-zinc-100">
                     Personal Brand / Creator
                   </h3>
-                  <p className="text-text-xs text-sapphire-muted leading-relaxed">
+                  <p className="text-text-xs text-zinc-400 leading-relaxed">
                     Designed for founders, creators, and individuals. Answer 3 quick style questions to synthesize your custom visual palette.
                   </p>
                 </div>
@@ -321,21 +321,21 @@ export const WorkspaceOnboardingModal: React.FC<WorkspaceOnboardingModalProps> =
 
               <div
                 onClick={() => setPath("client_extract")}
-                className="group p-6 rounded-2xl border border-sapphire-border bg-sapphire-surface hover:border-sapphire-terracotta transition-all cursor-pointer space-y-4 hover:shadow-md"
+                className="group p-6 rounded-2xl border border-white/5 bg-zinc-900/60 hover:bg-zinc-900 hover:border-white/15 transition-all cursor-pointer space-y-4 hover:shadow-md"
               >
                 <div className="w-12 h-12 rounded-xl bg-sapphire-terracotta/10 flex items-center justify-center text-sapphire-terracotta group-hover:bg-sapphire-terracotta group-hover:text-white transition-all">
                   <Globe className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-serif font-bold text-text-md text-sapphire-dark">
+                    <h3 className="font-serif font-bold text-text-md text-zinc-100">
                       Client / Company URL
                     </h3>
                     <span className="text-[10px] bg-sapphire-terracotta/15 text-sapphire-terracotta font-semibold px-2 py-0.5 rounded-full">
                       OpenBrand AI
                     </span>
                   </div>
-                  <p className="text-text-xs text-sapphire-muted leading-relaxed">
+                  <p className="text-text-xs text-zinc-400 leading-relaxed">
                     Autonomous agent crawls the client domain, extracting stylesheets, logo variants, hex palettes, typography & positioning.
                   </p>
                 </div>

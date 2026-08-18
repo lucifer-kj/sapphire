@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #181816;
-  --foreground: #ECEBE4;
+  --background: #09090b;
+  --foreground: #f4f4f5;
 }
 
 body {
@@ -17,8 +17,8 @@ body {
 
 /* Custom scrollbar matching Claude dark aesthetic */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -26,13 +26,14 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2B2B28;
+  background: #27272a;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3E3E3A;
+  background: #3f3f46;
 }
+
 
 /* Image Generation Loading Animation Styles */
 .igWrap {

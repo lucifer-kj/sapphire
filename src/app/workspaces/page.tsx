@@ -128,48 +128,48 @@ export default function WorkspacesPage() {
       {/* 2. Main Portal Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-12">
         {/* Hero Section */}
-        <div className="space-y-2">
+        <div className="space-y-3 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-text-xs font-medium bg-sapphire-terracotta/10 text-sapphire-terracotta border border-sapphire-terracotta/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Autonomous Brand Intelligence & Workspace Hub</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-sapphire-dark">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100">
             Create or Select a Workspace
           </h1>
-          <p className="text-text-sm text-sapphire-muted max-w-2xl leading-relaxed">
+          <p className="text-text-sm text-zinc-400 leading-relaxed">
             Extract brand DNA directly from any client website or calibrate a bespoke personal creator identity.
           </p>
         </div>
 
-        {/* Top Section: Two Primary Onboarding Flows */}
+        {/* Top Section: Two Primary Onboarding Flows (High-End Dashboard Hero Cards) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Path A: Client Brand Workspace (OpenBrand Extraction) */}
           <div
             onClick={() => handleOpenOnboarding("client_extract")}
-            className="p-7 rounded-2xl bg-sapphire-surface border border-sapphire-border hover:border-sapphire-terracotta transition-all duration-300 cursor-pointer group shadow-xs hover:shadow-md flex flex-col justify-between relative overflow-hidden"
+            className="p-10 sm:p-12 rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sapphire-terracotta/5 rounded-full blur-2xl pointer-events-none group-hover:bg-sapphire-terracotta/10 transition-colors" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-sapphire-terracotta/5 rounded-full blur-3xl pointer-events-none group-hover:bg-sapphire-terracotta/10 transition-colors" />
 
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center text-sapphire-terracotta group-hover:scale-105 transition-transform">
-                <Globe className="w-6 h-6" />
+            <div className="space-y-6">
+              <div className="w-14 h-14 rounded-2xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center text-sapphire-terracotta group-hover:scale-105 transition-transform">
+                <Globe className="w-7 h-7" />
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-sapphire-dark group-hover:text-sapphire-terracotta transition-colors">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-sapphire-terracotta transition-colors">
                     Client Brand Workspace
                   </h2>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sapphire-terracotta/10 text-sapphire-terracotta uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-sapphire-terracotta/10 text-sapphire-terracotta uppercase tracking-wider">
                     Autonomous
                   </span>
                 </div>
-                <p className="text-text-xs text-sapphire-muted leading-relaxed">
+                <p className="text-text-xs md:text-[13px] text-zinc-400 leading-relaxed">
                   Enter any client website URL. Sapphire’s OpenBrand crawler autonomously extracts color palettes, typography rules, logos, taglines, and positioning into a durable Brand Brain.
                 </p>
               </div>
             </div>
 
-            <div className="pt-6 flex items-center justify-between text-text-xs font-semibold text-sapphire-terracotta group-hover:translate-x-1 transition-transform">
+            <div className="pt-8 flex items-center justify-between text-text-xs font-semibold text-sapphire-terracotta group-hover:translate-x-1 transition-transform">
               <span>Extract Client Brand</span>
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -178,30 +178,30 @@ export default function WorkspacesPage() {
           {/* Path B: Personal / Creator Workspace */}
           <div
             onClick={() => handleOpenOnboarding("personal")}
-            className="p-7 rounded-2xl bg-sapphire-surface border border-sapphire-border hover:border-sapphire-dark transition-all duration-300 cursor-pointer group shadow-xs hover:shadow-md flex flex-col justify-between relative overflow-hidden"
+            className="p-10 sm:p-12 rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sapphire-subtle rounded-full blur-2xl pointer-events-none group-hover:bg-sapphire-border/50 transition-colors" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none group-hover:bg-white/10 transition-colors" />
 
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-sapphire-subtle border border-sapphire-border flex items-center justify-center text-sapphire-dark group-hover:scale-105 transition-transform">
-                <User className="w-6 h-6" />
+            <div className="space-y-6">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-white/5 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
+                <User className="w-7 h-7" />
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-sapphire-dark group-hover:text-sapphire-dark transition-colors">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-white transition-colors">
                     Personal Creator Workspace
                   </h2>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sapphire-subtle text-sapphire-dark uppercase tracking-wider border border-sapphire-border">
+                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 uppercase tracking-wider border border-white/5">
                     Cognitive
                   </span>
                 </div>
-                <p className="text-text-xs text-sapphire-muted leading-relaxed">
+                <p className="text-text-xs md:text-[13px] text-zinc-400 leading-relaxed">
                   Tailored for creators, agencies, and founders. Answer strategic cognitive questions, select a customized multi-color palette, and pick from 4 curated design templates.
                 </p>
               </div>
             </div>
 
-            <div className="pt-6 flex items-center justify-between text-text-xs font-semibold text-sapphire-dark group-hover:translate-x-1 transition-transform">
+            <div className="pt-8 flex items-center justify-between text-text-xs font-semibold text-zinc-200 group-hover:translate-x-1 transition-transform">
               <span>Setup Personal Brand</span>
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -209,26 +209,26 @@ export default function WorkspacesPage() {
         </div>
 
         {/* Bottom Section: Existing Workspaces Grid */}
-        <div className="space-y-6 pt-4 border-t border-sapphire-border/60">
+        <div className="space-y-6 pt-6 border-t border-white/5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-sapphire-dark">
+              <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
                 Your Workspaces ({workspaces.length})
               </h2>
-              <p className="text-text-xs text-sapphire-muted">
+              <p className="text-text-xs text-zinc-400">
                 Select a client workspace to enter the creative studio canvas.
               </p>
             </div>
 
             {workspaces.length > 0 && (
               <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-sapphire-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Filter workspaces..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-text-xs rounded-xl bg-sapphire-surface border border-sapphire-border focus:outline-none focus:border-sapphire-terracotta transition-colors"
+                  className="w-full pl-9 pr-3 py-1.5 text-text-xs rounded-xl bg-zinc-900 border border-white/5 focus:outline-none focus:border-sapphire-terracotta text-zinc-200 transition-colors"
                 />
               </div>
             )}
@@ -247,20 +247,20 @@ export default function WorkspacesPage() {
                 return (
                   <div
                     key={brandId}
-                    className="p-5 rounded-2xl bg-sapphire-surface border border-sapphire-border hover:border-sapphire-terracotta/80 transition-all duration-200 flex flex-col justify-between group relative shadow-xs"
+                    className="p-6 rounded-2xl bg-zinc-900/70 border border-white/5 hover:border-white/15 transition-all duration-200 flex flex-col justify-between group relative shadow-md"
                   >
                     <div className="space-y-4">
                       {/* Card Header */}
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-sapphire-bg border border-sapphire-border flex items-center justify-center font-bold text-text-sm text-sapphire-dark">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-text-sm text-zinc-200">
                             {brand.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="font-bold text-text-sm text-sapphire-dark group-hover:text-sapphire-terracotta transition-colors">
+                            <h3 className="font-bold text-text-sm text-zinc-100 group-hover:text-sapphire-terracotta transition-colors">
                               {brand.name}
                             </h3>
-                            <span className="text-[11px] text-sapphire-muted">
+                            <span className="text-[11px] text-zinc-400">
                               {brand.industry}
                             </span>
                           </div>
@@ -268,7 +268,7 @@ export default function WorkspacesPage() {
 
                         {/* Delete Button */}
                         {isDeleting ? (
-                          <div className="flex items-center gap-1 bg-red-50 p-1 rounded-lg border border-red-200">
+                          <div className="flex items-center gap-1 bg-red-950/80 p-1 rounded-lg border border-red-800">
                             <button
                               onClick={() => handleDeleteWorkspace(brandId)}
                               className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white font-medium hover:bg-red-700"
@@ -277,7 +277,7 @@ export default function WorkspacesPage() {
                             </button>
                             <button
                               onClick={() => setDeleteConfirmId(null)}
-                              className="text-[10px] px-1.5 py-0.5 rounded text-sapphire-muted hover:text-sapphire-dark"
+                              className="text-[10px] px-1.5 py-0.5 rounded text-zinc-400 hover:text-zinc-200"
                             >
                               Cancel
                             </button>
@@ -286,7 +286,7 @@ export default function WorkspacesPage() {
                           <button
                             onClick={() => setDeleteConfirmId(brandId)}
                             title="Delete workspace"
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-sapphire-muted hover:text-red-600 hover:bg-red-50 transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -294,7 +294,7 @@ export default function WorkspacesPage() {
                       </div>
 
                       {/* Positioning / Description */}
-                      <p className="text-text-xs text-sapphire-muted line-clamp-2 leading-relaxed">
+                      <p className="text-text-xs text-zinc-400 line-clamp-2 leading-relaxed">
                         {brand.positioning || brand.description || "Active Brand Brain with customized visual rules."}
                       </p>
 
@@ -303,25 +303,25 @@ export default function WorkspacesPage() {
                         {colors.map((c, i) => (
                           <div
                             key={i}
-                            className="w-4 h-4 rounded-full border border-sapphire-border shadow-hairline"
+                            className="w-4 h-4 rounded-full border border-white/10 shadow-hairline"
                             style={{ backgroundColor: c }}
                             title={c}
                           />
                         ))}
-                        <span className="text-[10px] font-mono text-sapphire-muted ml-1">
+                        <span className="text-[10px] font-mono text-zinc-500 ml-1">
                           {brand.visual_identity?.fonts?.heading || "Plus Jakarta Sans"}
                         </span>
                       </div>
                     </div>
 
                     {/* Open Studio Action */}
-                    <div className="pt-5 mt-4 border-t border-sapphire-border/50 flex items-center justify-between">
-                      <span className="text-[11px] text-sapphire-muted">
+                    <div className="pt-5 mt-4 border-t border-white/5 flex items-center justify-between">
+                      <span className="text-[11px] text-zinc-500">
                         {brand.social_handle || "@brand"}
                       </span>
                       <button
                         onClick={() => router.push(`/?workspace=${brandId}`)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-text-xs font-semibold bg-sapphire-bg hover:bg-sapphire-terracotta hover:text-white border border-sapphire-border transition-all shadow-hairline"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-text-xs font-semibold bg-zinc-800 hover:bg-sapphire-terracotta hover:text-white border border-white/5 transition-all shadow-sm"
                       >
                         <span>Open Studio</span>
                         <ArrowRight className="w-3 h-3" />
@@ -332,14 +332,14 @@ export default function WorkspacesPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-sapphire-border bg-sapphire-surface/50 space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-sapphire-subtle mx-auto flex items-center justify-center text-sapphire-muted">
+            <div className="text-center py-16 px-6 rounded-3xl border border-white/5 bg-zinc-900/40 space-y-3 shadow-md">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-800 mx-auto flex items-center justify-center text-zinc-400 border border-white/5">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="text-text-sm font-semibold text-sapphire-dark">
+              <h3 className="text-text-sm font-semibold text-zinc-200">
                 No Workspaces Created Yet
               </h3>
-              <p className="text-text-xs text-sapphire-muted max-w-sm mx-auto">
+              <p className="text-text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
                 Select Client Workspace or Personal Creator above to configure your first Brand Brain.
               </p>
             </div>
@@ -348,6 +348,7 @@ export default function WorkspacesPage() {
       </main>
 
       {/* Onboarding Modal Component */}
+
       <WorkspaceOnboardingModal
         isOpen={isOnboardingOpen}
         initialPath={onboardingPath}

@@ -10,17 +10,19 @@ const config: Config = {
     extend: {
       colors: {
         sapphire: {
-          bg: "#181816",
-          surface: "#21211F",
-          subtle: "#2B2B28",
-          dark: "#ECEBE4",
-          muted: "#9C9A91",
-          border: "rgba(255, 255, 255, 0.08)",
-          terracotta: "#D97757",
+          bg: "#09090b", // Rich dark neutral (zinc-950)
+          surface: "#18181b", // Surface / Panel (zinc-900)
+          subtle: "#27272a", // Elevated subtle (zinc-800)
+          elevated: "#27272a",
+          dark: "#f4f4f5", // Primary crisp text (zinc-100)
+          muted: "#a1a1aa", // Secondary muted text (zinc-400)
+          border: "rgba(255, 255, 255, 0.06)", // Ultra-low opacity white border (~5-6%)
+          terracotta: "#D97757", // Claude/Sapphire terracotta accent
           blue: "#7BA7D7",
           green: "#87A96B",
         },
       },
+
       borderWidth: {
         DEFAULT: "0.5px",
         "0.5": "0.5px",

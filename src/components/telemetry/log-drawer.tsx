@@ -139,19 +139,19 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#181816] h-full shadow-2xl flex flex-col border-l border-white/10 text-[#ECEBE4]">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-zinc-950 h-full shadow-2xl flex flex-col border-l border-white/10 text-zinc-100">
         {/* Header */}
-        <div className="p-4 bg-[#21211F] border-b border-white/10 flex items-center justify-between">
+        <div className="p-4 bg-zinc-900 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#D97757]/15 flex items-center justify-center text-[#D97757]">
+            <div className="w-8 h-8 rounded-xl bg-sapphire-terracotta/15 flex items-center justify-center text-sapphire-terracotta border border-sapphire-terracotta/20">
               <Activity className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-[#ECEBE4]">
+              <h2 className="text-sm font-semibold text-zinc-100">
                 Agent Telemetry & Execution Logs
               </h2>
-              <p className="text-xs text-[#9C9A91] font-mono">
+              <p className="text-xs text-zinc-400 font-mono">
                 {logs.length} events recorded • Total Latency: {totalDuration}ms
               </p>
             </div>
@@ -160,7 +160,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyLogs}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-[#2B2B28] hover:bg-[#383834] text-[#ECEBE4] rounded-md transition-colors border border-white/10"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl transition-colors border border-white/5 shadow-sm"
               title="Copy complete JSON log trace"
             >
               {copied ? (
@@ -177,7 +177,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md hover:bg-[#2B2B28] text-[#9C9A91] hover:text-[#ECEBE4] transition-colors"
+              className="p-1.5 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -185,36 +185,36 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
         </div>
 
         {/* Summary Metrics Bar */}
-        <div className="grid grid-cols-4 gap-2 p-3 bg-[#21211F] border-b border-white/10 text-xs">
-          <div className="p-2 rounded bg-[#2B2B28] border border-white/5">
-            <span className="text-[#9C9A91] block text-[10px] uppercase font-mono">
+        <div className="grid grid-cols-4 gap-2 p-3 bg-zinc-900 border-b border-white/5 text-xs">
+          <div className="p-2.5 rounded-xl bg-zinc-950 border border-white/5">
+            <span className="text-zinc-500 block text-[10px] uppercase font-mono">
               Total Steps
             </span>
-            <span className="font-semibold text-[#ECEBE4] text-sm">{logs.length}</span>
+            <span className="font-semibold text-zinc-100 text-sm">{logs.length}</span>
           </div>
-          <div className="p-2 rounded bg-[#2B2B28] border border-white/5">
-            <span className="text-[#9C9A91] block text-[10px] uppercase font-mono">
+          <div className="p-2.5 rounded-xl bg-zinc-950 border border-white/5">
+            <span className="text-zinc-500 block text-[10px] uppercase font-mono">
               Total Duration
             </span>
-            <span className="font-semibold text-[#ECEBE4] text-sm">
+            <span className="font-semibold text-zinc-100 text-sm">
               {(totalDuration / 1000).toFixed(2)}s
             </span>
           </div>
-          <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <span className="text-amber-400 block text-[10px] uppercase font-mono">
               Fallbacks
             </span>
             <span className="font-semibold text-amber-300 text-sm">{fallbackCount}</span>
           </div>
-          <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20">
+          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
             <span className="text-rose-400 block text-[10px] uppercase font-mono">Errors</span>
             <span className="font-semibold text-rose-300 text-sm">{errorCount}</span>
           </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="flex items-center gap-1.5 px-4 py-2 bg-[#181816] border-b border-white/10 overflow-x-auto text-xs">
-          <Filter className="w-3.5 h-3.5 text-[#9C9A91] mr-1" />
+        <div className="flex items-center gap-1.5 px-4 py-2.5 bg-zinc-950 border-b border-white/5 overflow-x-auto text-xs">
+          <Filter className="w-3.5 h-3.5 text-zinc-500 mr-1" />
           {[
             { id: "all", label: "All Logs" },
             { id: "groq", label: "Groq" },
@@ -225,10 +225,10 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 filter === tab.id
-                  ? "bg-[#D97757] text-white"
-                  : "bg-[#2B2B28] hover:bg-[#383834] text-[#9C9A91] hover:text-[#ECEBE4]"
+                  ? "bg-sapphire-terracotta text-white"
+                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/5"
               }`}
             >
               {tab.label}
@@ -239,7 +239,7 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
         {/* Log Entries Timeline */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredLogs.length === 0 ? (
-            <div className="text-center py-12 text-[#9C9A91] text-xs">
+            <div className="text-center py-12 text-zinc-500 text-xs">
               No log entries match the selected filter.
             </div>
           ) : (
@@ -248,20 +248,20 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
               return (
                 <div
                   key={log.id || index}
-                  className={`bg-[#21211F] rounded-lg border transition-all ${
+                  className={`bg-zinc-900 rounded-2xl border transition-all ${
                     log.status === "error"
                       ? "border-rose-500/40"
                       : log.status === "fallback"
                       ? "border-amber-500/40"
-                      : "border-white/10 hover:border-white/20"
+                      : "border-white/5 hover:border-white/15"
                   }`}
                 >
                   <div
                     onClick={() => toggleExpand(log.id)}
-                    className="p-3 cursor-pointer flex items-start justify-between gap-2 select-none"
+                    className="p-3.5 cursor-pointer flex items-start justify-between gap-2 select-none"
                   >
                     <div className="flex items-start gap-2 flex-1">
-                      <button className="mt-0.5 text-[#9C9A91] hover:text-[#ECEBE4]">
+                      <button className="mt-0.5 text-zinc-400 hover:text-zinc-200">
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
@@ -271,21 +271,21 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
 
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-xs text-[#ECEBE4]">
+                          <span className="font-semibold text-xs text-zinc-100">
                             {log.agent}
                           </span>
                           {getProviderBadge(log.provider, log.model)}
                           {getStatusBadge(log.status)}
                         </div>
 
-                        <p className="text-xs text-[#9C9A91] leading-relaxed font-sans">
+                        <p className="text-xs text-zinc-400 leading-relaxed font-sans">
                           {log.summary}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#9C9A91]">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-500">
                         <Clock className="w-3 h-3" />
                         {log.durationMs}ms
                       </span>
@@ -294,16 +294,16 @@ export const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, logs }) =
 
                   {/* Expanded JSON Inspector */}
                   {isExpanded && (
-                    <div className="border-t border-white/10 p-3 bg-[#181816] rounded-b-lg">
+                    <div className="border-t border-white/5 p-3.5 bg-zinc-950 rounded-b-2xl">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-mono uppercase text-[#9C9A91]">
+                        <span className="text-[10px] font-mono uppercase text-zinc-500">
                           Raw Payload / State
                         </span>
-                        <span className="text-[10px] font-mono text-[#9C9A91]/80">
+                        <span className="text-[10px] font-mono text-zinc-500">
                           {new Date(log.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
-                      <pre className="text-[11px] font-mono bg-[#111110] text-[#ECEBE4] p-2.5 rounded overflow-x-auto max-h-60 leading-tight border border-white/5">
+                      <pre className="text-[11px] font-mono bg-zinc-950 text-zinc-200 p-3 rounded-xl overflow-x-auto max-h-60 leading-tight border border-white/5">
                         {JSON.stringify(log.details || log, null, 2)}
                       </pre>
                     </div>
