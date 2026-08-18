@@ -946,38 +946,19 @@ export default function SapphireWorkspace() {
               Sapphire
             </span>
           </Link>
-
-          <div className="h-4 w-[1px] bg-white/5" />
-
-          {/* Active Workspace Pill Linking to /workspaces */}
-          <Link
-            href="/workspaces"
-            title="Switch Workspace or Manage Clients"
-            className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-text-xs font-medium bg-transparent hover:bg-zinc-900 border border-transparent hover:border-white/5 text-zinc-300 hover:text-zinc-100 transition-all group"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="max-w-[160px] truncate font-medium">{activeBrandProfile.name}</span>
-            <span className="text-[10px] text-zinc-500 group-hover:text-sapphire-terracotta transition-colors flex items-center gap-0.5">
-              <span>Switch</span>
-              <ArrowRight className="w-2.5 h-2.5" />
-            </span>
-          </Link>
         </div>
 
         {/* Center: Platform Switcher Segmented Control */}
         <div className="hidden md:flex items-center bg-zinc-900 p-0.5 rounded-xl border border-white/5 text-text-xs font-medium shadow-inner">
           <button
             onClick={() => setActivePlatform("instagram")}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
               activePlatform === "instagram"
                 ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            <span>📷 Instagram</span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-sapphire-terracotta/10 text-sapphire-terracotta font-mono font-bold">
-              1080×1350
-            </span>
+            <span>Instagram</span>
           </button>
           <button
             onClick={() => {
@@ -985,13 +966,13 @@ export default function SapphireWorkspace() {
               setLearningToast("💼 LinkedIn Multi-Slide Carousel pipeline in development — Instagram Studio active.");
               setTimeout(() => setLearningToast(null), 4000);
             }}
-            className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
               activePlatform === "linkedin"
                 ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
-            <span>💼 LinkedIn</span>
+            <span>LinkedIn</span>
             <span className="text-[9px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-500 font-mono">
               Coming Soon
             </span>
@@ -1055,68 +1036,37 @@ export default function SapphireWorkspace() {
           }`}
         >
           <div className="w-[270px] flex flex-col h-full">
-            {/* Header Row 1: Brand Logo & App Title */}
-            <div className="h-12 px-3.5 border-b border-white/5 flex items-center justify-between bg-zinc-950">
-              <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 rounded-md overflow-hidden border border-white/10 bg-zinc-900 flex items-center justify-center p-0.5 shadow-sm">
-                  <img src="/logo.png" alt="Sapphire" className="w-full h-full object-contain" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-text-xs tracking-tight text-zinc-100">
-                    Sapphire
-                  </span>
-                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-sapphire-terracotta/10 text-sapphire-terracotta font-semibold">
-                    v2.4
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsLeftOpen(false)}
-                title="Collapse Left Panel (Ctrl+B)"
-                className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Header Row 2: Active Workspace & Key Details */}
-            <div className="px-3.5 py-2.5 border-b border-white/5 bg-zinc-900/30 flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-[10px] text-zinc-200 shrink-0">
+            {/* Unified Top Header: Active Workspace Brand Profile & Actions */}
+            <div className="h-14 px-3.5 border-b border-white/5 bg-zinc-950 flex items-center justify-between">
+              <Link href="/workspaces" className="flex items-center gap-2.5 min-w-0 group" title="Manage Workspaces / Switch Brand">
+                <div className="w-7 h-7 rounded-xl bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-xs text-zinc-200 shrink-0 group-hover:border-sapphire-terracotta transition-colors">
                   {activeBrandProfile.name.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-text-xs font-semibold text-zinc-200 leading-tight">
+                  <p className="truncate text-text-xs font-semibold text-zinc-200 group-hover:text-zinc-100 leading-tight">
                     {activeBrandProfile.name}
                   </p>
                   <span className="text-[10px] text-zinc-400 truncate block">
                     {activeBrandProfile.industry}
                   </span>
                 </div>
+              </Link>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  title="Brand Brain Settings"
+                  className="p-1.5 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-900 transition-colors"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setIsLeftOpen(false)}
+                  title="Collapse Left Panel (Ctrl+B)"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                title="Brand Brain Settings"
-                className="p-1 text-zinc-400 hover:text-zinc-200 rounded-md hover:bg-zinc-900 transition-colors"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Clean + New Campaign Button */}
-            <div className="p-3 border-b border-white/5">
-              <button
-                onClick={handleNewConversation}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 border border-white/5 text-text-xs font-medium text-zinc-300 hover:text-zinc-100 transition-colors shadow-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <Plus className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                  <span>New Campaign</span>
-                </span>
-                <span className="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded border border-white/5">
-                  Ctrl+N
-                </span>
-              </button>
             </div>
 
             {/* Scrollable Gallery & Chronological History */}
@@ -1154,20 +1104,6 @@ export default function SapphireWorkspace() {
                   </div>
                 </div>
               )}
-
-              {/* Switch Workspace Button Placed Directly Below Library */}
-              <div className="pt-1">
-                <Link
-                  href="/workspaces"
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/5 hover:border-white/10 text-text-xs font-medium text-zinc-300 hover:text-zinc-100 transition-all shadow-sm group"
-                >
-                  <span className="flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-sapphire-terracotta group-hover:scale-110 transition-transform" />
-                    <span>Switch Workspace</span>
-                  </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
 
               {/* Chronological Campaign Stream with Thumbnails & Pagination & Delete Action */}
               <div className="space-y-2 pt-2 border-t border-white/5">
@@ -1517,8 +1453,8 @@ export default function SapphireWorkspace() {
                       <ImageIcon className="w-4 h-4" />
                       <span className="hidden sm:inline font-medium">
                         {referenceImages.length > 0
-                          ? `${referenceImages.length}/3 Ingredients Stacked`
-                          : "Add Visual Ingredient"}
+                          ? `${referenceImages.length}/3 Visuals Attached`
+                          : "Add Visual"}
                       </span>
                     </button>
 
@@ -1531,7 +1467,7 @@ export default function SapphireWorkspace() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <>
-                          <span>Generate Instagram Concepts</span>
+                          <span>Generate</span>
                           <Send className="w-3 h-3" />
                         </>
                       )}
