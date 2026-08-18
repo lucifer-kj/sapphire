@@ -12,9 +12,14 @@ export class ResearchAgent {
     intent: UserIntent,
     brand: BrandProfile
   ): Promise<ResearchContext> {
-    const systemPrompt = `You are Sapphire's Research Agent. Your job is to analyze current social media marketing trends for "${intent.event}" in the "${intent.industry}" industry for brand "${brand.name}".
+    const systemPrompt = `You are Sapphire's Research Agent. Your job is to analyze current social media marketing trends and high-converting visual ad frameworks for "${intent.event}" in the "${intent.industry}" industry for brand "${brand.name}".
 
-Synthesize 3 winning visual trends, 3 overused clichés to avoid, search queries, visual motifs, and a concise research summary.`;
+Synthesize:
+1. 3 winning visual trends & high-converting creative hooks (e.g. 'In Movies vs Now A Reality' comparison, first-person POV Polaroid framing, luxury travel badges).
+2. 3 overused clichés to avoid (e.g. cheesy stock templates, cluttered neon banners).
+3. Strategic search queries and evocative visual motifs (e.g. limestone karsts, lantern-lit streets, emerald water, golden hour rim lighting).
+4. A concise strategic research summary.`;
+
 
     try {
       const result = await generateObject({

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -39,18 +40,21 @@ import {
   AlertCircle,
   Eye,
   Zap,
+  Trash2,
+  ArrowRight,
+  ArrowLeft,
+  Building2,
+  Sliders,
 } from "lucide-react";
-
 
 import { CreativeBrief, ResearchContext, UserIntent, ConceptItem } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
 import { CriticResult } from "@/lib/schema/critic";
 import { WorkflowLogEntry } from "@/lib/schema/telemetry";
 import { LogDrawer } from "@/components/telemetry/log-drawer";
-import { WorkspaceModal } from "@/components/workspace/workspace-modal";
 import { WorkspaceOnboardingModal } from "@/components/workspace/workspace-onboarding-modal";
-
 import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
+
 
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
@@ -114,13 +118,27 @@ export default function SapphireWorkspace() {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Brand Switcher, Onboarding & Platform Switcher State
-  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [chatPage, setChatPage] = useState(1);
+  const CHATS_PER_PAGE = 5;
+
+  // Platform Switcher State
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
   const [activePlatform, setActivePlatform] = useState<"instagram" | "linkedin">("instagram");
   const [learningToast, setLearningToast] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"ab" | "focus">("ab");
+
+  const handleDeleteSession = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setSavedCampaigns((prev) => prev.filter((c) => c.id !== id));
+    if (campaignId === id) {
+      setBrief(null);
+      setCampaignId(null);
+    }
+    setLearningToast("Session removed from history. Creative assets preserved.");
+    setTimeout(() => setLearningToast(null), 3500);
+  };
+
 
 
   // Supabase Saved Campaigns
@@ -138,9 +156,10 @@ export default function SapphireWorkspace() {
   const [isRegeneratingA, setIsRegeneratingA] = useState(false);
   const [isRegeneratingB, setIsRegeneratingB] = useState(false);
 
-  // Reference Image Upload State
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  // Multi-Asset Visual Ingredient Stacking State (up to 3 references)
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   // Lightbox Modal State
   const [activeImageModal, setActiveImageModal] = useState<string | null>(null);
@@ -258,8 +277,9 @@ export default function SapphireWorkspace() {
     setHistoryConceptB([]);
     setImageErrorA(false);
     setImageErrorB(false);
-    setReferenceImage(null);
+    setReferenceImages([]);
     setWorkflowLogs([]);
+
     setMessages([
       {
         role: "system",
@@ -327,24 +347,41 @@ export default function SapphireWorkspace() {
     ]);
   };
 
-  // Load workspace from URL parameter (?workspace=...) on initial load
+  // Load workspace from URL parameter (?workspace=...) or localStorage on initial load
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const wsParam = params.get("workspace");
+
+      let loadedWorkspaces: BrandProfile[] = [];
+      try {
+        const raw = localStorage.getItem("sapphire_user_workspaces");
+        if (raw) {
+          loadedWorkspaces = JSON.parse(raw);
+        }
+      } catch (err) {
+        console.warn("Could not load user workspaces:", err);
+      }
+
       if (wsParam) {
-        const found = PRECONFIGURED_BRANDS.find(
+        const found = loadedWorkspaces.find(
           (b) => b.id === wsParam || b.name.toLowerCase() === wsParam.toLowerCase()
         );
         if (found) {
           setActiveBrandProfile(found);
           setActiveBrand(found.name);
+          return;
         }
+      }
+
+      if (loadedWorkspaces.length > 0) {
+        setActiveBrandProfile(loadedWorkspaces[0]);
+        setActiveBrand(loadedWorkspaces[0].name);
       }
     }
   }, []);
 
-  // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel), Ctrl+N (New Campaign), Ctrl+W (Workspace Hub)
+  // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel), Ctrl+N (New Campaign), Ctrl+W (Workspaces Portal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
@@ -361,7 +398,7 @@ export default function SapphireWorkspace() {
 
       if (isCtrlOrCmd && key === "w") {
         e.preventDefault();
-        setIsBrandModalOpen((prev) => !prev);
+        window.location.href = "/workspaces";
       }
 
       if (isCtrlOrCmd && key === "n") {
@@ -370,21 +407,34 @@ export default function SapphireWorkspace() {
       }
     };
 
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeBrand]);
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReferenceImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      Array.from(files)
+        .slice(0, 3 - referenceImages.length)
+        .forEach((file) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (reader.result) {
+              setReferenceImages((prev) => (prev.length < 3 ? [...prev, reader.result as string] : prev));
+            }
+          };
+          reader.readAsDataURL(file);
+        });
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const removeReferenceImage = (index: number) => {
+    setReferenceImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
 
   const handleRegenerateImage = async (conceptType: "A" | "B") => {
     if (!brief) return;
@@ -400,8 +450,9 @@ export default function SapphireWorkspace() {
           prompt: targetConcept.optimized_image_prompt || targetConcept.image_prompt,
           styleOverride: referenceAnalysis ? referenceAnalysis.photography_style : undefined,
           designBlueprint: targetConcept.design_blueprint,
-          referenceImage: referenceImage,
+          referenceImage: referenceImages[0] || null,
         }),
+
       });
 
       const data = await res.json();
@@ -448,14 +499,15 @@ export default function SapphireWorkspace() {
     if (!prompt.trim() || isLoading) return;
 
     const userMessage = prompt.trim();
-    const currentRefImage = referenceImage;
+    const currentRefImages = referenceImages;
     setPrompt("");
-    setReferenceImage(null);
+    setReferenceImages([]);
     setIsLoading(true);
     setPreferenceSaved(false);
     setDeliverySuccess(null);
     setImageErrorA(false);
     setImageErrorB(false);
+
 
     // Reset planning steps to active state
     const initialSteps = createInitialPlanningSteps();
@@ -474,9 +526,10 @@ export default function SapphireWorkspace() {
         body: JSON.stringify({
           prompt: userMessage,
           brandId: activeBrandProfile.id,
-          referenceImage: currentRefImage,
+          referenceImage: currentRefImages.length === 1 ? currentRefImages[0] : currentRefImages.length > 1 ? currentRefImages : null,
         }),
       });
+
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: Failed to reach agent workflow.`);
@@ -865,41 +918,32 @@ export default function SapphireWorkspace() {
       {/* 1. Main Top Application Header Bar */}
       <header className="h-12 border-b border-sapphire-border bg-sapphire-surface px-4 flex items-center justify-between shrink-0 select-none z-10">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="h-5 w-5 rounded-md bg-sapphire-terracotta text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-sm">
-              S
-            </span>
+          <Link href="/workspaces" className="flex items-center gap-2.5 group" title="Sapphire Workspaces">
+            <div className="w-6 h-6 rounded-md overflow-hidden border border-sapphire-border bg-sapphire-surface flex items-center justify-center p-0.5 shadow-hairline group-hover:border-sapphire-terracotta transition-colors">
+              <img src="/logo.png" alt="Sapphire" className="w-full h-full object-contain" />
+            </div>
             <span className="font-semibold text-text-sm tracking-tight text-sapphire-dark">
               Sapphire
             </span>
-          </div>
+          </Link>
 
           <div className="h-4 w-[0.5px] bg-sapphire-border" />
 
-          {/* Interactive Workspace Switcher Button */}
-          <button
-            onClick={() => setIsBrandModalOpen(true)}
-            title="Switch Brand Workspace (Ctrl+W)"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline group"
+          {/* Active Workspace Pill Linking to /workspaces */}
+          <Link
+            href="/workspaces"
+            title="Switch Workspace or Manage Clients"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-text-xs font-medium bg-sapphire-bg hover:bg-sapphire-subtle transition-all border border-sapphire-border text-sapphire-dark shadow-hairline group"
           >
             <span className="w-2 h-2 rounded-full bg-sapphire-green animate-pulse" />
-            <span className="max-w-[150px] truncate">{activeBrand}</span>
-            <span className="text-[10px] font-mono text-sapphire-muted hidden sm:inline-block px-1 rounded bg-sapphire-subtle">
-              Ctrl+W
+            <span className="max-w-[160px] truncate font-semibold">{activeBrandProfile.name}</span>
+            <span className="text-[10px] text-sapphire-muted group-hover:text-sapphire-terracotta transition-colors flex items-center gap-0.5">
+              <span>Switch</span>
+              <ArrowRight className="w-2.5 h-2.5" />
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-sapphire-muted" />
-          </button>
-
-          {/* New Onboarding Button */}
-          <button
-            onClick={() => setIsOnboardingModalOpen(true)}
-            title="Create or Onboard New Brand Workspace"
-            className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-sapphire-terracotta bg-sapphire-terracotta/10 hover:bg-sapphire-terracotta/20 transition-all border border-sapphire-terracotta/20"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Onboard Brand</span>
-          </button>
+          </Link>
         </div>
+
 
         {/* Center: Platform Switcher Segmented Control */}
         <div className="hidden md:flex items-center bg-sapphire-bg p-0.5 rounded-xl border border-sapphire-border text-text-xs font-medium shadow-inner">
@@ -992,17 +1036,51 @@ export default function SapphireWorkspace() {
           }`}
         >
           <div className="w-[270px] flex flex-col h-full">
-            {/* Minimalist Top Header */}
-            <div className="h-10 px-3 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-sapphire-muted">
-                Workspace Hub
-              </span>
+            {/* Header Row 1: Brand Logo & App Title */}
+            <div className="h-12 px-3.5 border-b border-sapphire-border flex items-center justify-between bg-sapphire-surface">
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md overflow-hidden border border-sapphire-border bg-sapphire-surface flex items-center justify-center p-0.5 shadow-hairline">
+                  <img src="/logo.png" alt="Sapphire" className="w-full h-full object-contain" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-text-xs tracking-tight text-sapphire-dark">
+                    Sapphire
+                  </span>
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-sapphire-terracotta/10 text-sapphire-terracotta font-semibold">
+                    v2.4
+                  </span>
+                </div>
+              </div>
               <button
                 onClick={() => setIsLeftOpen(false)}
                 title="Collapse Left Panel (Ctrl+B)"
                 className="p-1 rounded-md text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle transition-colors border border-transparent hover:border-sapphire-border"
               >
                 <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Header Row 2: Active Workspace & Key Details */}
+            <div className="px-3.5 py-2.5 border-b border-sapphire-border/80 bg-sapphire-bg/50 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-sapphire-surface border border-sapphire-border flex items-center justify-center font-bold text-[10px] text-sapphire-dark shrink-0 shadow-hairline">
+                  {activeBrandProfile.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-text-xs font-semibold text-sapphire-dark leading-tight">
+                    {activeBrandProfile.name}
+                  </p>
+                  <span className="text-[10px] text-sapphire-muted truncate block">
+                    {activeBrandProfile.industry}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                title="Brand Brain Settings"
+                className="p-1 text-sapphire-muted hover:text-sapphire-dark rounded-md hover:bg-sapphire-subtle transition-colors"
+              >
+                <Sliders className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -1058,55 +1136,119 @@ export default function SapphireWorkspace() {
                 </div>
               )}
 
-              {/* Chronological Campaign Stream with Thumbnails */}
-              <div className="space-y-1.5">
-                <div className="text-[11px] font-semibold text-sapphire-muted px-1 pb-1">
-                  RECENT SESSIONS
+              {/* Switch Workspace Button Placed Directly Below Library */}
+              <div className="pt-1">
+                <Link
+                  href="/workspaces"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-sapphire-bg hover:bg-sapphire-subtle border border-sapphire-border text-text-xs font-medium text-sapphire-dark transition-all shadow-hairline group"
+                >
+                  <span className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-sapphire-terracotta group-hover:scale-110 transition-transform" />
+                    <span>Switch Workspace</span>
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-sapphire-muted group-hover:text-sapphire-dark group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+
+              {/* Chronological Campaign Stream with Thumbnails & Pagination & Delete Action */}
+              <div className="space-y-2 pt-2 border-t border-sapphire-border/50">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-sapphire-muted px-1">
+                  <span>RECENT SESSIONS</span>
+                  <span className="font-mono text-[10px]">
+                    {savedCampaigns.length} total
+                  </span>
                 </div>
+
                 {savedCampaigns.length > 0 ? (
-                  savedCampaigns.map((c) => {
-                    const isActive = campaignId === c.id;
-                    const thumb = c.raw?.brief?.concept_a?.image_url;
-                    return (
-                      <button
-                        key={c.id}
-                        onClick={() => handleSelectCampaign(c)}
-                        className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
-                          isActive
-                            ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
-                            : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
-                        }`}
-                      >
-                        {thumb ? (
-                          <img
-                            src={thumb}
-                            alt=""
-                            className="w-8 h-10 rounded-md object-cover border border-sapphire-border shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-10 rounded-md bg-sapphire-bg border border-sapphire-border flex items-center justify-center shrink-0 text-sapphire-muted">
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate text-text-xs text-sapphire-dark font-medium leading-tight">
-                            {c.campaign_title}
-                          </p>
-                          <span className="text-[10px] text-sapphire-muted/80 block pt-0.5">
-                            {new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })
+                  <>
+                    <div className="space-y-1">
+                      {savedCampaigns
+                        .slice((chatPage - 1) * CHATS_PER_PAGE, chatPage * CHATS_PER_PAGE)
+                        .map((c) => {
+                          const isActive = campaignId === c.id;
+                          const thumb = c.raw?.brief?.concept_a?.image_url;
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => handleSelectCampaign(c)}
+                              className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer group ${
+                                isActive
+                                  ? "bg-sapphire-subtle text-sapphire-dark font-semibold border border-sapphire-border shadow-hairline"
+                                  : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle/60 border border-transparent"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                {thumb ? (
+                                  <img
+                                    src={thumb}
+                                    alt=""
+                                    className="w-8 h-10 rounded-md object-cover border border-sapphire-border shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-10 rounded-md bg-sapphire-bg border border-sapphire-border flex items-center justify-center shrink-0 text-sapphire-muted">
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="truncate text-text-xs text-sapphire-dark font-medium leading-tight">
+                                    {c.campaign_title}
+                                  </p>
+                                  <span className="text-[10px] text-sapphire-muted/80 block pt-0.5">
+                                    {new Date(c.created_at).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Hover Delete Button (Deletes Session History Only) */}
+                              <button
+                                onClick={(e) => handleDeleteSession(e, c.id)}
+                                title="Delete session history (preserves gallery assets)"
+                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-sapphire-muted hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {savedCampaigns.length > CHATS_PER_PAGE && (
+                      <div className="flex items-center justify-between pt-2 px-1 text-[11px] text-sapphire-muted border-t border-sapphire-border/40">
+                        <button
+                          disabled={chatPage === 1}
+                          onClick={() => setChatPage((p) => Math.max(1, p - 1))}
+                          className="px-2 py-0.5 rounded border border-sapphire-border bg-sapphire-bg disabled:opacity-40 disabled:pointer-events-none hover:text-sapphire-dark"
+                        >
+                          Prev
+                        </button>
+                        <span className="font-mono text-[10px]">
+                          {chatPage} / {Math.ceil(savedCampaigns.length / CHATS_PER_PAGE)}
+                        </span>
+                        <button
+                          disabled={chatPage >= Math.ceil(savedCampaigns.length / CHATS_PER_PAGE)}
+                          onClick={() => setChatPage((p) => p + 1)}
+                          className="px-2 py-0.5 rounded border border-sapphire-border bg-sapphire-bg disabled:opacity-40 disabled:pointer-events-none hover:text-sapphire-dark"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="p-4 text-center text-sapphire-muted text-text-xs border border-dashed border-sapphire-border rounded-xl">
                     <p className="font-medium">No previous campaigns.</p>
-                    <p className="text-[10px] pt-1 text-sapphire-muted/70">Submit a prompt to create artwork.</p>
+                    <p className="text-[10px] pt-1 text-sapphire-muted/70">
+                      Submit a prompt to create artwork.
+                    </p>
                   </div>
                 )}
               </div>
             </div>
+
 
             {/* Minimalist Bottom Footer: Micro-Quota Tracker */}
             <div className="p-3 border-t border-sapphire-border bg-sapphire-surface space-y-2">
@@ -1198,35 +1340,65 @@ export default function SapphireWorkspace() {
                 </div>
               ))}
 
-              {/* Reference Analysis Synthesis Card */}
+              {/* Multimodal Visual Blueprint Manifest Card */}
               {referenceAnalysis && (
-                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2.5 shadow-sm">
-                  <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted">
+                <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-3 shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between text-text-xs font-medium text-sapphire-muted border-b border-sapphire-border pb-2.5">
                     <span className="flex items-center gap-1.5 text-sapphire-dark font-semibold">
-                      <Eye className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                      Multimodal Reference Analysis
+                      <Layers className="w-3.5 h-3.5 text-sapphire-terracotta" />
+                      Visual Blueprint Manifest
                     </span>
                     <span className="text-sapphire-green font-medium flex items-center gap-1 text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Processed
+                      Synthesized
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-text-xs text-sapphire-muted">
-                    <div>
-                      <span className="text-sapphire-muted font-medium">Mood:</span>{" "}
-                      <span className="text-sapphire-dark font-medium">
-                        {referenceAnalysis.mood}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-text-xs">
+                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
+                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                        Camera & Optics
                       </span>
+                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                        {referenceAnalysis.camera_optics || referenceAnalysis.photography_style}
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-sapphire-muted font-medium">Style:</span>{" "}
-                      <span className="text-sapphire-dark font-medium">
-                        {referenceAnalysis.photography_style}
+
+                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
+                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                        Lighting Vector
                       </span>
+                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                        {referenceAnalysis.lighting_vector || referenceAnalysis.lighting}
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
+                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                        Negative Space Budget
+                      </span>
+                      <p className="text-sapphire-dark font-medium text-[11px] leading-relaxed">
+                        {referenceAnalysis.spatial_negative_space_plan || referenceAnalysis.negative_space_zone || "Upper 40% reserved for headline typography"}
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-sapphire-bg border border-sapphire-border space-y-1">
+                      <span className="text-[10px] font-mono text-sapphire-muted uppercase block">
+                        Palette Anchors
+                      </span>
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        {(referenceAnalysis.color_palette_anchors || referenceAnalysis.color_palette).slice(0, 4).map((c, i) => (
+                          <div key={i} className="flex items-center gap-1 bg-sapphire-surface px-1.5 py-0.5 rounded border border-sapphire-border">
+                            <div className="w-2.5 h-2.5 rounded-full border border-black/10 shadow-xs" style={{ backgroundColor: c }} />
+                            <span className="font-mono text-[9px] text-sapphire-dark">{c}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
+
 
               {research && (
                 <div className="border border-sapphire-border rounded-2xl p-4 bg-sapphire-surface space-y-2.5 shadow-sm">
@@ -1263,24 +1435,42 @@ export default function SapphireWorkspace() {
           <div className="p-4 border-t border-sapphire-border bg-sapphire-bg/90 backdrop-blur-md">
             <div className="max-w-2xl w-full mx-auto">
               <form onSubmit={handleSubmit} className="space-y-2">
-                {referenceImage && (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-sapphire-surface border border-sapphire-border text-text-xs">
-                    <div className="flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={referenceImage}
-                        alt="Reference Attachment"
-                        className="w-7 h-7 object-cover rounded border border-sapphire-border"
-                      />
-                      <span className="font-medium text-sapphire-dark">Reference Image Attached</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setReferenceImage(null)}
-                      className="p-1 text-sapphire-muted hover:text-sapphire-dark rounded hover:bg-sapphire-subtle"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                {/* Multi-Asset Visual Ingredients Manifest Bar */}
+                {referenceImages.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-sapphire-surface border border-sapphire-border animate-fade-in shadow-xs">
+                    <span className="text-[10px] font-mono font-semibold uppercase text-sapphire-muted px-1">
+                      Visual Ingredients ({referenceImages.length}/3):
+                    </span>
+                    {referenceImages.map((img, idx) => {
+                      const ingredientTag =
+                        idx === 0
+                          ? "📦 Hero Subject"
+                          : idx === 1
+                          ? "🌅 Lighting / Mood"
+                          : "📐 Composition";
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-1.5 bg-sapphire-bg border border-sapphire-border rounded-xl p-1 pr-2 shadow-xs group"
+                        >
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-6 h-6 rounded-lg object-cover border border-black/10 shrink-0"
+                          />
+                          <span className="text-[11px] font-medium text-sapphire-dark">
+                            {ingredientTag}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeReferenceImage(idx)}
+                            className="p-0.5 text-sapphire-muted hover:text-sapphire-dark rounded hover:bg-sapphire-subtle ml-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1288,26 +1478,30 @@ export default function SapphireWorkspace() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your Instagram post request (e.g. Artisanal breakfast pour-over ritual) or upload a reference image..."
+                    placeholder="Describe your Instagram post direction or stack visual ingredients (Product + Mood + Composition)..."
                     rows={3}
                     className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-sapphire-dark placeholder:text-sapphire-muted font-sans"
                   />
                   <div className="flex items-center justify-between pt-2 border-t border-sapphire-border/50">
                     <button
                       type="button"
+                      disabled={referenceImages.length >= 3}
                       onClick={() => fileInputRef.current?.click()}
                       className={`p-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-text-xs ${
-                        referenceImage
+                        referenceImages.length > 0
                           ? "bg-sapphire-terracotta/20 text-sapphire-terracotta border border-sapphire-terracotta/30"
                           : "text-sapphire-muted hover:text-sapphire-dark hover:bg-sapphire-subtle"
-                      }`}
-                      title="Attach reference image"
+                      } disabled:opacity-40`}
+                      title={referenceImages.length >= 3 ? "Maximum 3 visual ingredients attached" : "Attach visual ingredient (Subject, Mood, or Composition)"}
                     >
                       <ImageIcon className="w-4 h-4" />
                       <span className="hidden sm:inline font-medium">
-                        {referenceImage ? "Image Attached" : "Reference Image"}
+                        {referenceImages.length > 0
+                          ? `${referenceImages.length}/3 Ingredients Stacked`
+                          : "Add Visual Ingredient"}
                       </span>
                     </button>
+
                     <button
                       type="submit"
                       disabled={!prompt.trim() || isLoading}
@@ -2063,17 +2257,7 @@ export default function SapphireWorkspace() {
         </aside>
       </div>
 
-      {/* Workspace Hub Switcher Modal (Ctrl+W) */}
-      <WorkspaceModal
-        isOpen={isBrandModalOpen}
-        onClose={() => setIsBrandModalOpen(false)}
-        activeBrand={activeBrandProfile}
-        onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
-        onSelectBrand={(b) => {
-          setActiveBrand(b.name);
-          setActiveBrandProfile(b);
-        }}
-      />
+
 
       {/* Dual Personal & Client OpenBrand Onboarding Modal */}
       <WorkspaceOnboardingModal

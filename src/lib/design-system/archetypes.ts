@@ -6,17 +6,35 @@ export const DesignArchetypeEnum = z.enum([
   "comparison_split",
   "vintage_poster",
   "saas_dotgrid",
+  "polaroid_pov_overlay",
+  "feature_badges_editorial",
+  "minimal_shader_text",
 ]);
 
 export type DesignArchetype = z.infer<typeof DesignArchetypeEnum>;
 
+export const FeatureBadgeSchema = z.object({
+  label: z.string(),
+  icon: z.enum(["flight", "hotel", "experience", "star", "shield", "sparkle", "pin", "tag"]).default("flight"),
+});
+
+export type FeatureBadge = z.infer<typeof FeatureBadgeSchema>;
+
 export const DesignBlueprintSchema = z.object({
   archetype: DesignArchetypeEnum,
-  headline: z.string().max(60, "Headline should be concise (max 60 chars)"),
-  subheadline: z.string().max(180, "Subheadline should be concise (max 180 chars)"),
+  headline: z.string().max(80, "Headline should be concise"),
+  subheadline: z.string().max(180, "Subheadline should be concise (max 180 chars)").optional().default(""),
   category_pill: z.string().max(30).optional(),
   brand_tagline: z.string().max(60).optional(),
   value_props: z.array(z.string().max(50)).optional(),
+  feature_badges: z.array(FeatureBadgeSchema).optional(),
+  logo_badge: z
+    .object({
+      prefix: z.string().optional().default(""),
+      highlight: z.string().optional().default(""),
+      suffix: z.string().optional().default(""),
+    })
+    .optional(),
   cta_text: z.string().max(30).default("Learn More ➔"),
   social_handle: z.string().max(30).default("@sapphire"),
   brand_name: z.string().max(40).default("Sapphire"),
@@ -28,7 +46,11 @@ export const DesignBlueprintSchema = z.object({
     .default("Plus Jakarta Sans"),
   highlighted_keywords: z.array(z.string()).default([]),
   font_scale: z.enum(["compact", "regular", "large"]).default("regular"),
-  scrim_intensity: z.enum(["subtle", "medium", "heavy"]).default("medium"),
+  scrim_intensity: z.enum(["subtle", "medium", "heavy"]).optional().default("medium"),
+  shader_style: z.enum(["sky_vignette", "dark_gradient", "subtle_blur", "clean_plain"]).optional().default("sky_vignette"),
+
+
+
   color_tokens: z
     .object({
       primary_text: z.string().default("#FAF7F2"),
@@ -48,6 +70,7 @@ export const DesignBlueprintSchema = z.object({
     .optional(),
   negative_space_directive: z.string(),
 });
+
 
 export type DesignBlueprint = z.infer<typeof DesignBlueprintSchema>;
 
@@ -98,6 +121,33 @@ export const DESIGN_KNOWLEDGE_GRAPH = {
       tracking: "-1.5px",
       lineHeight: 1.15,
     },
+    polaroid_pov_overlay: {
+      hookFont: "Plus Jakarta Sans" as const,
+      bodyFont: "Inter" as const,
+      style: "First-Person Handheld Framing + High-Impact All-Caps & Badges",
+      hookWeight: 700,
+      bodyWeight: 600,
+      tracking: "-0.5px",
+      lineHeight: 1.15,
+    },
+    feature_badges_editorial: {
+      hookFont: "Plus Jakarta Sans" as const,
+      bodyFont: "Inter" as const,
+      style: "Top Brand Logo + Bold Headline + 3 Icon Feature Badges",
+      hookWeight: 700,
+      bodyWeight: 600,
+      tracking: "-0.5px",
+      lineHeight: 1.15,
+    },
+    minimal_shader_text: {
+      hookFont: "Plus Jakarta Sans" as const,
+      bodyFont: "Inter" as const,
+      style: "Radial Contrast Shaded Typography Canvas",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-1px",
+      lineHeight: 1.2,
+    },
   },
   spatial_budgeting: {
     editorial_magazine: {
@@ -129,6 +179,24 @@ export const DESIGN_KNOWLEDGE_GRAPH = {
       subjectPlacement: "Bottom-right quadrant (x: 45% to 100%, y: 40% to 100%)",
       cameraDirective:
         "Isometric 3D product showcase angled in lower-right, clean deep slate-navy void in upper-left",
+    },
+    polaroid_pov_overlay: {
+      voidRegion: "Upper 45% open sky/ambient area (y: 0% to 45%)",
+      subjectPlacement: "Lower 55% first-person POV hand holding Polaroid frame (y: 45% to 100%)",
+      cameraDirective:
+        "First-person POV hand holding a crisp white Polaroid instant photograph in sharp focus in lower foreground, framed against matching scenic landscape, with upper 45% having wide clear blue sky void with zero clutter for headline and badges",
+    },
+    feature_badges_editorial: {
+      voidRegion: "Upper 45% open sky/ambient area (y: 0% to 45%)",
+      subjectPlacement: "Lower 55% scenic landscape or hero view",
+      cameraDirective:
+        "Scenic landscape photography with expansive clear sky in upper 45% for logo, bold headline, and 3 icon feature badges",
+    },
+    minimal_shader_text: {
+      voidRegion: "Centered 80% canvas with radial dark vignette",
+      subjectPlacement: "Background abstract or subtle texture",
+      cameraDirective:
+        "Atmospheric shaded background with subtle micro-textures and dark gradient scrim",
     },
   },
   color_science: {
@@ -197,5 +265,33 @@ export const DEFAULT_ARCHETYPE_CONFIGS: Record<
     suggestedBodyFont: "Inter",
     scrimGradient: DESIGN_KNOWLEDGE_GRAPH.color_science.scrim_multi_stop.heavy,
   },
+  polaroid_pov_overlay: {
+    name: "POV Polaroid Landmark Overlay",
+    negativeSpaceDirective:
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.polaroid_pov_overlay.cameraDirective,
+    suggestedFont: "Plus Jakarta Sans",
+    suggestedBodyFont: "Inter",
+    scrimGradient:
+      "linear-gradient(180deg, rgba(0, 20, 45, 0.48) 0%, rgba(0, 20, 45, 0.22) 45%, rgba(0, 20, 45, 0) 100%)",
+  },
+  feature_badges_editorial: {
+    name: "Feature Badges Commercial Hero",
+    negativeSpaceDirective:
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.feature_badges_editorial.cameraDirective,
+    suggestedFont: "Plus Jakarta Sans",
+    suggestedBodyFont: "Inter",
+    scrimGradient:
+      "linear-gradient(180deg, rgba(0, 20, 45, 0.48) 0%, rgba(0, 20, 45, 0.22) 45%, rgba(0, 20, 45, 0) 100%)",
+  },
+  minimal_shader_text: {
+    name: "Minimal Shader Contrast Canvas",
+    negativeSpaceDirective:
+      DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.minimal_shader_text.cameraDirective,
+    suggestedFont: "Plus Jakarta Sans",
+    suggestedBodyFont: "Inter",
+    scrimGradient:
+      "radial-gradient(circle at 50% 30%, rgba(20,20,19,0.3) 0%, rgba(20,20,19,0.85) 100%)",
+  },
 };
+
 

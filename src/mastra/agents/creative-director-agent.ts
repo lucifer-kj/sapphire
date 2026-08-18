@@ -22,18 +22,21 @@ export class CreativeDirectorAgent {
     referenceAnalysis?: ReferenceImageAnalysis | null
   ): Promise<CreativeBrief> {
     const allArchetypes: DesignArchetype[] = [
+      "polaroid_pov_overlay",
+      "feature_badges_editorial",
       "editorial_magazine",
       "conceptual_split",
       "comparison_split",
       "vintage_poster",
       "saas_dotgrid",
+      "minimal_shader_text",
     ];
 
     // 1. Determine Archetype A based on reference image or brand affinity
     const detectedArchetype = referenceAnalysis?.detected_archetype;
     const affinities = brand.learned_preferences?.archetype_affinity || {};
 
-    let archA: DesignArchetype = detectedArchetype || "editorial_magazine";
+    let archA: DesignArchetype = detectedArchetype || "polaroid_pov_overlay";
     if (!detectedArchetype && Object.keys(affinities).length > 0) {
       const sorted = [...allArchetypes].sort(
         (a, b) => (affinities[b] ?? 0.5) - (affinities[a] ?? 0.5)
@@ -44,11 +47,12 @@ export class CreativeDirectorAgent {
     // 2. Programmatically select a contrasting Archetype B
     const remaining = allArchetypes.filter((a) => a !== archA);
     const archB: DesignArchetype =
-      archA === "editorial_magazine"
+      archA === "polaroid_pov_overlay"
+        ? "feature_badges_editorial"
+        : archA === "editorial_magazine"
         ? "conceptual_split"
-        : archA === "conceptual_split"
-        ? "editorial_magazine"
         : remaining[0];
+
 
     const refPalette = referenceAnalysis?.color_palette?.length
       ? referenceAnalysis.color_palette
@@ -98,9 +102,12 @@ CRITICAL RULES FOR CANVA-QUALITY POST DESIGN:
    - "font_family_hook": Use "${pairingA.hookFont}" for Concept A, "${pairingB.hookFont}" for Concept B.
    - "font_family_body": Use "${pairingA.bodyFont}" for Concept A, "${pairingB.bodyFont}" for Concept B.
    - "highlighted_keywords": 1-2 important words from the headline to highlight in brand accent color.
+   - "feature_badges": If archetype is "polaroid_pov_overlay" or "feature_badges_editorial", provide 3 concise badges (e.g. [{ label: "Flights", icon: "flight" }, { label: "Hotels", icon: "hotel" }, { label: "Experiences", icon: "experience" }]).
+   - "logo_badge": If archetype has a top logo lockup, provide { prefix: "make", highlight: "my", suffix: "trip" } or appropriate brand segments.
    - "negative_space_directive": Explicit spatial instruction matching the assigned archetype.
 2. The "image_prompt" MUST describe the photographic/visual scene, explicitly instructing the AI model to respect the negative space.
 3. Captions for Instagram and LinkedIn must be polished and platform-tailored.
+
 
 ${referencePrompt}`;
 
@@ -161,6 +168,7 @@ Brand Voice Tone: ${brand.voice.tone}`;
               highlighted_keywords: [topic.split(" ")[0] || "Reimagined"],
               font_scale: "regular",
               scrim_intensity: "medium",
+              shader_style: "sky_vignette",
               negative_space_directive: spatialA.cameraDirective,
             },
           },
@@ -189,6 +197,7 @@ Brand Voice Tone: ${brand.voice.tone}`;
               highlighted_keywords: [topic.split(" ")[0] || "Power"],
               font_scale: "regular",
               scrim_intensity: "heavy",
+              shader_style: "sky_vignette",
               negative_space_directive: spatialB.cameraDirective,
             },
           },
@@ -197,4 +206,3 @@ Brand Voice Tone: ${brand.voice.tone}`;
     }
   }
 }
-

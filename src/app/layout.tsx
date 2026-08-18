@@ -4,7 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Sapphire — Autonomous AI Creative Director",
   description: "Transform simple ideas into production-ready social media content with brand awareness and trend research.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo.png",
+  },
 };
+
 
 export default function RootLayout({
   children,

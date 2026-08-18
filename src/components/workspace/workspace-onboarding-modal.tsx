@@ -28,6 +28,7 @@ interface WorkspaceOnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (brand: BrandProfile) => void;
+  initialPath?: OnboardingPath;
 }
 
 type OnboardingPath = "select" | "personal" | "client_extract" | "client_review";
@@ -36,8 +37,16 @@ export const WorkspaceOnboardingModal: React.FC<WorkspaceOnboardingModalProps> =
   isOpen,
   onClose,
   onComplete,
+  initialPath = "select",
 }) => {
-  const [path, setPath] = useState<OnboardingPath>("select");
+  const [path, setPath] = useState<OnboardingPath>(initialPath);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setPath(initialPath);
+    }
+  }, [isOpen, initialPath]);
+
 
   // Client Web Extraction State
   const [clientName, setClientName] = useState("");

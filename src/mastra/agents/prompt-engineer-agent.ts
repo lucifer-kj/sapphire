@@ -62,11 +62,12 @@ ${refContext}
 ${remediationContext}
 
 LAYER DECOMPOSITION GUIDELINES:
-1. environment_background_layer: Architectural backdrop and textures strictly kept in the negative space zone.
-2. subject_asset_layer: Primary subject with framing matching spatial rules.
-3. atmospheric_grading_layer: Lighting direction (e.g. golden hour side-light), color harmony (${colorList}), natural depth-of-field.
-4. blended_composite_prompt: Master prompt starting with "Commercial photography, vertical 4:5 portrait composition for social media," integrating lens, framing, and clean negative space void.
-5. negative_constraints: "text, typography, letters, words, font, watermark, logo, label, badge, blurry, oversaturated, generic stock photo, distorted, cartoon".`;
+1. environment_background_layer: Architectural or natural scenic backdrop with clear sky in the upper 45% negative space zone.
+2. subject_asset_layer: Primary subject with framing matching spatial rules. If archetype is 'polaroid_pov_overlay', describe a realistic first-person POV hand holding a crisp white Polaroid instant photograph in sharp focus in the lower-center foreground, perfectly framing the scenic landmark inside the Polaroid.
+3. atmospheric_grading_layer: Lighting direction (e.g. golden hour sunlight, warm directional side-lighting), color temperature, natural depth of field.
+4. blended_composite_prompt: Master hyper-realistic prompt starting with "Commercial photography, vertical 4:5 portrait composition for social media," integrating lens (e.g. 35mm f/2.8), sharp subject focus, and clean negative space sky void.
+5. negative_constraints: "text, typography, letters, words, font, watermark, logo, label, badge, blurry, distorted fingers, extra fingers, cartoon, 3d render, low quality".`;
+
 
     const promptText = `Campaign Event: ${intent.event}
 Concept Label: ${concept.label}

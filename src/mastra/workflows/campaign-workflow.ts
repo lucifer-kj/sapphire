@@ -63,7 +63,7 @@ export class CampaignWorkflow {
   static async run(
     prompt: string,
     brandId?: string,
-    referenceImage?: string | null,
+    referenceImage?: string | string[] | null,
     onProgress?: ProgressCallback
   ): Promise<WorkflowResult> {
     const logger = new ExecutionLogger();
@@ -84,7 +84,7 @@ export class CampaignWorkflow {
       stage: "intent",
       agentName: "Intent Parsing & Brand DNA Extraction",
       provider: "Groq / Gemini",
-      model: "llama-3.3-70b-versatile",
+      model: "gemini-2.5-flash",
       status: "active",
       summary: `Analyzing campaign objective and aligning with brand voice "${brand.name}"...`,
     });
@@ -93,10 +93,11 @@ export class CampaignWorkflow {
     const intent = await logger.track(
       "IntentAgent",
       "Google Gemini",
-      "gemini-3.1-flash-lite",
+      "gemini-2.5-flash",
       () => IntentAgent.parseIntent(prompt, brand),
-      (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}".`
+      (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}", Platforms=[${i.target_platforms.join(", ")}].`
     );
+
 
     await onProgress?.({
       step: 0,
@@ -104,36 +105,37 @@ export class CampaignWorkflow {
       stage: "intent",
       agentName: "Intent Parsing & Brand DNA Extraction",
       provider: "Groq / Gemini",
-      model: "llama-3.3-70b-versatile",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - intentStart,
       summary: `Objective: ${intent.objective} • Event: ${intent.event} • Industry: ${intent.industry}`,
       details: intent,
     });
 
-    // 3. Analyze Reference Image using Gemini 2.5 Flash (if provided) + Research
+    // 3. Analyze Reference Visual Ingredients using Gemini Vision + Research
+    const hasReferences = Array.isArray(referenceImage) ? referenceImage.length > 0 : !!referenceImage;
     await onProgress?.({
       step: 1,
       totalSteps: 6,
       stage: "reference",
-      agentName: "Multimodal Visual Reference & Web Trends",
+      agentName: "Multimodal Visual Manifest & Trend Research",
       provider: "Google Gemini",
       model: "gemini-2.5-flash",
       status: "active",
-      summary: referenceImage
-        ? "Extracting lighting, depth of field, color temperature and composition from reference image..."
+      summary: hasReferences
+        ? "Compiling visual ingredients, lighting vectors, optics and negative space blueprint..."
         : "Synthesizing real-time design intelligence and negative space requirements...",
     });
 
     const refStart = Date.now();
     let referenceAnalysis: ReferenceImageAnalysis | null = null;
-    if (referenceImage) {
+    if (hasReferences && referenceImage) {
       referenceAnalysis = await logger.track(
         "MultimodalAgent",
         "Google Gemini",
-        "gemini-3.7-flash",
-        () => MultimodalAgent.analyzeReferenceImage(referenceImage),
-        (ref) => `Extracted reference style: "${ref.photography_style}", Mood="${ref.mood}".`
+        "gemini-2.5-flash",
+        () => MultimodalAgent.analyzeReferenceImages(referenceImage, brand),
+        (ref) => `Synthesized Visual Blueprint: Camera="${ref.camera_optics || ref.photography_style}", Lighting="${ref.lighting_vector || ref.lighting}", Palette=[${ref.color_palette_anchors?.join(", ") || ref.color_palette.join(", ")}].`
       );
     } else {
       logger.log({
@@ -142,7 +144,7 @@ export class CampaignWorkflow {
         model: "none",
         status: "info",
         durationMs: 0,
-        summary: "No reference image provided. Proceeded with text-only creative synthesis.",
+        summary: "No visual ingredients provided. Auto-compiled default Brand DNA manifest.",
       });
     }
 
@@ -281,6 +283,7 @@ export class CampaignWorkflow {
     const seedA = Math.floor(Math.random() * 1000000);
     const seedB = seedA + 1;
     const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
+    const primaryRefImage = Array.isArray(referenceImage) ? referenceImage[0] : referenceImage;
 
     const [imgResultA, imgResultB] = await Promise.all([
       ImageGenerationService.generateImageUrlWithMeta(
@@ -288,7 +291,7 @@ export class CampaignWorkflow {
         seedA,
         refStyle,
         promptEngineeredA.negative_prompt,
-        referenceImage,
+        primaryRefImage,
         brief.concept_a.design_blueprint
       ),
       ImageGenerationService.generateImageUrlWithMeta(
@@ -296,10 +299,11 @@ export class CampaignWorkflow {
         seedB,
         refStyle,
         promptEngineeredB.negative_prompt,
-        referenceImage,
+        primaryRefImage,
         brief.concept_b.design_blueprint
       ),
     ]);
+
 
     brief.concept_a.image_url = imgResultA.url;
     brief.concept_b.image_url = imgResultB.url;
@@ -424,7 +428,7 @@ export class CampaignWorkflow {
                 remSeedA,
                 refStyle,
                 remediatedLayersA.negative_constraints,
-                referenceImage,
+                primaryRefImage,
                 brief.concept_a.design_blueprint
               );
               brief.concept_a.image_url = remImgA.url;
@@ -463,7 +467,7 @@ export class CampaignWorkflow {
                 remSeedB,
                 refStyle,
                 remediatedLayersB.negative_constraints,
-                referenceImage,
+                primaryRefImage,
                 brief.concept_b.design_blueprint
               );
               brief.concept_b.image_url = remImgB.url;
@@ -472,6 +476,7 @@ export class CampaignWorkflow {
                 agent: "CriticAutoRemediation (Concept B)",
                 provider: "Groq",
                 model: "llama-3.3-70b-versatile",
+
                 status: "success",
                 durationMs: 0,
                 summary: `Concept B auto-remediated: Score improved ${critiqueB.brand_alignment_score} -> ${finalCritiqueB.brand_alignment_score}/100.`,
