@@ -543,6 +543,8 @@ export default function SapphireWorkspace() {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      let streamCompleted = false;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -557,6 +559,10 @@ export default function SapphireWorkspace() {
 
           try {
             const payload = JSON.parse(trimmed.slice(6));
+
+            if (payload.logs && Array.isArray(payload.logs)) {
+              setWorkflowLogs(payload.logs);
+            }
 
             if (payload.type === "progress") {
               setPlanningSteps((prev) =>
@@ -585,6 +591,7 @@ export default function SapphireWorkspace() {
                 })
               );
             } else if (payload.type === "complete") {
+              streamCompleted = true;
               setCampaignId(payload.campaignId);
               setIntent(payload.intent);
               setResearch(payload.research);
@@ -625,6 +632,7 @@ export default function SapphireWorkspace() {
                 },
               ]);
             } else if (payload.type === "error") {
+              streamCompleted = true;
               setMessages((prev) => [
                 ...prev,
                 {
@@ -638,6 +646,17 @@ export default function SapphireWorkspace() {
             console.warn("Error parsing SSE JSON chunk:", jsonErr, trimmed);
           }
         }
+      }
+
+      if (!streamCompleted && !brief) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `The workflow execution was interrupted. Click "Telemetry Logs" at the top right to inspect step traces.`,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -653,6 +672,7 @@ export default function SapphireWorkspace() {
       fetchSavedCampaigns();
     }
   };
+
 
 
   const handleRefineSubmit = async (conceptKey: "A" | "B") => {
@@ -1417,17 +1437,20 @@ export default function SapphireWorkspace() {
               )}
 
               {/* Dynamic Live Multi-Agent Planning & Orchestration Timeline */}
-              {(isLoading || brief) && (
+              {(isLoading || brief || planningSteps.some((s) => s.status === "success" || s.status === "active" || s.status === "error")) && (
                 <AgentPlanning
                   title={
                     isLoading
                       ? "Multi-Agent Pipeline Active • Streaming Mastra Agents..."
-                      : "Multi-Agent Generation Complete • 1080×1350 Assets Ready"
+                      : brief
+                      ? "Multi-Agent Generation Complete • 1080×1350 Assets Ready"
+                      : "Multi-Agent Pipeline Step Traces"
                   }
                   steps={planningSteps}
                   className="animate-in fade-in duration-300"
                 />
               )}
+
             </div>
           </div>
 

@@ -44,7 +44,9 @@ export interface WorkflowProgressEvent {
   summary: string;
   durationMs?: number;
   details?: any;
+  logs?: WorkflowLogEntry[];
 }
+
 
 export type ProgressCallback = (event: WorkflowProgressEvent) => Promise<void> | void;
 
@@ -68,6 +70,18 @@ export class CampaignWorkflow {
   ): Promise<WorkflowResult> {
     const logger = new ExecutionLogger();
 
+    const notifyProgress = async (evt: Omit<WorkflowProgressEvent, "logs">) => {
+      try {
+        await onProgress?.({
+          ...evt,
+          logs: logger.getLogs(),
+        });
+      } catch (err) {
+        console.warn("Error in notifyProgress:", err);
+      }
+    };
+
+
     // 1. Fetch Brand Context & Visual DNA
     const brand = await logger.track(
       "BrandBrainService",
@@ -77,8 +91,8 @@ export class CampaignWorkflow {
       (b) => `Loaded brand DNA for "${b.name}" (${b.industry}).`
     );
 
-    // 2. Parse User Intent using Groq Llama 3.3 / Gemini 3.1
-    await onProgress?.({
+    // 2. Parse User Intent using Groq Llama 3.3 / Gemini 2.5
+    await notifyProgress({
       step: 0,
       totalSteps: 6,
       stage: "intent",
@@ -98,8 +112,7 @@ export class CampaignWorkflow {
       (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}", Platforms=[${i.target_platforms.join(", ")}].`
     );
 
-
-    await onProgress?.({
+    await notifyProgress({
       step: 0,
       totalSteps: 6,
       stage: "intent",
@@ -112,9 +125,9 @@ export class CampaignWorkflow {
       details: intent,
     });
 
-    // 3. Analyze Reference Visual Ingredients using Gemini Vision + Research
+    // 3. Concurrent Reference Analysis + Trend Research (Parallelized for Speed)
     const hasReferences = Array.isArray(referenceImage) ? referenceImage.length > 0 : !!referenceImage;
-    await onProgress?.({
+    await notifyProgress({
       step: 1,
       totalSteps: 6,
       stage: "reference",
@@ -123,21 +136,31 @@ export class CampaignWorkflow {
       model: "gemini-2.5-flash",
       status: "active",
       summary: hasReferences
-        ? "Compiling visual ingredients, lighting vectors, optics and negative space blueprint..."
+        ? "Compiling visual ingredients, lighting vectors, optics and negative space blueprint in parallel..."
         : "Synthesizing real-time design intelligence and negative space requirements...",
     });
 
     const refStart = Date.now();
-    let referenceAnalysis: ReferenceImageAnalysis | null = null;
-    if (hasReferences && referenceImage) {
-      referenceAnalysis = await logger.track(
-        "MultimodalAgent",
+    const [referenceAnalysis, research] = await Promise.all([
+      hasReferences && referenceImage
+        ? logger.track(
+            "MultimodalAgent",
+            "Google Gemini",
+            "gemini-2.5-flash",
+            () => MultimodalAgent.analyzeReferenceImages(referenceImage, brand),
+            (ref) => `Synthesized Visual Blueprint: Camera="${ref.camera_optics || ref.photography_style}", Lighting="${ref.lighting_vector || ref.lighting}", Palette=[${ref.color_palette_anchors?.join(", ") || ref.color_palette.join(", ")}].`
+          )
+        : Promise.resolve(null),
+      logger.track(
+        "ResearchAgent",
         "Google Gemini",
         "gemini-2.5-flash",
-        () => MultimodalAgent.analyzeReferenceImages(referenceImage, brand),
-        (ref) => `Synthesized Visual Blueprint: Camera="${ref.camera_optics || ref.photography_style}", Lighting="${ref.lighting_vector || ref.lighting}", Palette=[${ref.color_palette_anchors?.join(", ") || ref.color_palette.join(", ")}].`
-      );
-    } else {
+        () => ResearchAgent.synthesizeResearch(intent, brand),
+        (r) => `Synthesized ${r.key_trends.length} winning trends & ${r.overused_patterns_to_avoid.length} clichés to avoid.`
+      ),
+    ]);
+
+    if (!hasReferences) {
       logger.log({
         agent: "MultimodalAgent",
         provider: "System",
@@ -148,15 +171,7 @@ export class CampaignWorkflow {
       });
     }
 
-    const research = await logger.track(
-      "ResearchAgent",
-      "Google Gemini",
-      "gemini-3.7-flash",
-      () => ResearchAgent.synthesizeResearch(intent, brand),
-      (r) => `Synthesized ${r.key_trends.length} winning trends & ${r.overused_patterns_to_avoid.length} clichés to avoid.`
-    );
-
-    await onProgress?.({
+    await notifyProgress({
       step: 1,
       totalSteps: 6,
       stage: "reference",
@@ -172,13 +187,13 @@ export class CampaignWorkflow {
     });
 
     // 4. Develop A/B Creative Brief using CreativeDirectorAgent
-    await onProgress?.({
+    await notifyProgress({
       step: 2,
       totalSteps: 6,
       stage: "brief",
       agentName: "Creative Direction & A/B Archetype Formulation",
       provider: "Google Gemini / Mastra",
-      model: "gemini-3.7-flash",
+      model: "gemini-2.5-flash",
       status: "active",
       summary: "Formulating dual creative directions and selecting graphic design archetypes...",
     });
@@ -187,7 +202,7 @@ export class CampaignWorkflow {
     const brief = await logger.track(
       "CreativeDirectorAgent",
       "Google Gemini",
-      "gemini-3.7-flash",
+      "gemini-2.5-flash",
       () =>
         CreativeDirectorAgent.developCreativeBrief(
           intent,
@@ -198,69 +213,70 @@ export class CampaignWorkflow {
       (b) => `Generated dual concepts: "${b.concept_a.label}" & "${b.concept_b.label}".`
     );
 
-    await onProgress?.({
+    await notifyProgress({
       step: 2,
       totalSteps: 6,
       stage: "brief",
       agentName: "Creative Direction & A/B Archetype Formulation",
       provider: "Google Gemini / Mastra",
-      model: "gemini-3.7-flash",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - briefStart,
       summary: `Concept A: "${brief.concept_a.label}" vs Concept B: "${brief.concept_b.label}"`,
       details: brief,
     });
 
-    // 5. Multi-Layer Visual Decomposition & Prompt Engineering
-    await onProgress?.({
+    // 5. Multi-Layer Visual Decomposition & Prompt Engineering (Parallelized for Speed)
+    await notifyProgress({
       step: 3,
       totalSteps: 6,
       stage: "prompt_decomp",
       agentName: "Spatial Prompt Engineering & Satori Blueprint",
       provider: "Google Gemini / Satori",
-      model: "gemini-3.7-flash",
+      model: "gemini-2.5-flash",
       status: "active",
-      summary: "Calculating negative space void & 3-layer visual prompt decomposition...",
+      summary: "Calculating negative space void & decomposing prompts in parallel...",
     });
 
     const promptStart = Date.now();
-    const promptEngineeredA = await logger.track(
-      "VisualDecomposition (Concept A)",
-      "Google Gemini",
-      "gemini-3.7-flash",
-      () =>
-        PromptEngineerAgent.engineerPrompt(
-          brief.concept_a,
-          brand,
-          intent,
-          research,
-          referenceAnalysis
-        ),
-      (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept A.`
-    );
+    const [promptEngineeredA, promptEngineeredB] = await Promise.all([
+      logger.track(
+        "VisualDecomposition (Concept A)",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        () =>
+          PromptEngineerAgent.engineerPrompt(
+            brief.concept_a,
+            brand,
+            intent,
+            research,
+            referenceAnalysis
+          ),
+        (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept A.`
+      ),
+      logger.track(
+        "VisualDecomposition (Concept B)",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        () =>
+          PromptEngineerAgent.engineerPrompt(
+            brief.concept_b,
+            brand,
+            intent,
+            research,
+            referenceAnalysis
+          ),
+        (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept B.`
+      ),
+    ]);
 
-    const promptEngineeredB = await logger.track(
-      "VisualDecomposition (Concept B)",
-      "Google Gemini",
-      "gemini-3.7-flash",
-      () =>
-        PromptEngineerAgent.engineerPrompt(
-          brief.concept_b,
-          brand,
-          intent,
-          research,
-          referenceAnalysis
-        ),
-      (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept B.`
-    );
-
-    await onProgress?.({
+    await notifyProgress({
       step: 3,
       totalSteps: 6,
       stage: "prompt_decomp",
       agentName: "Spatial Prompt Engineering & Satori Blueprint",
       provider: "Google Gemini / Satori",
-      model: "gemini-3.7-flash",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - promptStart,
       summary: `Constructed 4-zone negative space budget • Archetypes: ${brief.concept_a.design_blueprint?.archetype} & ${brief.concept_b.design_blueprint?.archetype}`,
@@ -268,7 +284,7 @@ export class CampaignWorkflow {
     });
 
     // 6. Image Generation & Canva-Grade Compositing
-    await onProgress?.({
+    await notifyProgress({
       step: 4,
       totalSteps: 6,
       stage: "image_rendering",
@@ -276,7 +292,7 @@ export class CampaignWorkflow {
       provider: "Cloudflare FLUX 1 Schnell + Satori",
       model: "@cf/black-forest-labs/flux-1-schnell",
       status: "active",
-      summary: "Rendering photorealistic backgrounds and overlaying editorial typography hierarchy...",
+      summary: "Rendering photorealistic backgrounds and overlaying editorial typography hierarchy in parallel...",
     });
 
     const renderStart = Date.now();
@@ -304,7 +320,6 @@ export class CampaignWorkflow {
       ),
     ]);
 
-
     brief.concept_a.image_url = imgResultA.url;
     brief.concept_b.image_url = imgResultB.url;
 
@@ -326,7 +341,7 @@ export class CampaignWorkflow {
       summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms.`,
     });
 
-    await onProgress?.({
+    await notifyProgress({
       step: 4,
       totalSteps: 6,
       stage: "image_rendering",
@@ -339,8 +354,9 @@ export class CampaignWorkflow {
       details: { urlA: imgResultA.url, urlB: imgResultB.url },
     });
 
+
     // 7. Critic Agent Brand Voice & Compliance Audit
-    await onProgress?.({
+    await notifyProgress({
       step: 5,
       totalSteps: 6,
       stage: "critic_audit",
@@ -369,7 +385,7 @@ export class CampaignWorkflow {
       ),
     ]);
 
-    await onProgress?.({
+    await notifyProgress({
       step: 5,
       totalSteps: 6,
       stage: "critic_audit",
@@ -391,7 +407,7 @@ export class CampaignWorkflow {
     const needsRemediationB = critiqueB.brand_alignment_score < threshold || critiqueB.visual_score < threshold;
 
     if (needsRemediationA || needsRemediationB) {
-      await onProgress?.({
+      await notifyProgress({
         step: 5,
         totalSteps: 6,
         stage: "critic_audit",
@@ -406,6 +422,7 @@ export class CampaignWorkflow {
           .filter(Boolean)
           .join(" & ")} with targeted prompt engineering...`,
       });
+
 
       const remediationTasks: Promise<void>[] = [];
 
@@ -491,7 +508,7 @@ export class CampaignWorkflow {
 
       await Promise.all(remediationTasks);
 
-      await onProgress?.({
+      await notifyProgress({
         step: 5,
         totalSteps: 6,
         stage: "critic_audit",
@@ -504,6 +521,7 @@ export class CampaignWorkflow {
         details: { critiqueA: finalCritiqueA, critiqueB: finalCritiqueB },
       });
     }
+
 
     // 9. Persist Campaign, Concepts, Critiques & Versions in Supabase
     let campaignId = "local-campaign-" + Date.now();
