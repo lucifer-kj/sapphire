@@ -42,19 +42,22 @@ This document defines the core operational constraints and rules for all AI codi
 
 ## 4. UI / UX & Design System Guidelines
 
-- **Design Philosophy:** **Claude Visual Language + Google Flow Spatial Interaction Architecture**.
-- **Color Palette (Strict):**
-  - Application Background: `#FAF9F5` (`bg-sapphire-bg`)
-  - Main Surface / Cards: `#FFFFFF` (`bg-sapphire-surface`)
-  - Primary Text & Dark Elements: `#141413` (`text-sapphire-dark`)
-  - Secondary Text / Subdued Icons: `#B0AEA5`
-  - Subtle Borders / Dividers: `rgba(20, 20, 19, 0.12)` (`0.5px` border width)
-  - Primary Accent (Buttons / Focus): `#D97757` (`accent-sapphire-terracotta`)
+- **Design Philosophy:** **Claude Subtractive Dark Theme + Google Flow Spatial Interaction Architecture**.
+- **Color Palette (Strict Dark Neutral Hierarchy):**
+  - Application Background (Base Canvas): `#09090b` (`bg-zinc-950` / `bg-sapphire-bg`)
+  - Main Surface / Cards / Elevated Panels: `#18181b` (`bg-zinc-900` / `bg-sapphire-surface`)
+  - Secondary Elevated / Active Inputs: `#27272a` (`bg-zinc-800` / `bg-sapphire-subtle`)
+  - Primary Text & Prominent Elements: `#f4f4f5` (`text-zinc-100` / `text-sapphire-dark`)
+  - Secondary Text / Subdued Metadata: `#a1a1aa` (`text-zinc-400` / `text-sapphire-muted`)
+  - Subtle Micro-Borders / Dividers: `rgba(255, 255, 255, 0.05)` to `rgba(255, 255, 255, 0.10)` (`border-white/5` / `border-white/10`)
+  - Primary Accent (Buttons / Active States / Focal CTAs): `#D97757` (`accent-sapphire-terracotta`)
 - **Strict Prohibition (No Generic AI Aesthetics):**
   - **NEVER** use purple/blue background gradients, neon glowing borders, rainbow text, or glassmorphism gradients on Sapphire UI chrome.
 - **Layout Surface Boundaries:**
-  - Left Panel: Conversational control surface & research log.
-  - Right Panel: Spatial creative canvas for comparing A/B concepts, visual ingredients, version history, and contextual editing.
+  - **Dedicated Workspace Portal (`/workspaces`):** Central launchpad for choosing between Personal Creator Onboarding and Client OpenBrand Autonomous Extraction.
+  - **Left Panel (Sidebar):** Unified workspace identity header, Creative Gallery asset stack, Brand Brain settings, and paginated session history with isolated history deletion.
+  - **Center Panel (Conversation Feed):** Centered (`max-w-3xl lg:max-w-4xl mx-auto`), relaxed line-height conversation feed with elevated diffuse-shadow composer (`Add Visual`, `Generate`).
+  - **Right Panel (Spatial Creative Canvas):** Dynamic spatial workspace supporting Vertical Stack Feed and Studio Focus Inspector for inspecting 1080×1350 Canva-grade composites, typography layers, version history, and Bayesian alignment scores.
 
 ---
 
