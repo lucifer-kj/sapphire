@@ -36,7 +36,7 @@ export function getGroqProvider() {
 }
 
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Gemini 1.5/Groq fallback)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro/Groq fallback)
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
@@ -50,7 +50,7 @@ export function getReasoningModel() {
 export function getReasoningFallbackModel() {
   const secondaryKey = getGoogleApiKey(true);
   if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-1.5-flash");
+    return getGoogleProvider(true)("gemini-2.5-pro");
   }
   return getGroqProvider()("llama-3.3-70b-versatile");
 }
@@ -70,13 +70,13 @@ export function getLightModel() {
 export function getLightFallbackModel() {
   const secondaryKey = getGoogleApiKey(true);
   if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-1.5-flash");
+    return getGoogleProvider(true)("gemini-2.5-flash");
   }
   return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 /**
- * Multimodal Vision Model (Gemini 2.5 Flash primary, Gemini 1.5 fallback)
+ * Multimodal Vision Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro fallback)
  * Used for: Reference image stylistic breakdown & visual palette extraction
  */
 export function getVisionModel() {
@@ -90,13 +90,13 @@ export function getVisionModel() {
 export function getVisionFallbackModel() {
   const secondaryKey = getGoogleApiKey(true);
   if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-1.5-flash");
+    return getGoogleProvider(true)("gemini-2.5-pro");
   }
   return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 /**
- * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Gemini 1.5 fallback)
+ * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro fallback)
  * Used for: Fast structured compliance auditing & brand scorecards
  */
 export function getCriticModel() {

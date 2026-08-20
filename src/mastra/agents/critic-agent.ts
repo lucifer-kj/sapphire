@@ -42,11 +42,20 @@ TWO-STAGE EVALUATION MANDATE:
    - Forbidden Phrases Found in Captions (list)
    - Critique Notes & Actionable Suggestions`;
 
+    const shotListAudit = concept.locked_shot_list
+      ? `\nLOCKED SHOT LIST TO AUDIT AGAINST VISUAL PIXELS (GROUND TRUTH):
+- Mandatory Required Props: [${concept.locked_shot_list.required_props.join(", ")}]
+- Expected Hero Subject: ${concept.locked_shot_list.hero_subject}
+- Expected Setting: ${concept.locked_shot_list.setting}\n`
+      : "";
+
     const promptText = `USER CAMPAIGN PROMPT / TOPIC: "${originalUserPrompt || concept.label}"
 CONCEPT DIRECTION: "${concept.label}" — ${concept.creative_direction}
 VISUAL STYLE: "${concept.visual_style}"
 INSTAGRAM CAPTION: "${concept.caption_instagram}"
-LINKEDIN CAPTION: "${concept.caption_linkedin}"`;
+LINKEDIN CAPTION: "${concept.caption_linkedin}"
+${shotListAudit}
+CRITICAL INSTRUCTION: Visually inspect the attached image. Check specifically whether each mandatory prop in the Locked Shot List is physically visible in the image pixels. If any prop is missing or unidentifiable, set content_match.passed to false and list it in content_match.missing_elements.`;
 
     const contentParts: any[] = [
       {
@@ -91,22 +100,23 @@ LINKEDIN CAPTION: "${concept.caption_linkedin}"`;
         });
         return result.object;
       } catch (err2) {
+        // FAIL-SAFE: Never silently auto-pass an unverified vision check
+        console.warn("Vision Critic fallback failed, executing FAIL-SAFE gate:", err2);
         return {
           content_match: {
-            passed: true,
-            detected_elements: ["Atmospheric travel setting", "Hero subject"],
-            missing_elements: [],
-            reasoning: "Fallback review approved concept.",
+            passed: false,
+            detected_elements: [],
+            missing_elements: concept.locked_shot_list?.required_props || ["Visual verification unavailable - text-only fallback executed"],
+            reasoning: "Vision model unavailable during evaluation. Auto-flagged for re-generation and visual inspection to prevent uninspected renders from passing.",
           },
-          brand_alignment_score: 92,
+          brand_alignment_score: 50,
           voice_compliance: true,
           forbidden_phrases_found: [],
-          visual_score: 90,
+          visual_score: 50,
           critique_notes: [
-            "Strong alignment with editorial photography guidelines.",
-            "Voice tone matches aspirational brand positioning.",
+            "Vision model evaluation failed; fail-safe engaged to trigger re-generation with explicit hero props.",
           ],
-          suggestions: ["Ensure logo placement remains subtle in final rendering."],
+          suggestions: ["Re-verify image with Gemini Vision to validate physical props."],
         };
       }
     }

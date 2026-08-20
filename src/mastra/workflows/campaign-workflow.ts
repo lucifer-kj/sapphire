@@ -2,6 +2,7 @@ import { BrandBrainService } from "@/services/brand-brain";
 import { IntentAgent } from "../agents/intent-agent";
 import { ResearchAgent } from "../agents/research-agent";
 import { CreativeDirectorAgent } from "../agents/creative-director-agent";
+import { ImageDirectorAgent } from "../agents/image-director-agent";
 import { MultimodalAgent } from "../agents/multimodal-agent";
 import { CriticAgent } from "../agents/critic-agent";
 import { PromptEngineerAgent } from "../agents/prompt-engineer-agent";
@@ -225,6 +226,27 @@ export class CampaignWorkflow {
       summary: `Concept A: "${brief.concept_a.label}" vs Concept B: "${brief.concept_b.label}"`,
       details: brief,
     });
+
+    // 4. Image Director: Physical Shot List Compilation (Ground Truth Anchor)
+    const [shotListA, shotListB] = await Promise.all([
+      logger.track(
+        "ImageDirector (Concept A)",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        () => ImageDirectorAgent.compileLockedShotList(brief.concept_a, brand, intent, research),
+        (sl) => `Locked props for Concept A: [${sl.required_props.join(", ")}].`
+      ),
+      logger.track(
+        "ImageDirector (Concept B)",
+        "Google Gemini",
+        "gemini-2.5-flash",
+        () => ImageDirectorAgent.compileLockedShotList(brief.concept_b, brand, intent, research),
+        (sl) => `Locked props for Concept B: [${sl.required_props.join(", ")}].`
+      ),
+    ]);
+
+    brief.concept_a.locked_shot_list = shotListA;
+    brief.concept_b.locked_shot_list = shotListB;
 
     // 5. Multi-Layer Visual Decomposition & Prompt Engineering (Parallelized for Speed)
     await notifyProgress({

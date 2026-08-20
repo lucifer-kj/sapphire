@@ -69,6 +69,14 @@ LAYER DECOMPOSITION GUIDELINES:
 4. blended_composite_prompt: Master hyper-realistic prompt starting with "Commercial photography, vertical 4:5 portrait composition for social media," integrating lens ("Shot on 50mm f/4 lens, tack-sharp in-focus subject and props"), crisp micro-contrast, and clean negative space sky void.
 5. negative_constraints: "blurry, soft focus, out of focus, motion blur, bokeh over subject, text, typography, letters, words, font, watermark, logo, label, badge, distorted fingers, extra fingers, cartoon, 3d render, low quality".`;
 
+    const shotListContext = concept.locked_shot_list
+      ? `\nLOCKED PHYSICAL SHOT LIST (NON-NEGOTIABLE GROUND TRUTH):
+- Hero Subject: ${concept.locked_shot_list.hero_subject}
+- Required Mandatory Props: ${concept.locked_shot_list.required_props.join(" • ")}
+- Setting & Surfaces: ${concept.locked_shot_list.setting}
+- Lighting & Atmosphere: ${concept.locked_shot_list.lighting_and_atmosphere}\n`
+      : "";
+
     const promptText = `Campaign Topic & Requirements: ${intent.event} (${intent.objective})
 Concept Label: ${concept.label}
 Archetype: ${blueprint?.archetype || "editorial_magazine"}
@@ -76,7 +84,8 @@ Creative Direction: ${concept.creative_direction}
 Visual Style: ${concept.visual_style}
 Composition: ${concept.composition}
 Lighting: ${concept.lighting}
-Spatial Requirement: ${spatialDirective}`;
+Spatial Requirement: ${spatialDirective}
+${shotListContext}`;
 
     try {
       const result = await generateObject({

@@ -18,6 +18,8 @@ export const ResearchContextSchema = z.object({
   summary: z.string().default("Research complete."),
 });
 
+import { LockedShotListSchema } from "./shot-list";
+
 export const ConceptItemSchema = z.object({
   label: z.string(),
   creative_direction: z.string(),
@@ -32,6 +34,7 @@ export const ConceptItemSchema = z.object({
   caption_instagram: z.string(),
   caption_linkedin: z.string(),
   design_blueprint: DesignBlueprintSchema.optional(),
+  locked_shot_list: LockedShotListSchema.optional(),
 });
 
 export const CreativeBriefSchema = z.object({
