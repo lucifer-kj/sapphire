@@ -7,11 +7,25 @@ const googleApiKey =
   "";
 
 
-export function getGoogleProvider() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+export function getGoogleApiKey(useSecondary: boolean = false) {
+  if (useSecondary) {
+    return (
+      process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      ""
+    );
+  }
+  return (
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    ""
+  );
+}
+
+export function getGoogleProvider(useSecondary: boolean = false) {
+  const key = getGoogleApiKey(useSecondary);
   return createGoogleGenerativeAI({ apiKey: key });
 }
 
@@ -22,14 +36,11 @@ export function getGroqProvider() {
 }
 
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq 70B fallback)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Gemini 1.5/Groq fallback)
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
+  const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
@@ -37,12 +48,9 @@ export function getReasoningModel() {
 }
 
 export function getReasoningFallbackModel() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
-  if (key) {
-    return getGoogleProvider()("gemini-2.5-flash");
+  const secondaryKey = getGoogleApiKey(true);
+  if (secondaryKey) {
+    return getGoogleProvider(true)("gemini-1.5-flash");
   }
   return getGroqProvider()("llama-3.3-70b-versatile");
 }
@@ -52,10 +60,7 @@ export function getReasoningFallbackModel() {
  * Used for: High-Speed Intent Parsing, Fast Concept Refinements
  */
 export function getLightModel() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
+  const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
@@ -63,33 +68,39 @@ export function getLightModel() {
 }
 
 export function getLightFallbackModel() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
+  const secondaryKey = getGoogleApiKey(true);
+  if (secondaryKey) {
+    return getGoogleProvider(true)("gemini-1.5-flash");
+  }
+  return getGroqProvider()("llama-3.3-70b-versatile");
+}
+
+/**
+ * Multimodal Vision Model (Gemini 2.5 Flash primary, Gemini 1.5 fallback)
+ * Used for: Reference image stylistic breakdown & visual palette extraction
+ */
+export function getVisionModel() {
+  const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
   return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
-/**
- * Multimodal Vision Model (Gemini 2.5 Flash)
- * Used for: Reference image stylistic breakdown & visual palette extraction
- */
-export function getVisionModel() {
-  return getGoogleProvider()("gemini-2.5-flash");
+export function getVisionFallbackModel() {
+  const secondaryKey = getGoogleApiKey(true);
+  if (secondaryKey) {
+    return getGoogleProvider(true)("gemini-1.5-flash");
+  }
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 /**
- * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Groq fallback)
+ * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Gemini 1.5 fallback)
  * Used for: Fast structured compliance auditing & brand scorecards
  */
 export function getCriticModel() {
-  const key =
-    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    "";
+  const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }

@@ -18,16 +18,7 @@ export class ExecutionLogger {
 
   async track<T>(
     agent: string,
-    provider:
-      | "Groq"
-      | "Google Gemini"
-      | "Cloudflare Workers AI (Flux)"
-      | "Pollinations AI"
-      | "Pollinations AI (Flux)"
-      | "System"
-      | "Nano Banana"
-      | "Nano Banana 2"
-      | "Puter.js",
+    provider: WorkflowLogEntry["provider"],
     model: string,
     action: () => Promise<T>,
     summaryExtractor?: (result: T) => string

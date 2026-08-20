@@ -355,33 +355,33 @@ export class CampaignWorkflow {
     });
 
 
-    // 7. Critic Agent Brand Voice & Compliance Audit
+    // 7. Critic Agent Multimodal Visual Inspection & Content Match Audit
     await notifyProgress({
       step: 5,
       totalSteps: 6,
       stage: "critic_audit",
-      agentName: "Critic Agent Brand Voice & Compliance Audit",
-      provider: "Groq / Gemini",
-      model: "llama-3.3-70b-versatile",
+      agentName: "Multimodal Visual Inspection & Content Match Audit",
+      provider: "Google Gemini Vision",
+      model: "gemini-2.5-flash",
       status: "active",
-      summary: "Running 100-point brand alignment, visual density, and readability evaluation...",
+      summary: "Inspecting rendered visual pixels for required hero props, subject match, and brand alignment...",
     });
 
     const criticStart = Date.now();
     const [critiqueA, critiqueB] = await Promise.all([
       logger.track(
         "CriticAgent (Concept A)",
-        "Groq",
-        "llama-3.3-70b-versatile",
-        () => CriticAgent.evaluateConcept(brief.concept_a, brand),
-        (c) => `Concept A Brand Alignment: ${c.brand_alignment_score}/100.`
+        "Google Gemini Vision",
+        "gemini-2.5-flash",
+        () => CriticAgent.evaluateConcept(brief.concept_a, brand, brief.concept_a.image_url, prompt),
+        (c) => `Concept A Content Match: ${c.content_match?.passed ? "PASSED" : "FAILED"} (Missing: [${c.content_match?.missing_elements?.join(", ") || "None"}]), Brand Alignment: ${c.brand_alignment_score}/100.`
       ),
       logger.track(
         "CriticAgent (Concept B)",
-        "Groq",
-        "llama-3.3-70b-versatile",
-        () => CriticAgent.evaluateConcept(brief.concept_b, brand),
-        (c) => `Concept B Brand Alignment: ${c.brand_alignment_score}/100.`
+        "Google Gemini Vision",
+        "gemini-2.5-flash",
+        () => CriticAgent.evaluateConcept(brief.concept_b, brand, brief.concept_b.image_url, prompt),
+        (c) => `Concept B Content Match: ${c.content_match?.passed ? "PASSED" : "FAILED"} (Missing: [${c.content_match?.missing_elements?.join(", ") || "None"}]), Brand Alignment: ${c.brand_alignment_score}/100.`
       ),
     ]);
 
@@ -389,38 +389,53 @@ export class CampaignWorkflow {
       step: 5,
       totalSteps: 6,
       stage: "critic_audit",
-      agentName: "Critic Agent Brand Voice & Compliance Audit",
-      provider: "Groq / Gemini",
-      model: "llama-3.3-70b-versatile",
+      agentName: "Multimodal Visual Inspection & Content Match Audit",
+      provider: "Google Gemini Vision",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - criticStart,
-      summary: `Alignment Scores: Concept A (${critiqueA.brand_alignment_score}/100) • Concept B (${critiqueB.brand_alignment_score}/100)`,
+      summary: `Content Check: Concept A (${critiqueA.content_match?.passed ? "Match" : "Missing Props"}) • Concept B (${critiqueB.content_match?.passed ? "Match" : "Missing Props"})`,
       details: { critiqueA, critiqueB },
     });
 
-    // 8. Bounded Critic Auto-Remediation Loop (<80 score threshold)
+    // 8. Bounded Remediation Hard Gate (Content Match Miss OR Score < 75)
     let finalCritiqueA = critiqueA;
     let finalCritiqueB = critiqueB;
 
-    const threshold = 80;
-    const needsRemediationA = critiqueA.brand_alignment_score < threshold || critiqueA.visual_score < threshold;
-    const needsRemediationB = critiqueB.brand_alignment_score < threshold || critiqueB.visual_score < threshold;
+    const threshold = 75;
+    const needsRemediationA =
+      !critiqueA.content_match?.passed ||
+      (critiqueA.content_match?.missing_elements && critiqueA.content_match.missing_elements.length > 0) ||
+      critiqueA.brand_alignment_score < threshold ||
+      critiqueA.visual_score < threshold;
+
+    const needsRemediationB =
+      !critiqueB.content_match?.passed ||
+      (critiqueB.content_match?.missing_elements && critiqueB.content_match.missing_elements.length > 0) ||
+      critiqueB.brand_alignment_score < threshold ||
+      critiqueB.visual_score < threshold;
 
     if (needsRemediationA || needsRemediationB) {
+      const missingSummary = [
+        needsRemediationA && critiqueA.content_match?.missing_elements?.length
+          ? `Concept A missing [${critiqueA.content_match.missing_elements.join(", ")}]`
+          : null,
+        needsRemediationB && critiqueB.content_match?.missing_elements?.length
+          ? `Concept B missing [${critiqueB.content_match.missing_elements.join(", ")}]`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
       await notifyProgress({
         step: 5,
         totalSteps: 6,
         stage: "critic_audit",
-        agentName: "Critic Auto-Remediation Active (<80 Score Detected)",
-        provider: "Google Gemini + FLUX Realism",
+        agentName: "Targeted Visual Auto-Remediation Active",
+        provider: "Google Gemini Vision + FLUX Realism",
         model: "gemini-2.5-flash",
         status: "active",
-        summary: `Auto-repairing ${[
-          needsRemediationA ? `Concept A (Score: ${critiqueA.brand_alignment_score}/100)` : null,
-          needsRemediationB ? `Concept B (Score: ${critiqueB.brand_alignment_score}/100)` : null,
-        ]
-          .filter(Boolean)
-          .join(" & ")} with targeted prompt engineering...`,
+        summary: `Auto-repairing missing hero props & composition: ${missingSummary || "Refining visual alignment"}...`,
       });
 
       const remediationTasks: Promise<void>[] = [];
@@ -448,14 +463,14 @@ export class CampaignWorkflow {
                 brief.concept_a.design_blueprint
               );
               brief.concept_a.image_url = remImgA.url;
-              finalCritiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand);
+              finalCritiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand, remImgA.url, prompt);
               logger.log({
                 agent: "CriticAutoRemediation (Concept A)",
-                provider: "Google Gemini",
+                provider: "Google Gemini Vision",
                 model: "gemini-2.5-flash",
                 status: "success",
                 durationMs: 0,
-                summary: `Concept A auto-remediated: Score improved ${critiqueA.brand_alignment_score} -> ${finalCritiqueA.brand_alignment_score}/100.`,
+                summary: `Concept A auto-remediated: Content Match=${finalCritiqueA.content_match?.passed ? "PASSED" : "REFINED"}, Score=${finalCritiqueA.brand_alignment_score}/100.`,
               });
             } catch (err) {
               console.warn("Auto-remediation pass for Concept A failed, retaining initial concept:", err);
@@ -487,14 +502,14 @@ export class CampaignWorkflow {
                 brief.concept_b.design_blueprint
               );
               brief.concept_b.image_url = remImgB.url;
-              finalCritiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand);
+              finalCritiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand, remImgB.url, prompt);
               logger.log({
                 agent: "CriticAutoRemediation (Concept B)",
-                provider: "Google Gemini",
+                provider: "Google Gemini Vision",
                 model: "gemini-2.5-flash",
                 status: "success",
                 durationMs: 0,
-                summary: `Concept B auto-remediated: Score improved ${critiqueB.brand_alignment_score} -> ${finalCritiqueB.brand_alignment_score}/100.`,
+                summary: `Concept B auto-remediated: Content Match=${finalCritiqueB.content_match?.passed ? "PASSED" : "REFINED"}, Score=${finalCritiqueB.brand_alignment_score}/100.`,
               });
             } catch (err) {
               console.warn("Auto-remediation pass for Concept B failed, retaining initial concept:", err);
@@ -509,12 +524,12 @@ export class CampaignWorkflow {
         step: 5,
         totalSteps: 6,
         stage: "critic_audit",
-        agentName: "Critic Auto-Remediation Complete",
-        provider: "Google Gemini",
+        agentName: "Critic Visual Remediation Complete",
+        provider: "Google Gemini Vision",
         model: "gemini-2.5-flash",
         status: "success",
         durationMs: Date.now() - criticStart,
-        summary: `Remediation Complete: Concept A (${finalCritiqueA.brand_alignment_score}/100) • Concept B (${finalCritiqueB.brand_alignment_score}/100)`,
+        summary: `Verified: Concept A (Match: ${finalCritiqueA.content_match?.passed ? "Yes" : "Soft"}, Score: ${finalCritiqueA.brand_alignment_score}/100) • Concept B (Match: ${finalCritiqueB.content_match?.passed ? "Yes" : "Soft"}, Score: ${finalCritiqueB.brand_alignment_score}/100)`,
         details: { critiqueA: finalCritiqueA, critiqueB: finalCritiqueB },
       });
     }

@@ -1,6 +1,31 @@
 import { z } from "zod";
 
+export const ContentMatchSchema = z.object({
+  passed: z
+    .boolean()
+    .default(true)
+    .describe("Whether the rendered image contains the specific subject, props, and setting requested in the user prompt/brief"),
+  detected_elements: z
+    .array(z.string())
+    .default([])
+    .describe("Concrete physical objects, subjects, props, and environments visibly detected in the image"),
+  missing_elements: z
+    .array(z.string())
+    .default([])
+    .describe("Mandatory subjects, hero props, or context items requested in the user prompt/brief that are missing in the image"),
+  reasoning: z
+    .string()
+    .default("Image content aligns with brief requirements.")
+    .describe("Detailed explanation of what specific elements were matched or missed"),
+});
+
 export const CriticResultSchema = z.object({
+  content_match: ContentMatchSchema.default({
+    passed: true,
+    detected_elements: [],
+    missing_elements: [],
+    reasoning: "Verified content match.",
+  }),
   brand_alignment_score: z.number().min(0).max(100).default(90),
   voice_compliance: z.boolean().default(true),
   forbidden_phrases_found: z.array(z.string()).default([]),
@@ -17,5 +42,7 @@ export const PreferenceDecompositionSchema = z.object({
   evidence_notes: z.string(),
 });
 
+export type ContentMatch = z.infer<typeof ContentMatchSchema>;
 export type CriticResult = z.infer<typeof CriticResultSchema>;
 export type PreferenceDecomposition = z.infer<typeof PreferenceDecompositionSchema>;
+

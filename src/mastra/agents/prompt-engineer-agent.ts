@@ -46,11 +46,12 @@ ${remediationDirective}\n`
     const systemPrompt = `You are Sapphire's Principal Prompt Engineer for Hybrid Multi-Layer AI Photography & Canva-Grade Compositing.
 Your task is to deconstruct the creative concept into pure photographic aspect layers and synthesize a master prompt for FLUX Realism.
 
-STRICT DIFFUSION SANITIZATION RULES (CRITICAL):
+STRICT DIFFUSION SANITIZATION & CRISP OPTICS RULES (CRITICAL):
 1. NEVER include words, headlines, slogans, letters, brand names, or typography demands in the image prompt. All text is overlaid separately via vector typography.
-2. Master prompt must describe 100% pure physical scene photography: [Camera/Lens Specs] + [Subject Position & Framing] + [Negative Space Void Zone] + [Lighting & Color Grading].
-3. Explicit Spatial Directive: "${spatialDirective}"
-4. Mandatory negative constraints: "text, typography, letters, words, font, watermark, logo, blurry, distorted hands, cartoon, low quality, oversaturated".
+2. HERO PROPS & CONCRETE SUBJECTS: Always explicitly include the tangible physical hero props, food/beverage items, cultural objects, or product assets required by the campaign topic (e.g. if coffee culture: traditional Vietnamese stainless steel phin filter, glass of condensed milk coffee, roasted dark coffee beans on a rustic wooden table).
+3. ZERO-BLUR CRISP FOCUS: Mandate tack-sharp foreground focus: "Shot on 50mm f/4 lens, tack-sharp crisp focus across hero subject and props, ultra-detailed micro-textures, clean lighting, 8k commercial photography". Avoid wide apertures like f/1.8 that create excessive bokeh blur over props.
+4. Explicit Spatial Directive: "${spatialDirective}"
+5. Mandatory negative constraints: "blurry, soft focus, out of focus, motion blur, bokeh over subject, text, typography, letters, words, font, watermark, logo, label, badge, distorted fingers, extra fingers, cartoon, 3d render, low quality, oversaturated".
 
 BRAND VISUAL DNA:
 - Brand: ${brand.name} (${brand.industry})
@@ -63,13 +64,12 @@ ${remediationContext}
 
 LAYER DECOMPOSITION GUIDELINES:
 1. environment_background_layer: Architectural or natural scenic backdrop with clear sky in the upper 45% negative space zone.
-2. subject_asset_layer: Primary subject with framing matching spatial rules. If archetype is 'polaroid_pov_overlay', describe a realistic first-person POV hand holding a crisp white Polaroid instant photograph in sharp focus in the lower-center foreground, perfectly framing the scenic landmark inside the Polaroid.
-3. atmospheric_grading_layer: Lighting direction (e.g. golden hour sunlight, warm directional side-lighting), color temperature, natural depth of field.
-4. blended_composite_prompt: Master hyper-realistic prompt starting with "Commercial photography, vertical 4:5 portrait composition for social media," integrating lens (e.g. 35mm f/2.8), sharp subject focus, and clean negative space sky void.
-5. negative_constraints: "text, typography, letters, words, font, watermark, logo, label, badge, blurry, distorted fingers, extra fingers, cartoon, 3d render, low quality".`;
+2. subject_asset_layer: Primary hero subject AND tangible props in sharp focus. If archetype is 'polaroid_pov_overlay', describe a realistic first-person POV hand holding a crisp white Polaroid instant photograph in sharp focus in the lower-center foreground, perfectly framing the scenic landmark inside the Polaroid.
+3. atmospheric_grading_layer: Lighting direction (e.g. golden hour sunlight, warm directional side-lighting), color temperature, clean natural depth.
+4. blended_composite_prompt: Master hyper-realistic prompt starting with "Commercial photography, vertical 4:5 portrait composition for social media," integrating lens ("Shot on 50mm f/4 lens, tack-sharp in-focus subject and props"), crisp micro-contrast, and clean negative space sky void.
+5. negative_constraints: "blurry, soft focus, out of focus, motion blur, bokeh over subject, text, typography, letters, words, font, watermark, logo, label, badge, distorted fingers, extra fingers, cartoon, 3d render, low quality".`;
 
-
-    const promptText = `Campaign Event: ${intent.event}
+    const promptText = `Campaign Topic & Requirements: ${intent.event} (${intent.objective})
 Concept Label: ${concept.label}
 Archetype: ${blueprint?.archetype || "editorial_magazine"}
 Creative Direction: ${concept.creative_direction}
@@ -77,7 +77,6 @@ Visual Style: ${concept.visual_style}
 Composition: ${concept.composition}
 Lighting: ${concept.lighting}
 Spatial Requirement: ${spatialDirective}`;
-
 
     try {
       const result = await generateObject({
@@ -106,12 +105,12 @@ Spatial Requirement: ${spatialDirective}`;
         const mood = referenceAnalysis ? referenceAnalysis.mood : "Warm and aspirational";
 
         return {
-          environment_background_layer: `Historic authentic architectural setting in ${topic} with sandstone textures and scenic landmark atmosphere.`,
-          subject_asset_layer: `Central hero subject for ${topic} framed according to spatial rules.`,
-          atmospheric_grading_layer: `Golden hour side-lighting with soft ambient shadows, harmonious warm color palette (${colorList}), and natural depth of field.`,
-          blended_composite_prompt: `Editorial commercial photography, vertical 4:5 portrait composition for social media, ${topic}, ${style}, ${mood} atmosphere, warm golden hour side-lighting, harmonious palette of ${colorList}, ${spatialDirective}, shot on 35mm f/1.8 lens, natural depth of field, crisp micro-contrast, photorealistic 8k`,
-          negative_constraints: "busy background, center clutter, text, typography, watermark, logo, crowded frame, blurry, oversaturated, generic stock photo, distorted hands, cartoon",
-          technical_camera_specs: "Shot on 35mm f/1.8 lens, golden hour lighting, 4:5 aspect ratio, 8k",
+          environment_background_layer: `Historic authentic architectural setting in ${topic} with sandstone textures and scenic atmosphere.`,
+          subject_asset_layer: `Central hero subject and tangible props for ${topic} in tack-sharp focus, framed according to spatial rules.`,
+          atmospheric_grading_layer: `Golden hour side-lighting with soft ambient shadows, harmonious warm color palette (${colorList}), clean natural depth.`,
+          blended_composite_prompt: `Commercial photography, vertical 4:5 portrait composition for social media, ${topic}, ${style}, ${mood} atmosphere, warm golden hour side-lighting, harmonious palette of ${colorList}, ${spatialDirective}, shot on 50mm f/4 lens, tack-sharp focus on subject and hero props, crisp micro-contrast, photorealistic 8k`,
+          negative_constraints: "blurry, soft focus, out of focus, motion blur, bokeh over subject, busy background, center clutter, text, typography, watermark, logo, crowded frame, oversaturated, generic stock photo, distorted hands, cartoon",
+          technical_camera_specs: "Shot on 50mm f/4 lens, tack-sharp focus, golden hour lighting, 4:5 aspect ratio, 8k",
         };
       }
     }
