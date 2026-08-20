@@ -22,35 +22,63 @@ export class CreativeDirectorAgent {
     referenceAnalysis?: ReferenceImageAnalysis | null
   ): Promise<CreativeBrief> {
     const allArchetypes: DesignArchetype[] = [
+      "bento_grid",
+      "minimalism",
+      "dark_mode_ui",
+      "glassmorphism",
+      "maximalism",
+      "cyberpunk",
+      "y2k_aesthetic",
+      "scrapbook",
+      "mixed_media",
+      "luxury_typography",
       "polaroid_pov_overlay",
       "feature_badges_editorial",
-      "editorial_magazine",
-      "conceptual_split",
-      "comparison_split",
-      "vintage_poster",
-      "saas_dotgrid",
-      "minimal_shader_text",
     ];
 
-    // 1. Determine Archetype A based on reference image or brand affinity
+    // 1. Determine Archetype A based on reference image, brand affinity, or industry context
     const detectedArchetype = referenceAnalysis?.detected_archetype;
     const affinities = brand.learned_preferences?.archetype_affinity || {};
 
-    let archA: DesignArchetype = detectedArchetype || "polaroid_pov_overlay";
+    let archA: DesignArchetype = detectedArchetype || "luxury_typography";
     if (!detectedArchetype && Object.keys(affinities).length > 0) {
       const sorted = [...allArchetypes].sort(
         (a, b) => (affinities[b] ?? 0.5) - (affinities[a] ?? 0.5)
       );
       archA = sorted[0];
+    } else if (!detectedArchetype) {
+      const ind = (brand.industry || "").toLowerCase();
+      const topic = (intent.event || "").toLowerCase();
+      if (ind.includes("tech") || ind.includes("software") || ind.includes("saas") || topic.includes("tool") || topic.includes("feature")) {
+        archA = "bento_grid";
+      } else if (topic.includes("ai") || topic.includes("crypto") || topic.includes("futuristic") || topic.includes("cyber")) {
+        archA = "cyberpunk";
+      } else if (topic.includes("vintage") || topic.includes("retro") || topic.includes("nostalg")) {
+        archA = "y2k_aesthetic";
+      } else if (topic.includes("story") || topic.includes("journal") || topic.includes("behind the scenes") || topic.includes("memory")) {
+        archA = "scrapbook";
+      } else if (topic.includes("art") || topic.includes("culture") || topic.includes("creative")) {
+        archA = "mixed_media";
+      } else if (ind.includes("travel") || ind.includes("hotel") || ind.includes("hospitality") || ind.includes("luxury")) {
+        archA = "luxury_typography";
+      } else {
+        archA = "minimalism";
+      }
     }
 
     // 2. Programmatically select a contrasting Archetype B
     const remaining = allArchetypes.filter((a) => a !== archA);
     const archB: DesignArchetype =
-      archA === "polaroid_pov_overlay"
-        ? "feature_badges_editorial"
-        : archA === "editorial_magazine"
-        ? "conceptual_split"
+      archA === "luxury_typography"
+        ? "scrapbook"
+        : archA === "bento_grid"
+        ? "dark_mode_ui"
+        : archA === "minimalism"
+        ? "maximalism"
+        : archA === "cyberpunk"
+        ? "glassmorphism"
+        : archA === "scrapbook"
+        ? "mixed_media"
         : remaining[0];
 
 

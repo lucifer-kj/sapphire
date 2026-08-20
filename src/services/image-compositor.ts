@@ -95,6 +95,16 @@ function loadFontRegistry(): FontEntry[] {
 }
 
 /**
+ * Sanitizes unicode glyphs to standard symbols to prevent missing character boxes.
+ */
+function cleanDisplayGlyphs(text: string): string {
+  return (text || "")
+    .replace(/[➔➜➝➞]/g, "→")
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'");
+}
+
+/**
  * Calculates adaptive font size & line height for Satori to prevent canvas clipping/overflow.
  * Tests against long words, ALL CAPS strings, non-English text, and emojis.
  */
@@ -246,6 +256,26 @@ export class ImageCompositor {
     const archetype: DesignArchetype = bp.archetype || "editorial_magazine";
 
     switch (archetype) {
+      case "bento_grid":
+        return this.buildBentoGridTemplate(bgUrl, bp);
+      case "minimalism":
+        return this.buildMinimalismTemplate(bgUrl, bp);
+      case "dark_mode_ui":
+        return this.buildDarkModeUITemplate(bgUrl, bp);
+      case "glassmorphism":
+        return this.buildGlassmorphismTemplate(bgUrl, bp);
+      case "maximalism":
+        return this.buildMaximalismTemplate(bgUrl, bp);
+      case "cyberpunk":
+        return this.buildCyberpunkTemplate(bgUrl, bp);
+      case "y2k_aesthetic":
+        return this.buildY2KAestheticTemplate(bgUrl, bp);
+      case "scrapbook":
+        return this.buildScrapbookTemplate(bgUrl, bp);
+      case "mixed_media":
+        return this.buildMixedMediaTemplate(bgUrl, bp);
+      case "luxury_typography":
+        return this.buildLuxuryTypographyTemplate(bgUrl, bp);
       case "polaroid_pov_overlay":
         return this.buildPolaroidPovOverlayTemplate(bgUrl, bp);
       case "feature_badges_editorial":
@@ -1642,5 +1672,1590 @@ export class ImageCompositor {
       },
     };
   }
+
+  // -------------------------------------------------------------
+  // Archetype: Bento Grid (Clean & Tech-Forward)
+  // -------------------------------------------------------------
+  private static buildBentoGridTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 50, 32);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#09090b",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(9,9,11,0.7) 0%, rgba(9,9,11,0.4) 30%, rgba(9,9,11,0.85) 65%, rgba(9,9,11,0.98) 100%)",
+              },
+            },
+          },
+          // Header Bar
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                paddingBottom: "20px",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "6px",
+                            backgroundColor: accentColor,
+                          },
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            fontFamily: hookFont,
+                            fontSize: "24px",
+                            fontWeight: 700,
+                            letterSpacing: "1px",
+                            color: "#FAF7F2",
+                          },
+                          children: bp.brand_name,
+                        },
+                      },
+                    ],
+                  },
+                },
+                bp.category_pill
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          backgroundColor: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          padding: "6px 16px",
+                          borderRadius: "20px",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "1.5px",
+                          textTransform: "uppercase",
+                          color: accentColor,
+                        },
+                        children: bp.category_pill,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
+            },
+          },
+          // Bento Grid Compartments (Lower 65%)
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+                width: "100%",
+              },
+              children: [
+                // Top Hero Bento Card
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                      padding: "36px 40px",
+                      backgroundColor: "rgba(24, 24, 27, 0.88)",
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      borderRadius: "24px",
+                    },
+                    children: [
+                      renderHeadlineElements(
+                        bp.headline,
+                        bp.highlighted_keywords,
+                        accentColor,
+                        "#FAF7F2",
+                        hookFont,
+                        fontSize,
+                        lineHeight
+                      ),
+                      bp.subheadline
+                        ? {
+                            type: "span",
+                            props: {
+                              style: {
+                                fontSize: "20px",
+                                lineHeight: "1.4",
+                                color: "rgba(250, 247, 242, 0.78)",
+                              },
+                              children: bp.subheadline,
+                            },
+                          }
+                        : null,
+                    ].filter(Boolean),
+                  },
+                },
+                // Lower 2-Column Bento Split
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      gap: "20px",
+                      width: "100%",
+                    },
+                    children: [
+                      // Left Value Props / Stats Card
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            gap: "12px",
+                            flex: 1,
+                            padding: "24px 30px",
+                            backgroundColor: "rgba(24, 24, 27, 0.88)",
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            borderRadius: "20px",
+                          },
+                          children: (bp.value_props || ["Instant Access", "Verified Quality", "24/7 Concierge"]).map((vp, idx) => ({
+                            type: "div",
+                            props: {
+                              style: {
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              },
+                              children: [
+                                {
+                                  type: "span",
+                                  props: {
+                                    style: { color: accentColor, fontSize: "16px", fontWeight: 700 },
+                                    children: `0${idx + 1}.`,
+                                  },
+                                },
+                                {
+                                  type: "span",
+                                  props: {
+                                    style: { fontSize: "17px", fontWeight: 500, color: "#FAF7F2" },
+                                    children: vp,
+                                  },
+                                },
+                              ],
+                            },
+                          })),
+                        },
+                      },
+                      // Right CTA Card
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            flex: 1,
+                            padding: "24px 30px",
+                            backgroundColor: accentColor,
+                            borderRadius: "20px",
+                            color: "#FAF7F2",
+                          },
+                          children: [
+                            {
+                              type: "span",
+                              props: {
+                                style: { fontSize: "14px", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" },
+                                children: bp.brand_tagline || "Official Experience",
+                              },
+                            },
+                            {
+                              type: "div",
+                              props: {
+                                style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "16px" },
+                                children: [
+                                  {
+                                    type: "span",
+                                    props: {
+                                      style: { fontSize: "22px", fontWeight: 700, letterSpacing: "-0.5px" },
+                                      children: bp.cta_text || "Explore Now ➔",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Authoritative Minimalism (Clean & Tech-Forward)
+  // -------------------------------------------------------------
+  private static buildMinimalismTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Plus Jakarta Sans";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 66, 42);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "80px 80px 70px 80px",
+          backgroundColor: "#09090b",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.3) 45%, rgba(9,9,11,0.9) 100%)",
+              },
+            },
+          },
+          // Minimal Brand Header
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      letterSpacing: "4px",
+                      textTransform: "uppercase",
+                      color: "#FAF7F2",
+                    },
+                    children: bp.brand_name,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      color: "rgba(250, 247, 242, 0.6)",
+                      letterSpacing: "1px",
+                    },
+                    children: bp.social_handle,
+                  },
+                },
+              ],
+            },
+          },
+          // Giant Negative Space Headline
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "28px",
+                maxWidth: "920px",
+                marginBottom: "40px",
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontSize: "24px",
+                          lineHeight: "1.45",
+                          color: "rgba(250, 247, 242, 0.8)",
+                          maxWidth: "760px",
+                        },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
+            },
+          },
+          // Minimal Bottom Line
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+                paddingTop: "24px",
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", color: "rgba(250, 247, 242, 0.6)" },
+                    children: bp.brand_tagline || "Curated Perspective",
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "18px", fontWeight: 600, color: accentColor },
+                    children: bp.cta_text || "Read More ➔",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Dark Mode UI Chrome (Clean & Tech-Forward)
+  // -------------------------------------------------------------
+  private static buildDarkModeUITemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Inter";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 48, 30);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#09090b",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.65) 50%, rgba(9,9,11,0.95) 100%)",
+              },
+            },
+          },
+          // IDE Chrome Terminal Card
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+                backgroundColor: "rgba(18, 18, 22, 0.95)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: "20px",
+                overflow: "hidden",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+              },
+              children: [
+                // Window Header Controls (● ● ●)
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px 24px",
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: { display: "flex", gap: "8px" },
+                          children: [
+                            { type: "div", props: { style: { width: "12px", height: "12px", borderRadius: "6px", backgroundColor: "#ff5f56" } } },
+                            { type: "div", props: { style: { width: "12px", height: "12px", borderRadius: "6px", backgroundColor: "#ffbd2e" } } },
+                            { type: "div", props: { style: { width: "12px", height: "12px", borderRadius: "6px", backgroundColor: "#27c93f" } } },
+                          ],
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "14px", fontWeight: 600, color: "rgba(250, 247, 242, 0.5)", letterSpacing: "1px" },
+                          children: `${bp.brand_name.toLowerCase()} // ${bp.category_pill || "release_v2"}`,
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "13px", color: accentColor, fontWeight: 600 },
+                          children: "● LIVE",
+                        },
+                      },
+                    ],
+                  },
+                },
+                // Terminal Content Area
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "24px",
+                      padding: "40px",
+                    },
+                    children: [
+                      renderHeadlineElements(
+                        bp.headline,
+                        bp.highlighted_keywords,
+                        accentColor,
+                        "#FAF7F2",
+                        hookFont,
+                        fontSize,
+                        lineHeight
+                      ),
+                      bp.subheadline
+                        ? {
+                            type: "span",
+                            props: {
+                              style: { fontSize: "20px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.8)" },
+                              children: bp.subheadline,
+                            },
+                          }
+                        : null,
+                    ].filter(Boolean),
+                  },
+                },
+              ],
+            },
+          },
+          // Bottom Status Row
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                padding: "20px 24px",
+                backgroundColor: "rgba(18, 18, 22, 0.8)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "16px",
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 500, color: "rgba(250, 247, 242, 0.7)" },
+                    children: bp.social_handle,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 700, color: accentColor },
+                    children: bp.cta_text || "Execute Query ➔",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Glassmorphism (Clean & Tech-Forward)
+  // -------------------------------------------------------------
+  private static buildGlassmorphismTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Outfit";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 54, 34);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "70px 70px 60px 70px",
+          backgroundColor: "#09090b",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(9,9,11,0.5) 0%, rgba(9,9,11,0.2) 40%, rgba(9,9,11,0.85) 100%)",
+              },
+            },
+          },
+          // Header Bar
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontFamily: hookFont, fontSize: "24px", fontWeight: 700, letterSpacing: "2px", color: "#FAF7F2" },
+                    children: bp.brand_name,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 600, color: "rgba(250, 247, 242, 0.7)" },
+                    children: bp.social_handle,
+                  },
+                },
+              ],
+            },
+          },
+          // Floating Frosted Glass Card
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                padding: "48px",
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "32px",
+                boxShadow: "0 25px 50px rgba(0, 0, 0, 0.5)",
+              },
+              children: [
+                bp.category_pill
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          alignSelf: "flex-start",
+                          backgroundColor: "rgba(255, 255, 255, 0.12)",
+                          border: "1px solid rgba(255, 255, 255, 0.2)",
+                          padding: "6px 16px",
+                          borderRadius: "16px",
+                          fontSize: "14px",
+                          fontWeight: 700,
+                          letterSpacing: "1px",
+                          textTransform: "uppercase",
+                          color: accentColor,
+                        },
+                        children: bp.category_pill,
+                      },
+                    }
+                  : null,
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: { fontSize: "22px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.85)" },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: "12px",
+                      paddingTop: "20px",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+                    },
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "16px", color: "rgba(250, 247, 242, 0.7)" },
+                          children: bp.brand_tagline || "Discover More",
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            backgroundColor: accentColor,
+                            color: "#FAF7F2",
+                            padding: "10px 24px",
+                            borderRadius: "20px",
+                            fontSize: "16px",
+                            fontWeight: 700,
+                          },
+                          children: bp.cta_text || "Explore ➔",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Maximalism (High Visual Impact)
+  // -------------------------------------------------------------
+  private static buildMaximalismTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Outfit";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 68, 44);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#09090b",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(9,9,11,0.8) 0%, rgba(9,9,11,0.2) 40%, rgba(9,9,11,0.92) 85%)",
+              },
+            },
+          },
+          // Top Maximalist Header Bar
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      backgroundColor: "#FAF7F2",
+                      color: "#09090b",
+                      padding: "8px 20px",
+                      borderRadius: "6px",
+                      fontFamily: hookFont,
+                      fontSize: "24px",
+                      fontWeight: 800,
+                      letterSpacing: "1px",
+                    },
+                    children: bp.brand_name.toUpperCase(),
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      backgroundColor: accentColor,
+                      color: "#FAF7F2",
+                      padding: "8px 18px",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                      fontWeight: 800,
+                      letterSpacing: "2px",
+                      textTransform: "uppercase",
+                    },
+                    children: "✦ MUST SEE ✦",
+                  },
+                },
+              ],
+            },
+          },
+          // Stacked High-Impact Typography
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", flexDirection: "column", gap: "24px", maxWidth: "940px" },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: {
+                          fontSize: "24px",
+                          fontWeight: 600,
+                          lineHeight: "1.4",
+                          color: "#FAF7F2",
+                          backgroundColor: "rgba(9,9,11,0.75)",
+                          padding: "16px 24px",
+                          borderRadius: "12px",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                        },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
+            },
+          },
+          // Bottom Bold Banner
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                backgroundColor: "#FAF7F2",
+                color: "#09090b",
+                padding: "20px 32px",
+                borderRadius: "16px",
+                width: "100%",
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "18px", fontWeight: 700 },
+                    children: bp.social_handle,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "20px", fontWeight: 800, color: accentColor },
+                    children: bp.cta_text || "GET STARTED ➔",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Cyberpunk HUD (High Visual Impact)
+  // -------------------------------------------------------------
+  private static buildCyberpunkTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = "#00F0FF"; // Cyber Cyan
+    const secondaryAccent = bp.color_tokens?.accent || "#FF5500";
+    const hookFont = bp.font_family_hook || "Inter";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 52, 32);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#050814",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(5,8,20,0.85) 0%, rgba(5,8,20,0.3) 40%, rgba(5,8,20,0.92) 85%)",
+              },
+            },
+          },
+          // Cyber HUD Telemetry Header
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      fontFamily: hookFont,
+                      fontSize: "20px",
+                      fontWeight: 800,
+                      letterSpacing: "3px",
+                      color: accentColor,
+                    },
+                    children: `// ${bp.brand_name.toUpperCase()}`,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      backgroundColor: "rgba(0, 240, 255, 0.12)",
+                      border: "1px solid #00F0FF",
+                      color: "#00F0FF",
+                      padding: "6px 16px",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      letterSpacing: "2px",
+                    },
+                    children: "[SYSTEM: ACTIVE]",
+                  },
+                },
+              ],
+            },
+          },
+          // HUD Main Frame
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                padding: "40px",
+                backgroundColor: "rgba(5, 8, 20, 0.8)",
+                border: "1px solid rgba(0, 240, 255, 0.3)",
+                borderRadius: "12px",
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: { fontSize: "20px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.85)" },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+              ].filter(Boolean),
+            },
+          },
+          // HUD Bottom Action Bar
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                padding: "16px 24px",
+                backgroundColor: "rgba(5, 8, 20, 0.9)",
+                borderTop: `2px solid ${secondaryAccent}`,
+              },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "15px", color: "rgba(250, 247, 242, 0.6)", letterSpacing: "1px" },
+                    children: bp.social_handle,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 800, color: secondaryAccent, letterSpacing: "1px" },
+                    children: bp.cta_text || "INITIATE PROTOCOL ➔",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Y2K Aesthetic (High Visual Impact)
+  // -------------------------------------------------------------
+  private static buildY2KAestheticTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Outfit";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 58, 36);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#12081f",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(18,8,31,0.75) 0%, rgba(18,8,31,0.2) 40%, rgba(18,8,31,0.9) 85%)",
+              },
+            },
+          },
+          // Y2K Header Pill
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      color: "#12081f",
+                      padding: "8px 24px",
+                      borderRadius: "30px",
+                      fontFamily: hookFont,
+                      fontSize: "20px",
+                      fontWeight: 800,
+                      letterSpacing: "1px",
+                    },
+                    children: `✦ ${bp.brand_name.toUpperCase()} ✦`,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 700, color: "#FAF7F2" },
+                    children: bp.social_handle,
+                  },
+                },
+              ],
+            },
+          },
+          // Y2K Bubble Typography Card
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                padding: "44px",
+                backgroundColor: "rgba(18, 8, 31, 0.85)",
+                border: "2px solid rgba(255, 255, 255, 0.25)",
+                borderRadius: "36px",
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: { fontSize: "22px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.85)" },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      alignSelf: "flex-start",
+                      marginTop: "12px",
+                      backgroundColor: accentColor,
+                      color: "#FAF7F2",
+                      padding: "12px 28px",
+                      borderRadius: "30px",
+                      fontSize: "18px",
+                      fontWeight: 800,
+                    },
+                    children: bp.cta_text || "Click Here ➔",
+                  },
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Scrapbook Collage (Storytelling & Brand Identity)
+  // -------------------------------------------------------------
+  private static buildScrapbookTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Playfair Display";
+    const bodyFont = bp.font_family_body || "Plus Jakarta Sans";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 52, 34);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#1a1410",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(26,20,16,0.65) 0%, rgba(26,20,16,0.2) 40%, rgba(26,20,16,0.9) 85%)",
+              },
+            },
+          },
+          // Washi Tape Header Accent
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: {
+                      backgroundColor: "rgba(245, 236, 203, 0.9)",
+                      color: "#1a1410",
+                      padding: "8px 24px",
+                      borderRadius: "2px",
+                      fontFamily: hookFont,
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                    },
+                    children: bp.brand_name,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 600, color: "#FAF7F2" },
+                    children: bp.social_handle,
+                  },
+                },
+              ],
+            },
+          },
+          // Tilted Photo Card Box
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+                padding: "44px",
+                backgroundColor: "rgba(24, 20, 18, 0.92)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                borderRadius: "16px",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: { fontSize: "22px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.85)" },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      borderTop: "1px dashed rgba(255,255,255,0.2)",
+                      paddingTop: "16px",
+                      marginTop: "10px",
+                    },
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "16px", color: "rgba(250, 247, 242, 0.7)" },
+                          children: bp.brand_tagline || "Field Notes",
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "18px", fontWeight: 700, color: accentColor },
+                          children: bp.cta_text || "Read Story ➔",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Mixed Media (Storytelling & Brand Identity)
+  // -------------------------------------------------------------
+  private static buildMixedMediaTemplate(bgUrl: string, bp: DesignBlueprint) {
+    const accentColor = bp.color_tokens?.accent || "#D97757";
+    const hookFont = bp.font_family_hook || "Outfit";
+    const bodyFont = bp.font_family_body || "Inter";
+    const { fontSize, lineHeight } = calculateHeadlineSize(bp.headline, bp.font_scale, 56, 36);
+
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "1080px",
+          height: "1350px",
+          padding: "60px 60px 50px 60px",
+          backgroundColor: "#141413",
+          color: "#FAF7F2",
+          fontFamily: bodyFont,
+          position: "relative",
+          overflow: "hidden",
+        },
+        children: [
+          {
+            type: "img",
+            props: {
+              src: bgUrl,
+              alt: "Background",
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                objectFit: "cover",
+              },
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "0px",
+                left: "0px",
+                width: "1080px",
+                height: "1350px",
+                background: "linear-gradient(180deg, rgba(20,20,19,0.7) 0%, rgba(20,20,19,0.2) 35%, rgba(20,20,19,0.9) 85%)",
+              },
+            },
+          },
+          // Header Bar
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" },
+              children: [
+                {
+                  type: "span",
+                  props: {
+                    style: { fontFamily: hookFont, fontSize: "24px", fontWeight: 800, letterSpacing: "2px", color: "#FAF7F2" },
+                    children: bp.brand_name,
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { fontSize: "16px", fontWeight: 600, color: "rgba(250, 247, 242, 0.7)" },
+                    children: bp.social_handle,
+                  },
+                },
+              ],
+            },
+          },
+          // Mixed Geometric Block Card
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                padding: "44px",
+                backgroundColor: "rgba(20, 20, 19, 0.9)",
+                border: `2px solid ${accentColor}`,
+                borderRadius: "24px",
+              },
+              children: [
+                renderHeadlineElements(
+                  bp.headline,
+                  bp.highlighted_keywords,
+                  accentColor,
+                  "#FAF7F2",
+                  hookFont,
+                  fontSize,
+                  lineHeight
+                ),
+                bp.subheadline
+                  ? {
+                      type: "span",
+                      props: {
+                        style: { fontSize: "22px", lineHeight: "1.45", color: "rgba(250, 247, 242, 0.85)" },
+                        children: bp.subheadline,
+                      },
+                    }
+                  : null,
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "16px" },
+                    children: [
+                      {
+                        type: "span",
+                        props: {
+                          style: { fontSize: "16px", color: "rgba(250, 247, 242, 0.7)" },
+                          children: bp.brand_tagline || "Creative Edition",
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: {
+                            backgroundColor: accentColor,
+                            color: "#FAF7F2",
+                            padding: "10px 24px",
+                            borderRadius: "12px",
+                            fontSize: "16px",
+                            fontWeight: 700,
+                          },
+                          children: bp.cta_text || "Discover ➔",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ].filter(Boolean),
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // -------------------------------------------------------------
+  // Archetype: Luxury Typography (Storytelling & Brand Identity)
+  // -------------------------------------------------------------
+  private static buildLuxuryTypographyTemplate(bgUrl: string, bp: DesignBlueprint) {
+    return this.buildEditorialTemplate(bgUrl, bp);
+  }
 }
+
 
