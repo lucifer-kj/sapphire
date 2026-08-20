@@ -347,13 +347,19 @@ export default function SapphireWorkspace() {
     ]);
   };
 
-  // Load workspace from URL parameter (?workspace=...) or localStorage on initial load
+  // Load workspace globally from API & URL parameter (?workspace=...) or localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    let isMounted = true;
+
+    async function initWorkspace() {
+      if (typeof window === "undefined") return;
+
       const params = new URLSearchParams(window.location.search);
       const wsParam = params.get("workspace");
 
       let loadedWorkspaces: BrandProfile[] = [];
+
+      // 1. Initial fast local cache read
       try {
         const raw = localStorage.getItem("sapphire_user_workspaces");
         if (raw) {
@@ -363,7 +369,23 @@ export default function SapphireWorkspace() {
         console.warn("Could not load user workspaces:", err);
       }
 
-      if (wsParam) {
+      // 2. Fetch global workspaces from API
+      try {
+        const res = await fetch("/api/workspaces");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.workspaces && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
+            loadedWorkspaces = data.workspaces;
+            localStorage.setItem("sapphire_user_workspaces", JSON.stringify(data.workspaces));
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Could not fetch global workspaces in studio:", apiErr);
+      }
+
+      if (!isMounted) return;
+
+      if (wsParam && loadedWorkspaces.length > 0) {
         const found = loadedWorkspaces.find(
           (b) => b.id === wsParam || b.name.toLowerCase() === wsParam.toLowerCase()
         );
@@ -379,6 +401,11 @@ export default function SapphireWorkspace() {
         setActiveBrand(loadedWorkspaces[0].name);
       }
     }
+
+    initWorkspace();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Keyboard shortcut listener: Ctrl+B (Left Panel), Ctrl+Alt+B (Right Panel), Ctrl+N (New Campaign), Ctrl+W (Workspaces Portal)

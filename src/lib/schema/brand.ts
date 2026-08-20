@@ -56,7 +56,7 @@ export const LearnedPreferencesSchema = z.object({
 });
 
 export const BrandProfileSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().optional(),
   name: z.string().min(1, "Brand name is required"),
   industry: z.string().default("General"),
   description: z.string().optional(),

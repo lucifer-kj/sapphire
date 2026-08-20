@@ -412,8 +412,8 @@ export class CampaignWorkflow {
         totalSteps: 6,
         stage: "critic_audit",
         agentName: "Critic Auto-Remediation Active (<80 Score Detected)",
-        provider: "Groq LLaMA 3.3 70B + FLUX Realism",
-        model: "llama-3.3-70b-versatile",
+        provider: "Google Gemini + FLUX Realism",
+        model: "gemini-2.5-flash",
         status: "active",
         summary: `Auto-repairing ${[
           needsRemediationA ? `Concept A (Score: ${critiqueA.brand_alignment_score}/100)` : null,
@@ -422,7 +422,6 @@ export class CampaignWorkflow {
           .filter(Boolean)
           .join(" & ")} with targeted prompt engineering...`,
       });
-
 
       const remediationTasks: Promise<void>[] = [];
 
@@ -452,8 +451,8 @@ export class CampaignWorkflow {
               finalCritiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand);
               logger.log({
                 agent: "CriticAutoRemediation (Concept A)",
-                provider: "Groq",
-                model: "llama-3.3-70b-versatile",
+                provider: "Google Gemini",
+                model: "gemini-2.5-flash",
                 status: "success",
                 durationMs: 0,
                 summary: `Concept A auto-remediated: Score improved ${critiqueA.brand_alignment_score} -> ${finalCritiqueA.brand_alignment_score}/100.`,
@@ -491,14 +490,12 @@ export class CampaignWorkflow {
               finalCritiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand);
               logger.log({
                 agent: "CriticAutoRemediation (Concept B)",
-                provider: "Groq",
-                model: "llama-3.3-70b-versatile",
-
+                provider: "Google Gemini",
+                model: "gemini-2.5-flash",
                 status: "success",
                 durationMs: 0,
                 summary: `Concept B auto-remediated: Score improved ${critiqueB.brand_alignment_score} -> ${finalCritiqueB.brand_alignment_score}/100.`,
               });
-
             } catch (err) {
               console.warn("Auto-remediation pass for Concept B failed, retaining initial concept:", err);
             }
@@ -513,8 +510,8 @@ export class CampaignWorkflow {
         totalSteps: 6,
         stage: "critic_audit",
         agentName: "Critic Auto-Remediation Complete",
-        provider: "Groq / Gemini",
-        model: "llama-3.3-70b-versatile",
+        provider: "Google Gemini",
+        model: "gemini-2.5-flash",
         status: "success",
         durationMs: Date.now() - criticStart,
         summary: `Remediation Complete: Concept A (${finalCritiqueA.brand_alignment_score}/100) • Concept B (${finalCritiqueB.brand_alignment_score}/100)`,

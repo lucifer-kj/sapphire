@@ -30,28 +30,68 @@ export default function WorkspacesPage() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Load workspaces from localStorage
+  // Load workspaces globally from API & sync with localStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    let isMounted = true;
+
+    async function loadWorkspaces() {
+      // 1. Initial immediate load from local cache
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setWorkspaces(parsed);
+            }
+          }
+        } catch (err) {
+          console.warn("Error reading workspaces from storage:", err);
+        }
+      }
+
+      // 2. Fetch global workspaces from Supabase via API
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setWorkspaces(parsed);
+        const res = await fetch("/api/workspaces");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.workspaces && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
+            if (isMounted) {
+              setWorkspaces(data.workspaces);
+              if (typeof window !== "undefined") {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.workspaces));
+              }
+            }
           }
         }
-      } catch (err) {
-        console.warn("Error reading workspaces from storage:", err);
+      } catch (apiErr) {
+        console.warn("Could not fetch global workspaces from server:", apiErr);
       }
     }
+
+    loadWorkspaces();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Save workspaces to localStorage
-  const saveWorkspaces = (updated: BrandProfile[]) => {
+  // Save workspaces to both Supabase database and localStorage
+  const saveWorkspaces = async (updated: BrandProfile[], newBrandToPersist?: BrandProfile) => {
     setWorkspaces(updated);
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+
+    if (newBrandToPersist) {
+      try {
+        await fetch("/api/workspaces", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newBrandToPersist),
+        });
+      } catch (err) {
+        console.warn("Error persisting workspace globally:", err);
+      }
     }
   };
 
@@ -60,25 +100,36 @@ export default function WorkspacesPage() {
     setIsOnboardingOpen(true);
   };
 
-  const handleOnboardingComplete = (newBrand: BrandProfile) => {
+  const handleOnboardingComplete = async (newBrand: BrandProfile) => {
     const brandWithId: BrandProfile = {
       ...newBrand,
       id: newBrand.id || newBrand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     };
 
     const updated = [brandWithId, ...workspaces.filter((w) => w.id !== brandWithId.id)];
-    saveWorkspaces(updated);
+    await saveWorkspaces(updated, brandWithId);
     setIsOnboardingOpen(false);
 
     // Navigate to studio with the new workspace
     router.push(`/?workspace=${brandWithId.id}`);
   };
 
-  const handleDeleteWorkspace = (id?: string) => {
+  const handleDeleteWorkspace = async (id?: string) => {
     if (!id) return;
     const updated = workspaces.filter((w) => w.id !== id);
-    saveWorkspaces(updated);
+    setWorkspaces(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
     setDeleteConfirmId(null);
+
+    try {
+      await fetch(`/api/workspaces?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.warn("Error deleting workspace globally:", err);
+    }
   };
 
   const filteredWorkspaces = workspaces.filter((w) =>

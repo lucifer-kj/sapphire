@@ -7,31 +7,44 @@ const googleApiKey =
   "";
 
 
-export const google = createGoogleGenerativeAI({
-  apiKey: googleApiKey,
-});
+export function getGoogleProvider() {
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  return createGoogleGenerativeAI({ apiKey: key });
+}
 
-export const groq = createGroq({
-  apiKey: process.env.GROQ_API_KEY || "",
-});
+export function getGroqProvider() {
+  return createGroq({
+    apiKey: process.env.GROQ_API_KEY || "",
+  });
+}
 
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 3.7 Flash primary, Groq 70B fallback)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq 70B fallback)
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
-  if (googleApiKey) {
-    return google("gemini-2.5-flash");
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return groq("llama-3.3-70b-versatile");
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
-
 export function getReasoningFallbackModel() {
-  if (googleApiKey) {
-    return google("gemini-2.5-flash");
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return groq("llama-3.3-70b-versatile");
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 /**
@@ -39,17 +52,25 @@ export function getReasoningFallbackModel() {
  * Used for: High-Speed Intent Parsing, Fast Concept Refinements
  */
 export function getLightModel() {
-  if (googleApiKey) {
-    return google("gemini-2.5-flash");
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return groq("llama-3.3-70b-versatile");
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 export function getLightFallbackModel() {
-  if (googleApiKey) {
-    return google("gemini-2.5-flash");
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return groq("llama-3.3-70b-versatile");
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 /**
@@ -57,7 +78,7 @@ export function getLightFallbackModel() {
  * Used for: Reference image stylistic breakdown & visual palette extraction
  */
 export function getVisionModel() {
-  return google("gemini-2.5-flash");
+  return getGoogleProvider()("gemini-2.5-flash");
 }
 
 /**
@@ -65,10 +86,14 @@ export function getVisionModel() {
  * Used for: Fast structured compliance auditing & brand scorecards
  */
 export function getCriticModel() {
-  if (googleApiKey) {
-    return google("gemini-2.5-flash");
+  const key =
+    process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    "";
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return groq("llama-3.3-70b-versatile");
+  return getGroqProvider()("llama-3.3-70b-versatile");
 }
 
 

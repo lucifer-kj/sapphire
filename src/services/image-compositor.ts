@@ -329,7 +329,6 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 {
@@ -374,7 +373,6 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -502,7 +500,6 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 {
@@ -545,7 +542,6 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -672,7 +668,6 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 {
@@ -715,7 +710,6 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -842,7 +836,6 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 {
@@ -886,7 +879,6 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -1013,7 +1005,6 @@ export class ImageCompositor {
                 justifyContent: "space-between",
                 alignItems: "center",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 {
@@ -1056,7 +1047,6 @@ export class ImageCompositor {
                 flexDirection: "column",
                 gap: "24px",
                 width: "100%",
-                zIndex: 10,
               },
               children: [
                 renderHeadlineElements(
@@ -1262,7 +1252,6 @@ export class ImageCompositor {
             props: {
               style: {
                 position: "relative",
-                zIndex: 10,
                 display: "flex",
                 flexDirection: "column",
                 padding: "60px 60px 0 60px",
@@ -1563,7 +1552,6 @@ export class ImageCompositor {
             props: {
               style: {
                 position: "relative",
-                zIndex: 10,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -1591,7 +1579,6 @@ export class ImageCompositor {
             props: {
               style: {
                 position: "relative",
-                zIndex: 10,
                 display: "flex",
                 flexDirection: "column",
                 gap: "24px",
@@ -1629,7 +1616,6 @@ export class ImageCompositor {
             props: {
               style: {
                 position: "relative",
-                zIndex: 10,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",

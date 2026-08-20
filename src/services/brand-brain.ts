@@ -121,11 +121,16 @@ export class BrandBrainService {
 
     try {
       const supabase = createAdminClient();
-      const { data, error } = await supabase
-        .from("brands")
-        .select("*")
-        .eq("id", brandId)
-        .single();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(brandId);
+
+      let query = supabase.from("brands").select("*");
+      if (isUuid) {
+        query = query.eq("id", brandId);
+      } else {
+        query = query.ilike("name", `%${brandId}%`);
+      }
+
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (error || !data) {
         return PRECONFIGURED_BRANDS[0];
@@ -138,7 +143,6 @@ export class BrandBrainService {
     }
   }
 
-
   /**
    * Creates or updates a Brand Profile in the durable database.
    */
@@ -146,14 +150,30 @@ export class BrandBrainService {
     const validated = BrandProfileSchema.parse(profile);
     const supabase = createAdminClient();
 
+    const isUuid = validated.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(validated.id);
+    const payload = {
+      ...validated,
+      id: isUuid ? validated.id : undefined,
+    };
+
     const { data, error } = await supabase
       .from("brands")
-      .upsert(validated)
+      .upsert(payload, { onConflict: "name" })
       .select()
       .single();
 
     if (error) {
-      throw new Error(`Failed to save Brand Profile: ${error.message}`);
+      // If error with onConflict, fallback to simple insert
+      const { data: insertData, error: insertError } = await supabase
+        .from("brands")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(`Failed to save Brand Profile: ${insertError.message}`);
+      }
+      return BrandProfileSchema.parse(insertData);
     }
 
     return BrandProfileSchema.parse(data);
