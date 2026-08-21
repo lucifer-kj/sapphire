@@ -5,10 +5,9 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-
   try {
     const body = await req.json();
-    const { prompt, brandId, referenceImage } = body;
+    const { prompt, brandId, platform } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return new Response(
@@ -21,77 +20,71 @@ export async function POST(req: NextRequest) {
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
+    // Asynchronously execute workflow and stream progress events via SSE
     (async () => {
       try {
-        const result = await CampaignWorkflow.run(
+        const result = await CampaignWorkflow.execute(
           prompt,
           brandId,
-          referenceImage,
-          async (event) => {
-            try {
-              await writer.write(
-                encoder.encode(`data: ${JSON.stringify({ type: "progress", ...event })}\n\n`)
-              );
-            } catch (streamErr) {
-              console.warn("Client disconnected during progress streaming:", streamErr);
-            }
+          platform === "linkedin" ? "linkedin" : "instagram",
+          async (step, totalSteps, summary, status) => {
+            await writer.write(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "progress",
+                  step,
+                  totalSteps,
+                  status,
+                  summary,
+                })}\n\n`
+              )
+            );
           }
         );
 
+        // Final payload for UI ingestion
         await writer.write(
           encoder.encode(
             `data: ${JSON.stringify({
               type: "complete",
-              success: true,
               campaignId: result.campaignId,
               intent: result.intent,
               research: result.research,
-              referenceAnalysis: result.referenceAnalysis,
               brief: result.brief,
+              conceptA: result.conceptA,
+              conceptB: result.conceptB,
               critiqueA: result.critiqueA,
               critiqueB: result.critiqueB,
               logs: result.logs,
             })}\n\n`
           )
         );
-      } catch (workflowError: any) {
-        console.error("Workflow execution error in /api/chat stream:", workflowError);
-        try {
-          await writer.write(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                error: workflowError.message || "Failed to process campaign workflow request.",
-              })}\n\n`
-            )
-          );
-        } catch {
-          // ignore closed stream
-        }
+      } catch (err: any) {
+        console.error("Campaign workflow execution error:", err);
+        await writer.write(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "error",
+              message: err?.message || "An unexpected error occurred during campaign generation.",
+            })}\n\n`
+          )
+        );
       } finally {
-        try {
-          await writer.close();
-        } catch {
-          // ignore already closed
-        }
+        await writer.close();
       }
     })();
 
     return new Response(stream.readable, {
       headers: {
-        "Content-Type": "text/event-stream",
+        "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
       },
     });
   } catch (error: any) {
-    console.error("Error initializing /api/chat route:", error);
     return new Response(
-      JSON.stringify({
-        error: error.message || "Failed to process campaign workflow request.",
-      }),
+      JSON.stringify({ error: error?.message || "Internal server error." }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
-

@@ -35,8 +35,17 @@ export function getGroqProvider() {
   });
 }
 
+export function getGroqModel(modelName: string = "llama-3.3-70b-versatile") {
+  return getGroqProvider()(modelName);
+}
+
+export function getEmbeddingModel() {
+  const provider = getGoogleProvider();
+  return provider.textEmbeddingModel("text-embedding-004");
+}
+
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro/Groq fallback)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq Llama 3.3 fallback)
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
@@ -44,7 +53,11 @@ export function getReasoningModel() {
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqProvider()("llama-3.3-70b-versatile");
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    return getGroqModel("llama-3.3-70b-versatile");
+  }
+  return getGoogleProvider()("gemini-2.5-flash");
 }
 
 export function getReasoningFallbackModel() {

@@ -5,10 +5,9 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-
   try {
     const body = await req.json();
-    const { prompt, styleOverride, designBlueprint, referenceImage } = body;
+    const { prompt } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -18,14 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const seed = Math.floor(Math.random() * 1000000);
-    const result = await ImageGenerationService.generateImageUrlWithMeta(
-      prompt,
-      seed,
-      styleOverride,
-      undefined,
-      referenceImage,
-      designBlueprint
-    );
+    const result = await ImageGenerationService.generatePostImage(prompt, seed);
 
     return NextResponse.json({
       success: true,

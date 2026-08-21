@@ -1,7 +1,15 @@
 import { z } from "zod";
 
 export const DesignArchetypeEnum = z.enum([
-  // Core 10 Categorized Styles
+  // Core Archetypes
+  "editorial_magazine",
+  "conceptual_split",
+  "comparison_split",
+  "vintage_poster",
+  "saas_dotgrid",
+  "scrapbook_maximalist",
+  "bold_funky",
+  // Extended Categorized Styles
   "bento_grid",
   "minimalism",
   "dark_mode_ui",
@@ -12,18 +20,34 @@ export const DesignArchetypeEnum = z.enum([
   "scrapbook",
   "mixed_media",
   "luxury_typography",
-  // Legacy & Specialized Archetype Aliases
-  "editorial_magazine",
-  "conceptual_split",
-  "comparison_split",
-  "vintage_poster",
-  "saas_dotgrid",
   "polaroid_pov_overlay",
   "feature_badges_editorial",
   "minimal_shader_text",
 ]);
 
 export type DesignArchetype = z.infer<typeof DesignArchetypeEnum>;
+
+export const ColorRoleSchema = z.object({
+  hex: z.string(),
+  role: z.enum(["background", "content", "accent"]),
+  source: z.enum([
+    "brand_primary",
+    "brand_secondary",
+    "derived_complementary",
+    "derived_split_complementary",
+  ]),
+});
+
+export type ColorRole = z.infer<typeof ColorRoleSchema>;
+
+export const TypographySystemSchema = z.object({
+  pairing_type: z.enum(["contrast_pairing", "mono_scale"]),
+  headline_font: z.string(),
+  body_font: z.string(),
+  headline_to_body_ratio: z.number().default(3),
+});
+
+export type TypographySystem = z.infer<typeof TypographySystemSchema>;
 
 export const FeatureBadgeSchema = z.object({
   label: z.string(),
@@ -34,11 +58,63 @@ export type FeatureBadge = z.infer<typeof FeatureBadgeSchema>;
 
 export const DesignBlueprintSchema = z.object({
   archetype: DesignArchetypeEnum,
-  headline: z.string().max(80, "Headline should be concise"),
-  subheadline: z.string().max(180, "Subheadline should be concise (max 180 chars)").optional().default(""),
-  category_pill: z.string().max(30).optional(),
-  brand_tagline: z.string().max(60).optional(),
-  value_props: z.array(z.string().max(50)).optional(),
+  color_system: z
+    .object({
+      proportion_rule: z.enum(["60_30_10", "40_40_20", "color_blocked_50_50"]).default("60_30_10"),
+      colors: z.array(ColorRoleSchema),
+    })
+    .default({
+      proportion_rule: "60_30_10",
+      colors: [
+        { hex: "#09090b", role: "background", source: "brand_primary" },
+        { hex: "#FAF7F2", role: "content", source: "brand_primary" },
+        { hex: "#D97757", role: "accent", source: "brand_secondary" },
+      ],
+    }),
+  typography: TypographySystemSchema.default({
+    pairing_type: "contrast_pairing",
+    headline_font: "Playfair Display",
+    body_font: "Plus Jakarta Sans",
+    headline_to_body_ratio: 3.2,
+  }),
+  composition: z
+    .object({
+      grid_logic: z.string().default("rule_of_thirds"),
+      negative_space_pct: z.number().default(40),
+      layer_count: z.number().optional(),
+      micro_rotation_deg: z.number().optional(),
+    })
+    .default({
+      grid_logic: "rule_of_thirds",
+      negative_space_pct: 40,
+    }),
+  virality: z
+    .object({
+      pattern_interrupt: z.string().default("High-contrast focal hook breaking visual expectation"),
+      focal_point: z.string().default("Hero subject"),
+      curiosity_gap_headline: z.boolean().default(true),
+    })
+    .default({
+      pattern_interrupt: "High-contrast focal hook breaking visual expectation",
+      focal_point: "Hero subject",
+      curiosity_gap_headline: true,
+    }),
+  brand_guardrail_check: z
+    .object({
+      brand_color_present: z.boolean().default(true),
+      tone_ceiling_applied: z.enum(["playful_bold", "premium_restrained", "professional_corporate"]).default("premium_restrained"),
+      archetype_allowed_reason: z.string().default("Matches brand positioning and tone ceiling"),
+    })
+    .default({
+      brand_color_present: true,
+      tone_ceiling_applied: "premium_restrained",
+      archetype_allowed_reason: "Matches brand positioning and tone ceiling",
+    }),
+  headline: z.string(),
+  subheadline: z.string().optional().default(""),
+  category_pill: z.string().optional(),
+  brand_tagline: z.string().optional(),
+  value_props: z.array(z.string()).default(["Curated Experience", "Authentic Discovery", "Seamless Access"]),
   feature_badges: z.array(FeatureBadgeSchema).optional(),
   logo_badge: z
     .object({
@@ -47,19 +123,19 @@ export const DesignBlueprintSchema = z.object({
       suffix: z.string().optional().default(""),
     })
     .optional(),
-  cta_text: z.string().max(30).default("Learn More ➔"),
-  social_handle: z.string().max(30).default("@sapphire"),
-  brand_name: z.string().max(40).default("Sapphire"),
+  cta_text: z.string().default("Learn More ➔"),
+  social_handle: z.string().default("@sapphire"),
+  brand_name: z.string().default("Sapphire"),
   font_family_hook: z
     .enum(["Plus Jakarta Sans", "Inter", "Playfair Display", "Outfit"])
-    .default("Plus Jakarta Sans"),
+    .optional(),
   font_family_body: z
     .enum(["Plus Jakarta Sans", "Inter", "Outfit"])
-    .default("Plus Jakarta Sans"),
+    .optional(),
   highlighted_keywords: z.array(z.string()).default([]),
-  font_scale: z.enum(["compact", "regular", "large"]).default("regular"),
-  scrim_intensity: z.enum(["subtle", "medium", "heavy"]).optional().default("medium"),
-  shader_style: z.enum(["sky_vignette", "dark_gradient", "subtle_blur", "clean_plain", "neon_glow", "cyber_grid", "frosted_glass", "paper_texture"]).optional().default("sky_vignette"),
+  font_scale: z.enum(["compact", "regular", "large"]).optional(),
+  scrim_intensity: z.enum(["subtle", "medium", "heavy"]).optional(),
+  shader_style: z.enum(["sky_vignette", "dark_gradient", "subtle_blur", "clean_plain", "neon_glow", "cyber_grid", "frosted_glass", "paper_texture"]).optional(),
   color_tokens: z
     .object({
       primary_text: z.string().default("#FAF7F2"),
@@ -78,6 +154,7 @@ export const DesignBlueprintSchema = z.object({
     )
     .optional(),
   negative_space_directive: z.string(),
+  founder_summary: z.string().default("Editorial design aligning with brand visual DNA"),
 });
 
 export type DesignBlueprint = z.infer<typeof DesignBlueprintSchema>;
@@ -257,6 +334,24 @@ export const DESIGN_KNOWLEDGE_GRAPH = {
       tracking: "-1px",
       lineHeight: 1.2,
     },
+    scrapbook_maximalist: {
+      hookFont: "Playfair Display" as const,
+      bodyFont: "Plus Jakarta Sans" as const,
+      style: "Deliberate Collage Layering + Washi Tape Accents & Micro-Rotations",
+      hookWeight: 700,
+      bodyWeight: 400,
+      tracking: "-0.5px",
+      lineHeight: 1.18,
+    },
+    bold_funky: {
+      hookFont: "Outfit" as const,
+      bodyFont: "Plus Jakarta Sans" as const,
+      style: "Single Oversized Focal Element + High-Contrast Color Block Background",
+      hookWeight: 800,
+      bodyWeight: 600,
+      tracking: "-1px",
+      lineHeight: 1.05,
+    },
   },
   spatial_budgeting: {
     bento_grid: {
@@ -349,6 +444,16 @@ export const DESIGN_KNOWLEDGE_GRAPH = {
       voidRegion: "Centered 80% canvas with radial dark vignette",
       subjectPlacement: "Background abstract or subtle texture",
       cameraDirective: "Atmospheric shaded background with subtle micro-textures and dark gradient scrim, 50mm f/4",
+    },
+    scrapbook_maximalist: {
+      voidRegion: "Deliberate collage layering with 3-5 overlapping elements",
+      subjectPlacement: "Hero photo framed inside tilted card with washi tape accents",
+      cameraDirective: "Layered tactile collage with 3-5 elements at 2-6° micro-rotations, natural lighting, 35mm f/4 sharp focus",
+    },
+    bold_funky: {
+      voidRegion: "High-contrast color blocked background with minimal supporting elements",
+      subjectPlacement: "Single oversized focal element cropped tight and large",
+      cameraDirective: "Oversized hero subject cropped tight, bold high-contrast background color block, 50mm f/4 tack-sharp",
     },
   },
   color_science: {
@@ -500,5 +605,19 @@ export const DEFAULT_ARCHETYPE_CONFIGS: Record<
     suggestedFont: "Plus Jakarta Sans",
     suggestedBodyFont: "Inter",
     scrimGradient: "radial-gradient(circle at 50% 30%, rgba(20,20,19,0.3) 0%, rgba(20,20,19,0.85) 100%)",
+  },
+  scrapbook_maximalist: {
+    name: "Scrapbook Maximalist Collage",
+    negativeSpaceDirective: DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.scrapbook_maximalist.cameraDirective,
+    suggestedFont: "Playfair Display",
+    suggestedBodyFont: "Plus Jakarta Sans",
+    scrimGradient: "linear-gradient(180deg, rgba(25,20,15,0.6) 0%, rgba(25,20,15,0.2) 35%, rgba(25,20,15,0.85) 100%)",
+  },
+  bold_funky: {
+    name: "Bold Funky Color Block",
+    negativeSpaceDirective: DESIGN_KNOWLEDGE_GRAPH.spatial_budgeting.bold_funky.cameraDirective,
+    suggestedFont: "Outfit",
+    suggestedBodyFont: "Plus Jakarta Sans",
+    scrimGradient: DESIGN_KNOWLEDGE_GRAPH.color_science.scrim_multi_stop.subtle,
   },
 };

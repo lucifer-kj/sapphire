@@ -1,171 +1,55 @@
 import { generateObject } from "ai";
-import { CriticResultSchema, CriticResult } from "@/lib/schema/critic";
+import { getGroqModel, getReasoningModel } from "@/lib/ai-model";
+import { CriticResult, CriticResultSchema } from "@/lib/schema/critic";
 import { ConceptItem } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
-import { getVisionModel, getVisionFallbackModel, getReasoningFallbackModel } from "@/lib/ai-model";
 
 export class CriticAgent {
   /**
-   * Evaluates a generated concept and its actual rendered image:
-   * 1. Content Match Check (Multimodal Vision): Inspects physical pixels to verify requested subjects, hero props, and context.
-   * 2. Brand Style Match Check: Tone compliance, typography contrast, brand alignment score (0-100), visual quality score (0-100).
+   * Evaluates generated artwork and copy against brand rules and platform standards.
+   * Emits a strict 100-point scorecard.
    */
   static async evaluateConcept(
     concept: ConceptItem,
     brand: BrandProfile,
-    renderedImageUrl?: string | null,
-    originalUserPrompt?: string | null
+    platform: "instagram" | "linkedin" = "instagram"
   ): Promise<CriticResult> {
-    const forbiddenList = brand.voice.forbidden_phrases.join(", ") || "None";
+    const forbiddenPhrases = brand.voice?.forbidden_phrases || [];
 
-    const systemPrompt = `You are Sapphire's Autonomous Multimodal Critic & Brand Guard Agent.
-Your job is to audit a generated social media concept AND visually inspect the attached rendered image against both the user's campaign prompt and the brand guidelines for "${brand.name}".
+    const systemPrompt = `You are Sapphire's Brand Guard & Creative Quality Critic.
+Perform an objective 100-point audit on the proposed concept for "${brand.name}".
 
-BRAND DNA:
-- Industry: ${brand.industry}
-- Positioning: ${brand.positioning}
-- Tone: ${brand.voice.tone}
-- Forbidden Phrases: ${forbiddenList}
+EVALUATION CRITERIA:
+1. Brand Alignment (0-100): Matches tone (${brand.voice?.tone || "Confident"}), positioning, and visual identity.
+2. Visual Quality & Hook (0-100): Scroll-stop potential, clarity, lack of clutter.
+3. Voice Compliance: Check that none of the forbidden phrases [${forbiddenPhrases.join(", ") || "None"}] are used.
+4. Suggestions: 1-2 actionable tips to refine the creative.`;
 
-TWO-STAGE EVALUATION MANDATE:
-1. CONTENT MATCH CHECK (VISION-BASED & STRICT):
-   - Inspect the attached image carefully.
-   - Does the image actually show the specific subjects, concrete hero props, or setting requested in the Campaign Objective / User Prompt ("${originalUserPrompt || concept.label}")?
-   - For example, if a coffee culture post was requested, are coffee beans, a cup, or a traditional phin filter physically visible? If a hotel post was requested, is a resort/room visible?
-   - If core requested props/subjects are missing, set 'content_match.passed' to FALSE and explicitly list the missing items in 'content_match.missing_elements'.
-   - List all detected physical objects in 'content_match.detected_elements'.
-
-2. BRAND STYLE & VOICE MATCH CHECK:
-   - Brand Alignment Score (0-100)
-   - Visual Quality & Composition Score (0-100)
-   - Voice Compliance (boolean)
-   - Forbidden Phrases Found in Captions (list)
-   - Critique Notes & Actionable Suggestions`;
-
-    const shotListAudit = concept.locked_shot_list
-      ? `\nLOCKED SHOT LIST TO AUDIT AGAINST VISUAL PIXELS (GROUND TRUTH):
-- Mandatory Required Props: [${concept.locked_shot_list.required_props.join(", ")}]
-- Expected Hero Subject: ${concept.locked_shot_list.hero_subject}
-- Expected Setting: ${concept.locked_shot_list.setting}\n`
-      : "";
-
-    const promptText = `USER CAMPAIGN PROMPT / TOPIC: "${originalUserPrompt || concept.label}"
-CONCEPT DIRECTION: "${concept.label}" — ${concept.creative_direction}
-VISUAL STYLE: "${concept.visual_style}"
-INSTAGRAM CAPTION: "${concept.caption_instagram}"
-LINKEDIN CAPTION: "${concept.caption_linkedin}"
-${shotListAudit}
-CRITICAL INSTRUCTION: Visually inspect the attached image. Check specifically whether each mandatory prop in the Locked Shot List is physically visible in the image pixels. If any prop is missing or unidentifiable, set content_match.passed to false and list it in content_match.missing_elements.`;
-
-    const contentParts: any[] = [
-      {
-        type: "text",
-        text: promptText,
-      },
-    ];
-
-    if (renderedImageUrl) {
-      contentParts.push({
-        type: "image",
-        image: renderedImageUrl,
-      });
-    }
+    const userPrompt = `Concept Label: ${concept.label}
+Creative Direction: "${concept.creative_direction}"
+Instagram Caption: "${concept.caption_instagram}"
+LinkedIn Caption: "${concept.caption_linkedin}"
+Platform: ${platform}`;
 
     try {
+      const model = getGroqModel("llama-3.3-70b-versatile");
       const result = await generateObject({
-        model: getVisionModel(),
+        model,
         schema: CriticResultSchema,
         system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: contentParts,
-          },
-        ],
+        prompt: userPrompt,
       });
       return result.object;
     } catch (err) {
-      console.warn("Vision-based Critic primary evaluation fallback:", err);
-      try {
-        const result = await generateObject({
-          model: getVisionFallbackModel(),
-          schema: CriticResultSchema,
-          system: systemPrompt,
-          messages: [
-            {
-              role: "user",
-              content: contentParts,
-            },
-          ],
-        });
-        return result.object;
-      } catch (err2) {
-        // FAIL-SAFE: Never silently auto-pass an unverified vision check
-        console.warn("Vision Critic fallback failed, executing FAIL-SAFE gate:", err2);
-        return {
-          content_match: {
-            passed: false,
-            detected_elements: [],
-            missing_elements: concept.locked_shot_list?.required_props || ["Visual verification unavailable - text-only fallback executed"],
-            reasoning: "Vision model unavailable during evaluation. Auto-flagged for re-generation and visual inspection to prevent uninspected renders from passing.",
-          },
-          brand_alignment_score: 50,
-          voice_compliance: true,
-          forbidden_phrases_found: [],
-          visual_score: 50,
-          critique_notes: [
-            "Vision model evaluation failed; fail-safe engaged to trigger re-generation with explicit hero props.",
-          ],
-          suggestions: ["Re-verify image with Gemini Vision to validate physical props."],
-        };
-      }
+      console.warn("Critic audit via Groq failed, falling back to Gemini:", err);
+      const fallbackModel = getReasoningModel();
+      const result = await generateObject({
+        model: fallbackModel,
+        schema: CriticResultSchema,
+        system: systemPrompt,
+        prompt: userPrompt,
+      });
+      return result.object;
     }
-  }
-
-  /**
-   * Synthesizes an explicit prompt remediation directive based on critic flaws to guide auto-regeneration.
-   * Feeds specific missing props and visual defects back into prompt engineering.
-   */
-  static generateRemediationDirective(
-    concept: ConceptItem,
-    brand: BrandProfile,
-    critique: CriticResult
-  ): string {
-    const issues: string[] = [];
-
-    // 1. Missing Content & Props (Highest Priority)
-    if (!critique.content_match.passed || (critique.content_match.missing_elements && critique.content_match.missing_elements.length > 0)) {
-      issues.push(
-        `CRITICAL MISSING PROPS & SUBJECTS: The image failed visual inspection because it is missing core required items: [${critique.content_match.missing_elements.join(", ")}]. You MUST explicitly place these exact physical objects in the subject_asset_layer and blended_composite_prompt in sharp focus!`
-      );
-      if (critique.content_match.reasoning) {
-        issues.push(`Critic Content Diagnosis: ${critique.content_match.reasoning}`);
-      }
-    }
-
-    // 2. Forbidden Phrases
-    if (critique.forbidden_phrases_found && critique.forbidden_phrases_found.length > 0) {
-      issues.push(`CRITICAL: Remove forbidden words: ${critique.forbidden_phrases_found.join(", ")}`);
-    }
-
-    // 3. Actionable Suggestions & Notes
-    if (critique.suggestions && critique.suggestions.length > 0) {
-      issues.push(`Actionable Fixes: ${critique.suggestions.slice(0, 3).join("; ")}`);
-    }
-
-    if (critique.critique_notes && critique.critique_notes.length > 0) {
-      issues.push(`Critic Notes: ${critique.critique_notes.slice(0, 2).join("; ")}`);
-    }
-
-    if (critique.visual_score < 80) {
-      issues.push("Visual Improvement: Enforce razor-sharp focus across hero subject and props, cleaner side-lighting, and wider negative space void.");
-    }
-
-    if (critique.brand_alignment_score < 80) {
-      issues.push(`Brand Alignment: Deepen alignment with brand tone "${brand.voice.tone}" and positioning "${brand.positioning}".`);
-    }
-
-    return issues.join("\n") || "Ensure cleaner composition, crisp props, and stricter brand tone alignment.";
   }
 }
-

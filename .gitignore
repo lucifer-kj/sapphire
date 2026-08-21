@@ -30,3 +30,7 @@ Thumbs.db
 
 /documents
 /documents/*
+/_deprecated
+/_deprecated/*
+/backup
+/backup/*

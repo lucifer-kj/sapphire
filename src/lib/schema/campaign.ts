@@ -19,6 +19,7 @@ export const ResearchContextSchema = z.object({
 });
 
 import { LockedShotListSchema } from "./shot-list";
+import { DesignSpecificationSchema } from "./layout-dsl";
 
 export const ConceptItemSchema = z.object({
   label: z.string(),
@@ -34,6 +35,7 @@ export const ConceptItemSchema = z.object({
   caption_instagram: z.string(),
   caption_linkedin: z.string(),
   design_blueprint: DesignBlueprintSchema.optional(),
+  dsl_spec: DesignSpecificationSchema.optional(),
   locked_shot_list: LockedShotListSchema.optional(),
 });
 

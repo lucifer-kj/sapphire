@@ -8,12 +8,10 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-
   try {
     const body = await req.json();
     const {
       conceptId,
-      campaignId,
       brandId,
       userInstruction,
       currentConcept,
@@ -40,15 +38,11 @@ export async function POST(req: NextRequest) {
     const refinedBlueprint =
       refinement.updated_design_blueprint || currentConcept.design_blueprint;
 
-    // 3. Generate updated AI artwork with Canva-grade Satori compositing
+    // 3. Generate updated AI artwork via Leonardo Phoenix
     const seed = Math.floor(Math.random() * 1000000);
-    const imageResult = await ImageGenerationService.generateImageUrlWithMeta(
+    const imageResult = await ImageGenerationService.generatePostImage(
       refinement.updated_image_prompt,
-      seed,
-      undefined,
-      undefined,
-      undefined,
-      refinedBlueprint
+      seed
     );
     const newImageUrl = imageResult.url;
 

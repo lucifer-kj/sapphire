@@ -1581,6 +1581,13 @@ export default function SapphireWorkspace() {
                         </span>
                       </div>
 
+                      {/* Plain-Language Founder Summary */}
+                      {brief?.concept_a.design_blueprint?.founder_summary && (
+                        <p className="text-[12px] text-zinc-300 bg-zinc-950/60 border border-white/5 rounded-xl px-3 py-2 leading-relaxed">
+                          {brief.concept_a.design_blueprint.founder_summary}
+                        </p>
+                      )}
+
                       {/* Brand Compliance Scorecard (Critic Agent) */}
                       {critiqueA && (
                         <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-1.5 text-text-xs">
@@ -1824,6 +1831,13 @@ export default function SapphireWorkspace() {
                           {selectedConcept === "B" ? "Active Selection" : "Direction B"}
                         </span>
                       </div>
+
+                      {/* Plain-Language Founder Summary */}
+                      {brief?.concept_b.design_blueprint?.founder_summary && (
+                        <p className="text-[12px] text-zinc-300 bg-zinc-950/60 border border-white/5 rounded-xl px-3 py-2 leading-relaxed">
+                          {brief.concept_b.design_blueprint.founder_summary}
+                        </p>
+                      )}
 
                       {/* Brand Compliance Scorecard (Critic Agent) */}
                       {critiqueB && (

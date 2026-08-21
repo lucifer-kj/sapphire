@@ -1,675 +1,209 @@
 import { BrandBrainService } from "@/services/brand-brain";
-import { IntentAgent } from "../agents/intent-agent";
-import { ResearchAgent } from "../agents/research-agent";
-import { CreativeDirectorAgent } from "../agents/creative-director-agent";
-import { ImageDirectorAgent } from "../agents/image-director-agent";
-import { MultimodalAgent } from "../agents/multimodal-agent";
-import { CriticAgent } from "../agents/critic-agent";
-import { PromptEngineerAgent } from "../agents/prompt-engineer-agent";
+import { DesignKnowledgeService } from "@/services/design-knowledge";
 import { ImageGenerationService } from "@/services/image-generation";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { UserIntent, ResearchContext, CreativeBrief } from "@/lib/schema/campaign";
-import { ReferenceImageAnalysis } from "@/lib/schema/reference";
-import { CriticResult } from "@/lib/schema/critic";
-import { WorkflowLogEntry } from "@/lib/schema/telemetry";
+import { SatoriCompositorService } from "@/services/satori-compositor";
 import { ExecutionLogger } from "@/services/telemetry";
+import { IntentAgent } from "../agents/intent-agent";
+import { CreativeDirectorAgent } from "../agents/creative-director-agent";
+import { LayoutPlannerAgent } from "../agents/layout-planner-agent";
+import { CriticAgent } from "../agents/critic-agent";
+import { CreativeBrief, ConceptItem, UserIntent, ResearchContext } from "@/lib/schema/campaign";
+import { CriticResult } from "@/lib/schema/critic";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export interface WorkflowResult {
+export interface CampaignWorkflowOutput {
   campaignId: string;
   intent: UserIntent;
   research: ResearchContext;
-  referenceAnalysis?: ReferenceImageAnalysis | null;
   brief: CreativeBrief;
+  conceptA: ConceptItem;
+  conceptB: ConceptItem;
   critiqueA: CriticResult;
   critiqueB: CriticResult;
-  logs: WorkflowLogEntry[];
+  logs: any[];
 }
-
-export type WorkflowStage =
-  | "intent"
-  | "reference"
-  | "brief"
-  | "prompt_decomp"
-  | "image_rendering"
-  | "critic_audit"
-  | "complete";
-
-export interface WorkflowProgressEvent {
-  step: number;
-  totalSteps: number;
-  stage: WorkflowStage;
-  agentName: string;
-  provider: string;
-  model: string;
-  status: "active" | "success" | "error";
-  summary: string;
-  durationMs?: number;
-  details?: any;
-  logs?: WorkflowLogEntry[];
-}
-
-
-export type ProgressCallback = (event: WorkflowProgressEvent) => Promise<void> | void;
 
 export class CampaignWorkflow {
   /**
-   * Executes end-to-end agent workflow with Multi-Layer Visual Decomposition & live telemetry:
-   * 1. Brand Context & DNA
-   * 2. Intent Parsing (Groq Llama 3.3 / Gemini 3.1)
-   * 3. Multimodal Vision (Gemini 2.5 Flash)
-   * 4. Creative Brief A/B (Creative Director Agent)
-   * 5. Multi-Layer Visual Decomposition & Negative Space Blueprint
-   * 6. Image Generation & Blending (Cloudflare FLUX 1 Schnell + Satori Resvg)
-   * 7. Critic Brand Guard (Gemini / Groq 70B)
-   * 8. Supabase Durable Persistence
+   * Executes the full 6-step DAG pipeline with real-time progress callbacks for SSE streaming.
    */
-  static async run(
+  static async execute(
     prompt: string,
     brandId?: string,
-    referenceImage?: string | string[] | null,
-    onProgress?: ProgressCallback
-  ): Promise<WorkflowResult> {
+    platform: "instagram" | "linkedin" = "instagram",
+    onProgress?: (step: number, totalSteps: number, summary: string, status: "active" | "success" | "error") => Promise<void>
+  ): Promise<CampaignWorkflowOutput> {
     const logger = new ExecutionLogger();
+    const campaignId = `camp_${Date.now()}`;
 
-    const notifyProgress = async (evt: Omit<WorkflowProgressEvent, "logs">) => {
-      try {
-        await onProgress?.({
-          ...evt,
-          logs: logger.getLogs(),
-        });
-      } catch (err) {
-        console.warn("Error in notifyProgress:", err);
-      }
-    };
-
-
-    // 1. Fetch Brand Context & Visual DNA
-    const brand = await logger.track(
-      "BrandBrainService",
-      "System",
-      "supabase-profile",
-      () => BrandBrainService.getBrandById(brandId),
-      (b) => `Loaded brand DNA for "${b.name}" (${b.industry}).`
-    );
-
-    // 2. Parse User Intent using Groq Llama 3.3 / Gemini 2.5
-    await notifyProgress({
-      step: 0,
-      totalSteps: 6,
-      stage: "intent",
-      agentName: "Intent Parsing & Brand DNA Extraction",
-      provider: "Groq / Gemini",
-      model: "gemini-2.5-flash",
-      status: "active",
-      summary: `Analyzing campaign objective and aligning with brand voice "${brand.name}"...`,
-    });
-
+    // Step 0: Brand DNA Loading & Intent Parsing
+    if (onProgress) {
+      await onProgress(0, 6, "Loading Brand DNA & Analyzing Intent (Groq Llama 3.3)...", "active");
+    }
+    const brand = await BrandBrainService.getBrandById(brandId);
     const intentStart = Date.now();
-    const intent = await logger.track(
-      "IntentAgent",
-      "Google Gemini",
-      "gemini-2.5-flash",
-      () => IntentAgent.parseIntent(prompt, brand),
-      (i) => `Parsed intent: Event="${i.event}", Objective="${i.objective}", Platforms=[${i.target_platforms.join(", ")}].`
-    );
-
-    await notifyProgress({
-      step: 0,
-      totalSteps: 6,
-      stage: "intent",
-      agentName: "Intent Parsing & Brand DNA Extraction",
-      provider: "Groq / Gemini",
-      model: "gemini-2.5-flash",
+    const intent = await IntentAgent.parseIntent(prompt, brand, platform);
+    logger.log({
+      agent: "IntentAgent",
+      provider: "Groq",
+      model: "llama-3.3-70b-versatile",
       status: "success",
       durationMs: Date.now() - intentStart,
-      summary: `Objective: ${intent.objective} • Event: ${intent.event} • Industry: ${intent.industry}`,
-      details: intent,
+      summary: `Parsed intent: Event "${intent.event}", Objective: "${intent.objective}"`,
     });
-
-    // 3. Concurrent Reference Analysis + Trend Research (Parallelized for Speed)
-    const hasReferences = Array.isArray(referenceImage) ? referenceImage.length > 0 : !!referenceImage;
-    await notifyProgress({
-      step: 1,
-      totalSteps: 6,
-      stage: "reference",
-      agentName: "Multimodal Visual Manifest & Trend Research",
-      provider: "Google Gemini",
-      model: "gemini-2.5-flash",
-      status: "active",
-      summary: hasReferences
-        ? "Compiling visual ingredients, lighting vectors, optics and negative space blueprint in parallel..."
-        : "Synthesizing real-time design intelligence and negative space requirements...",
-    });
-
-    const refStart = Date.now();
-    const [referenceAnalysis, research] = await Promise.all([
-      hasReferences && referenceImage
-        ? logger.track(
-            "MultimodalAgent",
-            "Google Gemini",
-            "gemini-2.5-flash",
-            () => MultimodalAgent.analyzeReferenceImages(referenceImage, brand),
-            (ref) => `Synthesized Visual Blueprint: Camera="${ref.camera_optics || ref.photography_style}", Lighting="${ref.lighting_vector || ref.lighting}", Palette=[${ref.color_palette_anchors?.join(", ") || ref.color_palette.join(", ")}].`
-          )
-        : Promise.resolve(null),
-      logger.track(
-        "ResearchAgent",
-        "Google Gemini",
-        "gemini-2.5-flash",
-        () => ResearchAgent.synthesizeResearch(intent, brand),
-        (r) => `Synthesized ${r.key_trends.length} winning trends & ${r.overused_patterns_to_avoid.length} clichés to avoid.`
-      ),
-    ]);
-
-    if (!hasReferences) {
-      logger.log({
-        agent: "MultimodalAgent",
-        provider: "System",
-        model: "none",
-        status: "info",
-        durationMs: 0,
-        summary: "No visual ingredients provided. Auto-compiled default Brand DNA manifest.",
-      });
+    if (onProgress) {
+      await onProgress(0, 6, `Brand DNA Loaded: "${brand.name}". Intent parsed.`, "success");
     }
 
-    await notifyProgress({
-      step: 1,
-      totalSteps: 6,
-      stage: "reference",
-      agentName: "Multimodal Visual Reference & Web Trends",
+    // Step 1: Design Knowledge & Visual Trends
+    if (onProgress) {
+      await onProgress(1, 6, "Retrieving Visual Trends & Design Knowledge (pgvector)...", "active");
+    }
+    const ragStart = Date.now();
+    const designThemes = await DesignKnowledgeService.searchKnowledge(prompt, 2);
+    const research: ResearchContext = {
+      search_queries: [prompt, `${brand.industry} ${platform} trend 2026`],
+      key_trends: designThemes.map((t) => t.theme_name),
+      visual_motifs: designThemes.map((t) => t.prompt_keywords),
+      overused_patterns_to_avoid: ["Generic 3D spheres", "Stock handshake", "Cliché gradients"],
+      summary: `Identified ${designThemes.length} design themes matching brand positioning.`,
+    };
+    logger.log({
+      agent: "DesignKnowledgeService",
+      provider: "Supabase Vector / RAG",
+      model: "text-embedding-004",
+      status: "success",
+      durationMs: Date.now() - ragStart,
+      summary: `Synthesized design themes: ${designThemes.map((t) => t.theme_name).join(", ")}`,
+    });
+    if (onProgress) {
+      await onProgress(1, 6, "Design trends & visual motifs retrieved.", "success");
+    }
+
+    // Step 2: Creative Direction & A/B Concept Formulation
+    if (onProgress) {
+      await onProgress(2, 6, "Formulating Differentiated A/B Creative Directions (Gemini Flash)...", "active");
+    }
+    const cdStart = Date.now();
+    const brief = await CreativeDirectorAgent.formulateConcepts(prompt, intent, brand, platform);
+    logger.log({
+      agent: "CreativeDirectorAgent",
       provider: "Google Gemini",
       model: "gemini-2.5-flash",
       status: "success",
-      durationMs: Date.now() - refStart,
-      summary: referenceAnalysis
-        ? `Style: ${referenceAnalysis.photography_style} • Mood: ${referenceAnalysis.mood} • Palette: ${referenceAnalysis.color_palette.join(", ")}`
-        : `Identified ${research.key_trends.length} design trends • Filtered ${research.overused_patterns_to_avoid.length} overused clichés`,
-      details: { referenceAnalysis, research },
+      durationMs: Date.now() - cdStart,
+      summary: `Formulated Concept A ("${brief.concept_a.creative_direction}") & Concept B ("${brief.concept_b.creative_direction}")`,
     });
+    if (onProgress) {
+      await onProgress(2, 6, "A/B creative directions formulated.", "success");
+    }
 
-    // 4. Develop A/B Creative Brief using CreativeDirectorAgent
-    await notifyProgress({
-      step: 2,
-      totalSteps: 6,
-      stage: "brief",
-      agentName: "Creative Direction & A/B Archetype Formulation",
-      provider: "Google Gemini / Mastra",
-      model: "gemini-2.5-flash",
-      status: "active",
-      summary: "Formulating dual creative directions and selecting graphic design archetypes...",
-    });
-
-    const briefStart = Date.now();
-    const brief = await logger.track(
-      "CreativeDirectorAgent",
-      "Google Gemini",
-      "gemini-2.5-flash",
-      () =>
-        CreativeDirectorAgent.developCreativeBrief(
-          intent,
-          research,
-          brand,
-          referenceAnalysis
-        ),
-      (b) => `Generated dual concepts: "${b.concept_a.label}" & "${b.concept_b.label}".`
-    );
-
-    await notifyProgress({
-      step: 2,
-      totalSteps: 6,
-      stage: "brief",
-      agentName: "Creative Direction & A/B Archetype Formulation",
-      provider: "Google Gemini / Mastra",
-      model: "gemini-2.5-flash",
-      status: "success",
-      durationMs: Date.now() - briefStart,
-      summary: `Concept A: "${brief.concept_a.label}" vs Concept B: "${brief.concept_b.label}"`,
-      details: brief,
-    });
-
-    // 4. Image Director: Physical Shot List Compilation (Ground Truth Anchor)
-    const [shotListA, shotListB] = await Promise.all([
-      logger.track(
-        "ImageDirector (Concept A)",
-        "Google Gemini",
-        "gemini-2.5-flash",
-        () => ImageDirectorAgent.compileLockedShotList(brief.concept_a, brand, intent, research),
-        (sl) => `Locked props for Concept A: [${sl.required_props.join(", ")}].`
-      ),
-      logger.track(
-        "ImageDirector (Concept B)",
-        "Google Gemini",
-        "gemini-2.5-flash",
-        () => ImageDirectorAgent.compileLockedShotList(brief.concept_b, brand, intent, research),
-        (sl) => `Locked props for Concept B: [${sl.required_props.join(", ")}].`
-      ),
+    // Step 3: Semantic Layout DSL Compilation
+    if (onProgress) {
+      await onProgress(3, 6, "Compiling Semantic Layout DSL Specifications...", "active");
+    }
+    const dslStart = Date.now();
+    const [dslSpecA, dslSpecB] = await Promise.all([
+      LayoutPlannerAgent.compileLayout(brief.concept_a, brand, platform),
+      LayoutPlannerAgent.compileLayout(brief.concept_b, brand, platform),
     ]);
-
-    brief.concept_a.locked_shot_list = shotListA;
-    brief.concept_b.locked_shot_list = shotListB;
-
-    // 5. Multi-Layer Visual Decomposition & Prompt Engineering (Parallelized for Speed)
-    await notifyProgress({
-      step: 3,
-      totalSteps: 6,
-      stage: "prompt_decomp",
-      agentName: "Spatial Prompt Engineering & Satori Blueprint",
-      provider: "Google Gemini / Satori",
-      model: "gemini-2.5-flash",
-      status: "active",
-      summary: "Calculating negative space void & decomposing prompts in parallel...",
-    });
-
-    const promptStart = Date.now();
-    const [promptEngineeredA, promptEngineeredB] = await Promise.all([
-      logger.track(
-        "VisualDecomposition (Concept A)",
-        "Google Gemini",
-        "gemini-2.5-flash",
-        () =>
-          PromptEngineerAgent.engineerPrompt(
-            brief.concept_a,
-            brand,
-            intent,
-            research,
-            referenceAnalysis
-          ),
-        (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept A.`
-      ),
-      logger.track(
-        "VisualDecomposition (Concept B)",
-        "Google Gemini",
-        "gemini-2.5-flash",
-        () =>
-          PromptEngineerAgent.engineerPrompt(
-            brief.concept_b,
-            brand,
-            intent,
-            research,
-            referenceAnalysis
-          ),
-        (pe) => `Decomposed 3 visual layers & synthesized composite prompt for Concept B.`
-      ),
-    ]);
-
-    await notifyProgress({
-      step: 3,
-      totalSteps: 6,
-      stage: "prompt_decomp",
-      agentName: "Spatial Prompt Engineering & Satori Blueprint",
-      provider: "Google Gemini / Satori",
-      model: "gemini-2.5-flash",
+    brief.concept_a.dsl_spec = dslSpecA;
+    brief.concept_b.dsl_spec = dslSpecB;
+    logger.log({
+      agent: "LayoutPlannerAgent",
+      provider: "Groq",
+      model: "llama-3.3-70b-versatile",
       status: "success",
-      durationMs: Date.now() - promptStart,
-      summary: `Constructed 4-zone negative space budget • Archetypes: ${brief.concept_a.design_blueprint?.archetype} & ${brief.concept_b.design_blueprint?.archetype}`,
-      details: { promptEngineeredA, promptEngineeredB },
+      durationMs: Date.now() - dslStart,
+      summary: `Compiled layout trees: Concept A (${dslSpecA.archetype}) & Concept B (${dslSpecB.archetype})`,
     });
+    if (onProgress) {
+      await onProgress(3, 6, "Layout DSL compiled with brand design tokens.", "success");
+    }
 
-    // 6. Image Generation & Canva-Grade Compositing
-    await notifyProgress({
-      step: 4,
-      totalSteps: 6,
-      stage: "image_rendering",
-      agentName: "FLUX Photorealistic Generation & Compositing",
-      provider: "Cloudflare FLUX 1 Schnell + Satori",
-      model: "@cf/black-forest-labs/flux-1-schnell",
-      status: "active",
-      summary: "Rendering photorealistic backgrounds and overlaying editorial typography hierarchy in parallel...",
-    });
-
+    // Step 4: FLUX Generation & Satori Compositing
+    if (onProgress) {
+      await onProgress(4, 6, "Generating Background Imagery (FLUX) & Compositing Typography (Satori)...", "active");
+    }
     const renderStart = Date.now();
-    const seedA = Math.floor(Math.random() * 1000000);
-    const seedB = seedA + 1;
-    const refStyle = referenceAnalysis ? referenceAnalysis.photography_style : undefined;
-    const primaryRefImage = Array.isArray(referenceImage) ? referenceImage[0] : referenceImage;
-
-    const [imgResultA, imgResultB] = await Promise.all([
-      ImageGenerationService.generateImageUrlWithMeta(
-        promptEngineeredA.optimized_image_prompt,
-        seedA,
-        refStyle,
-        promptEngineeredA.negative_prompt,
-        primaryRefImage,
-        brief.concept_a.design_blueprint
-      ),
-      ImageGenerationService.generateImageUrlWithMeta(
-        promptEngineeredB.optimized_image_prompt,
-        seedB,
-        refStyle,
-        promptEngineeredB.negative_prompt,
-        primaryRefImage,
-        brief.concept_b.design_blueprint
-      ),
+    const [bgImageA, bgImageB] = await Promise.all([
+      ImageGenerationService.generatePostImage(brief.concept_a.image_prompt),
+      ImageGenerationService.generatePostImage(brief.concept_b.image_prompt),
     ]);
 
-    brief.concept_a.image_url = imgResultA.url;
-    brief.concept_b.image_url = imgResultB.url;
+    const [compositeA, compositeB] = await Promise.all([
+      SatoriCompositorService.compositePost(dslSpecA, bgImageA.url),
+      SatoriCompositorService.compositePost(dslSpecB, bgImageB.url),
+    ]);
+
+    brief.concept_a.image_url = compositeA;
+    brief.concept_b.image_url = compositeB;
 
     logger.log({
-      agent: "ImageGenerationService (Concept A)",
-      provider: imgResultA.provider,
-      model: imgResultA.model,
-      status: imgResultA.status,
-      durationMs: imgResultA.durationMs,
-      summary: `Concept A Canva-grade post rendered via ${imgResultA.provider} in ${imgResultA.durationMs}ms.`,
-    });
-
-    logger.log({
-      agent: "ImageGenerationService (Concept B)",
-      provider: imgResultB.provider,
-      model: imgResultB.model,
-      status: imgResultB.status,
-      durationMs: imgResultB.durationMs,
-      summary: `Concept B Canva-grade post rendered via ${imgResultB.provider} in ${imgResultB.durationMs}ms.`,
-    });
-
-    await notifyProgress({
-      step: 4,
-      totalSteps: 6,
-      stage: "image_rendering",
-      agentName: "FLUX Photorealistic Generation & Compositing",
-      provider: "Cloudflare FLUX 1 Schnell + Satori",
-      model: "@cf/black-forest-labs/flux-1-schnell",
+      agent: "SatoriCompositorService",
+      provider: "Cloudflare FLUX + Satori / Resvg",
+      model: "satori-resvg-canvas",
       status: "success",
       durationMs: Date.now() - renderStart,
-      summary: `Generated two 1080×1350 Canva-grade visual compositions in ${(Date.now() - renderStart) / 1000}s`,
-      details: { urlA: imgResultA.url, urlB: imgResultB.url },
+      summary: "Composited Canva-grade 1080×1350 artwork with pixel-perfect typography.",
     });
-
-
-    // 7. Critic Agent Multimodal Visual Inspection & Content Match Audit
-    await notifyProgress({
-      step: 5,
-      totalSteps: 6,
-      stage: "critic_audit",
-      agentName: "Multimodal Visual Inspection & Content Match Audit",
-      provider: "Google Gemini Vision",
-      model: "gemini-2.5-flash",
-      status: "active",
-      summary: "Inspecting rendered visual pixels for required hero props, subject match, and brand alignment...",
-    });
-
-    const criticStart = Date.now();
-    const [critiqueA, critiqueB] = await Promise.all([
-      logger.track(
-        "CriticAgent (Concept A)",
-        "Google Gemini Vision",
-        "gemini-2.5-flash",
-        () => CriticAgent.evaluateConcept(brief.concept_a, brand, brief.concept_a.image_url, prompt),
-        (c) => `Concept A Content Match: ${c.content_match?.passed ? "PASSED" : "FAILED"} (Missing: [${c.content_match?.missing_elements?.join(", ") || "None"}]), Brand Alignment: ${c.brand_alignment_score}/100.`
-      ),
-      logger.track(
-        "CriticAgent (Concept B)",
-        "Google Gemini Vision",
-        "gemini-2.5-flash",
-        () => CriticAgent.evaluateConcept(brief.concept_b, brand, brief.concept_b.image_url, prompt),
-        (c) => `Concept B Content Match: ${c.content_match?.passed ? "PASSED" : "FAILED"} (Missing: [${c.content_match?.missing_elements?.join(", ") || "None"}]), Brand Alignment: ${c.brand_alignment_score}/100.`
-      ),
-    ]);
-
-    await notifyProgress({
-      step: 5,
-      totalSteps: 6,
-      stage: "critic_audit",
-      agentName: "Multimodal Visual Inspection & Content Match Audit",
-      provider: "Google Gemini Vision",
-      model: "gemini-2.5-flash",
-      status: "success",
-      durationMs: Date.now() - criticStart,
-      summary: `Content Check: Concept A (${critiqueA.content_match?.passed ? "Match" : "Missing Props"}) • Concept B (${critiqueB.content_match?.passed ? "Match" : "Missing Props"})`,
-      details: { critiqueA, critiqueB },
-    });
-
-    // 8. Bounded Remediation Hard Gate (Content Match Miss OR Score < 75)
-    let finalCritiqueA = critiqueA;
-    let finalCritiqueB = critiqueB;
-
-    const threshold = 75;
-    const needsRemediationA =
-      !critiqueA.content_match?.passed ||
-      (critiqueA.content_match?.missing_elements && critiqueA.content_match.missing_elements.length > 0) ||
-      critiqueA.brand_alignment_score < threshold ||
-      critiqueA.visual_score < threshold;
-
-    const needsRemediationB =
-      !critiqueB.content_match?.passed ||
-      (critiqueB.content_match?.missing_elements && critiqueB.content_match.missing_elements.length > 0) ||
-      critiqueB.brand_alignment_score < threshold ||
-      critiqueB.visual_score < threshold;
-
-    if (needsRemediationA || needsRemediationB) {
-      const missingSummary = [
-        needsRemediationA && critiqueA.content_match?.missing_elements?.length
-          ? `Concept A missing [${critiqueA.content_match.missing_elements.join(", ")}]`
-          : null,
-        needsRemediationB && critiqueB.content_match?.missing_elements?.length
-          ? `Concept B missing [${critiqueB.content_match.missing_elements.join(", ")}]`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
-      await notifyProgress({
-        step: 5,
-        totalSteps: 6,
-        stage: "critic_audit",
-        agentName: "Targeted Visual Auto-Remediation Active",
-        provider: "Google Gemini Vision + FLUX Realism",
-        model: "gemini-2.5-flash",
-        status: "active",
-        summary: `Auto-repairing missing hero props & composition: ${missingSummary || "Refining visual alignment"}...`,
-      });
-
-      const remediationTasks: Promise<void>[] = [];
-
-      if (needsRemediationA) {
-        remediationTasks.push(
-          (async () => {
-            try {
-              const directiveA = CriticAgent.generateRemediationDirective(brief.concept_a, brand, critiqueA);
-              const remediatedLayersA = await PromptEngineerAgent.decomposeAndEngineerPrompt(
-                brief.concept_a,
-                brand,
-                intent,
-                research,
-                referenceAnalysis,
-                directiveA
-              );
-              const remSeedA = seedA + 100;
-              const remImgA = await ImageGenerationService.generateImageUrlWithMeta(
-                remediatedLayersA.blended_composite_prompt,
-                remSeedA,
-                refStyle,
-                remediatedLayersA.negative_constraints,
-                primaryRefImage,
-                brief.concept_a.design_blueprint
-              );
-              brief.concept_a.image_url = remImgA.url;
-              finalCritiqueA = await CriticAgent.evaluateConcept(brief.concept_a, brand, remImgA.url, prompt);
-              logger.log({
-                agent: "CriticAutoRemediation (Concept A)",
-                provider: "Google Gemini Vision",
-                model: "gemini-2.5-flash",
-                status: "success",
-                durationMs: 0,
-                summary: `Concept A auto-remediated: Content Match=${finalCritiqueA.content_match?.passed ? "PASSED" : "REFINED"}, Score=${finalCritiqueA.brand_alignment_score}/100.`,
-              });
-            } catch (err) {
-              console.warn("Auto-remediation pass for Concept A failed, retaining initial concept:", err);
-            }
-          })()
-        );
-      }
-
-      if (needsRemediationB) {
-        remediationTasks.push(
-          (async () => {
-            try {
-              const directiveB = CriticAgent.generateRemediationDirective(brief.concept_b, brand, critiqueB);
-              const remediatedLayersB = await PromptEngineerAgent.decomposeAndEngineerPrompt(
-                brief.concept_b,
-                brand,
-                intent,
-                research,
-                referenceAnalysis,
-                directiveB
-              );
-              const remSeedB = seedB + 100;
-              const remImgB = await ImageGenerationService.generateImageUrlWithMeta(
-                remediatedLayersB.blended_composite_prompt,
-                remSeedB,
-                refStyle,
-                remediatedLayersB.negative_constraints,
-                primaryRefImage,
-                brief.concept_b.design_blueprint
-              );
-              brief.concept_b.image_url = remImgB.url;
-              finalCritiqueB = await CriticAgent.evaluateConcept(brief.concept_b, brand, remImgB.url, prompt);
-              logger.log({
-                agent: "CriticAutoRemediation (Concept B)",
-                provider: "Google Gemini Vision",
-                model: "gemini-2.5-flash",
-                status: "success",
-                durationMs: 0,
-                summary: `Concept B auto-remediated: Content Match=${finalCritiqueB.content_match?.passed ? "PASSED" : "REFINED"}, Score=${finalCritiqueB.brand_alignment_score}/100.`,
-              });
-            } catch (err) {
-              console.warn("Auto-remediation pass for Concept B failed, retaining initial concept:", err);
-            }
-          })()
-        );
-      }
-
-      await Promise.all(remediationTasks);
-
-      await notifyProgress({
-        step: 5,
-        totalSteps: 6,
-        stage: "critic_audit",
-        agentName: "Critic Visual Remediation Complete",
-        provider: "Google Gemini Vision",
-        model: "gemini-2.5-flash",
-        status: "success",
-        durationMs: Date.now() - criticStart,
-        summary: `Verified: Concept A (Match: ${finalCritiqueA.content_match?.passed ? "Yes" : "Soft"}, Score: ${finalCritiqueA.brand_alignment_score}/100) • Concept B (Match: ${finalCritiqueB.content_match?.passed ? "Yes" : "Soft"}, Score: ${finalCritiqueB.brand_alignment_score}/100)`,
-        details: { critiqueA: finalCritiqueA, critiqueB: finalCritiqueB },
-      });
+    if (onProgress) {
+      await onProgress(4, 6, "High-DPI 1080×1350 composite renders complete.", "success");
     }
 
+    // Step 5: Critic Agent 100-Point Audit
+    if (onProgress) {
+      await onProgress(5, 6, "Auditing Brand Guardrails & Quality (100-pt Rubric)...", "active");
+    }
+    const criticStart = Date.now();
+    const [critiqueA, critiqueB] = await Promise.all([
+      CriticAgent.evaluateConcept(brief.concept_a, brand, platform),
+      CriticAgent.evaluateConcept(brief.concept_b, brand, platform),
+    ]);
+    logger.log({
+      agent: "CriticAgent",
+      provider: "Groq",
+      model: "llama-3.3-70b-versatile",
+      status: "success",
+      durationMs: Date.now() - criticStart,
+      summary: `Scores: Concept A (${critiqueA.brand_alignment_score}/100) | Concept B (${critiqueB.brand_alignment_score}/100)`,
+    });
+    if (onProgress) {
+      await onProgress(5, 6, "Brand compliance and quality audit complete.", "success");
+    }
 
-    // 9. Persist Campaign, Concepts, Critiques & Versions in Supabase
-    let campaignId = "local-campaign-" + Date.now();
-
+    // Persist to Supabase asynchronously (if configured)
     try {
       const supabase = createAdminClient();
-
-      const { data: campaignData, error: campaignError } = await supabase
-        .from("campaigns")
-        .insert({
-          brand_id: brand.id || undefined,
-          title: brief.campaign_title,
-          user_prompt: prompt,
-          reference_image_url: referenceImage || undefined,
-          objective: intent.objective,
-          status: "brief_ready",
-          research_context: research as any,
-          creative_brief: brief as any,
-        })
-        .select()
-        .single();
-
-      if (campaignData && !campaignError) {
-        campaignId = campaignData.id;
-
-        // Insert Concept A Record with Critique
-        const { data: conceptA } = await supabase
-          .from("concepts")
-          .insert({
-            campaign_id: campaignId,
-            concept_label: brief.concept_a.label,
-            title: brief.concept_a.label,
-            creative_direction: brief.concept_a.creative_direction,
-            image_url: brief.concept_a.image_url,
-            image_prompt: promptEngineeredA.optimized_image_prompt,
-            caption_instagram: brief.concept_a.caption_instagram,
-            caption_linkedin: brief.concept_a.caption_linkedin,
-            visual_brief_summary: `${brief.concept_a.visual_style} [${brief.concept_a.design_blueprint?.archetype} / ${brief.concept_a.design_blueprint?.font_family_hook}] | Alignment Score: ${finalCritiqueA.brand_alignment_score}/100`,
-            status: "critiqued",
-          })
-          .select()
-          .single();
-
-        if (conceptA) {
-          await supabase.from("concept_versions").insert({
-            concept_id: conceptA.id,
-            version_number: 1,
-            user_instruction: "Initial Generation",
-            image_url: brief.concept_a.image_url,
-            caption_instagram: brief.concept_a.caption_instagram,
-            caption_linkedin: brief.concept_a.caption_linkedin,
-          });
-        }
-
-        // Insert Concept B Record with Critique
-        const { data: conceptB } = await supabase
-          .from("concepts")
-          .insert({
-            campaign_id: campaignId,
-            concept_label: brief.concept_b.label,
-            title: brief.concept_b.label,
-            creative_direction: brief.concept_b.creative_direction,
-            image_url: brief.concept_b.image_url,
-            image_prompt: promptEngineeredB.optimized_image_prompt,
-            caption_instagram: brief.concept_b.caption_instagram,
-            caption_linkedin: brief.concept_b.caption_linkedin,
-            visual_brief_summary: `${brief.concept_b.visual_style} [${brief.concept_b.design_blueprint?.archetype} / ${brief.concept_b.design_blueprint?.font_family_hook}] | Alignment Score: ${finalCritiqueB.brand_alignment_score}/100`,
-            status: "critiqued",
-          })
-          .select()
-          .single();
-
-        if (conceptB) {
-          await supabase.from("concept_versions").insert({
-            concept_id: conceptB.id,
-            version_number: 1,
-            user_instruction: "Initial Generation",
-            image_url: brief.concept_b.image_url,
-            caption_instagram: brief.concept_b.caption_instagram,
-            caption_linkedin: brief.concept_b.caption_linkedin,
-          });
-        }
-
-        logger.log({
-          agent: "SupabasePersistence",
-          provider: "System",
-          model: "supabase-postgres",
-          status: "success",
-          durationMs: 15,
-          summary: `Persisted campaign "${campaignId}" with v1 versions in durable database.`,
+      if (supabase) {
+        await supabase.from("campaigns").insert({
+          id: campaignId,
+          brand_id: brand.id,
+          campaign_title: brief.campaign_title || prompt,
+          topic: prompt,
+          platform,
+          intent,
+          research,
+          concept_a: brief.concept_a,
+          concept_b: brief.concept_b,
+          critique_a: critiqueA,
+          critique_b: critiqueB,
         });
       }
-    } catch (err) {
-      console.warn("Supabase persistence fallback in campaign workflow:", err);
-      logger.log({
-        agent: "SupabasePersistence",
-        provider: "System",
-        model: "supabase-postgres",
-        status: "fallback",
-        durationMs: 5,
-        summary: "Supabase storage skipped (offline fallback mode active).",
-      });
+    } catch (dbErr) {
+      console.warn("Supabase campaign persistence skipped:", dbErr);
     }
 
     return {
       campaignId,
       intent,
       research,
-      referenceAnalysis,
       brief,
-      critiqueA: finalCritiqueA,
-      critiqueB: finalCritiqueB,
+      conceptA: brief.concept_a,
+      conceptB: brief.concept_b,
+      critiqueA,
+      critiqueB,
       logs: logger.getLogs(),
     };
   }
 }
-

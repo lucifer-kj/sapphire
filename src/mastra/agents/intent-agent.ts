@@ -1,50 +1,40 @@
 import { generateObject } from "ai";
-import { UserIntentSchema, UserIntent } from "@/lib/schema/campaign";
+import { getLightModel, getGroqModel } from "@/lib/ai-model";
+import { UserIntent, UserIntentSchema } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
-import { getLightModel, getLightFallbackModel } from "@/lib/ai-model";
 
 export class IntentAgent {
   /**
-   * Analyzes raw user prompt and brand context using AI model to extract structured User Intent.
-   * Uses Light Model (Gemini Flash) for high-speed parsing.
+   * Parses user input, extracting marketing intent, audience, and platform constraints.
    */
   static async parseIntent(
     prompt: string,
-    brand: BrandProfile
+    brand: BrandProfile,
+    targetPlatform: "instagram" | "linkedin" = "instagram"
   ): Promise<UserIntent> {
-    const systemPrompt = `You are Sapphire's Intent Agent. Your role is to interpret a user's raw marketing/creative request for the brand "${brand.name}" in the "${brand.industry}" industry.
-Brand positioning: "${brand.positioning || brand.description || "Premium Brand"}".
-
-Analyze the request and return structured JSON matching the requested schema.`;
+    const systemPrompt = `You are Sapphire's Intent Parsing Agent.
+Analyze the user's prompt for "${brand.name}" in the "${brand.industry}" industry.
+Extract the core event/topic, marketing objective, cultural context, and creative opportunities for ${targetPlatform}.`;
 
     try {
+      const model = getLightModel();
       const result = await generateObject({
-        model: getLightModel(),
+        model,
         schema: UserIntentSchema,
         system: systemPrompt,
-        prompt: `User Request: "${prompt}"`,
+        prompt: `User request: "${prompt}". Platform: ${targetPlatform}.`,
       });
       return result.object;
     } catch (err) {
-      try {
-        const result = await generateObject({
-          model: getLightFallbackModel(),
-          schema: UserIntentSchema,
-          system: systemPrompt,
-          prompt: `User Request: "${prompt}"`,
-        });
-        return result.object;
-      } catch (err2) {
-        const cleanPrompt = prompt.trim();
-        return {
-          event: cleanPrompt,
-          industry: brand.industry || "Travel & Hospitality",
-          objective: "Brand Awareness & Customer Engagement",
-          target_platforms: ["instagram", "linkedin"],
-          cultural_elements: ["Authentic destination storytelling"],
-          creative_opportunity: `${brand.name} + ${cleanPrompt}`,
-        };
-      }
+      console.warn("Intent parsing via primary model failed, falling back to Groq Llama 3.3:", err);
+      const fallbackModel = getGroqModel("llama-3.3-70b-versatile");
+      const result = await generateObject({
+        model: fallbackModel,
+        schema: UserIntentSchema,
+        system: systemPrompt,
+        prompt: `User request: "${prompt}". Platform: ${targetPlatform}.`,
+      });
+      return result.object;
     }
   }
 }
