@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { DesignBlueprintSchema } from "../design-system/archetypes";
+import { LockedShotListSchema } from "./shot-list";
+import { DesignSpecificationSchema } from "./layout-dsl";
 
 export const UserIntentSchema = z.object({
   event: z.string().default("General Promotion"),
@@ -18,10 +20,7 @@ export const ResearchContextSchema = z.object({
   summary: z.string().default("Research complete."),
 });
 
-import { LockedShotListSchema } from "./shot-list";
-import { DesignSpecificationSchema } from "./layout-dsl";
-
-export const ConceptItemSchema = z.object({
+export const ConceptBriefSchema = z.object({
   label: z.string(),
   creative_direction: z.string(),
   visual_style: z.string(),
@@ -29,11 +28,14 @@ export const ConceptItemSchema = z.object({
   lighting: z.string(),
   color_palette: z.array(z.string()),
   image_prompt: z.string(),
+  caption_instagram: z.string(),
+  caption_linkedin: z.string(),
+});
+
+export const ConceptItemSchema = ConceptBriefSchema.extend({
   optimized_image_prompt: z.string().optional(),
   negative_prompt: z.string().optional(),
   image_url: z.string().optional(),
-  caption_instagram: z.string(),
-  caption_linkedin: z.string(),
   design_blueprint: DesignBlueprintSchema.optional(),
   dsl_spec: DesignSpecificationSchema.optional(),
   locked_shot_list: LockedShotListSchema.optional(),
@@ -41,11 +43,12 @@ export const ConceptItemSchema = z.object({
 
 export const CreativeBriefSchema = z.object({
   campaign_title: z.string(),
-  concept_a: ConceptItemSchema,
-  concept_b: ConceptItemSchema,
+  concept_a: ConceptBriefSchema,
+  concept_b: ConceptBriefSchema,
 });
 
 export type UserIntent = z.infer<typeof UserIntentSchema>;
 export type ResearchContext = z.infer<typeof ResearchContextSchema>;
+export type ConceptBrief = z.infer<typeof ConceptBriefSchema>;
 export type ConceptItem = z.infer<typeof ConceptItemSchema>;
 export type CreativeBrief = z.infer<typeof CreativeBriefSchema>;
