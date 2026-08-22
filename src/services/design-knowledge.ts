@@ -93,15 +93,28 @@ export class DesignKnowledgeService {
   }
 
   /**
-   * Seeds the Supabase database with all 21 Knowledge Base modules.
+   * Seeds the Supabase database with all Knowledge Base modules and computes vector embeddings.
    */
   static async seedKnowledgeBase(): Promise<number> {
     try {
       const supabase = createAdminClient();
       const modules = KnowledgeBaseService.getAllModules();
+      const embeddingModel = getEmbeddingModel();
 
       let insertedCount = 0;
       for (const mod of modules) {
+        let embeddingVector: number[] | undefined = undefined;
+        try {
+          const textToEmbed = `${mod.theme_name || mod.title}: ${mod.content.slice(0, 800)}`;
+          const { embedding } = await embed({
+            model: embeddingModel,
+            value: textToEmbed,
+          });
+          embeddingVector = embedding;
+        } catch (embErr) {
+          console.warn(`Could not compute embedding for module "${mod.title}":`, embErr);
+        }
+
         const { error } = await supabase.from("design_knowledge").upsert(
           {
             theme_name: mod.theme_name || mod.title,
@@ -112,6 +125,7 @@ export class DesignKnowledgeService {
               raw_markdown: mod.rawMarkdown,
               frontmatter: mod.frontmatter,
             } as any,
+            ...(embeddingVector ? { embedding: embeddingVector } : {}),
           },
           { onConflict: "theme_name" }
         );
