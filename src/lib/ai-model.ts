@@ -47,15 +47,15 @@ export function getEmbeddingModel() {
  * Flagship Reasoning & Creative Director Model (Groq GPT-OSS 120B / Gemini 2.5 Flash)
  */
 export function getReasoningModel() {
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey) {
-    return getGroqModel("openai/gpt-oss-120b");
-  }
   const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqModel("openai/gpt-oss-120b");
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    return getGroqModel("llama-3.3-70b-versatile");
+  }
+  return getGoogleProvider()("gemini-2.5-flash");
 }
 
 export function getReasoningFallbackModel() {

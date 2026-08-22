@@ -112,9 +112,8 @@ export class ImageGenerationService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: prompt.slice(0, 500),
+        prompt: prompt.slice(0, 1000),
         steps: 4,
-        seed,
       }),
       signal: AbortSignal.timeout(6000), // Strict 6s timeout
     });
