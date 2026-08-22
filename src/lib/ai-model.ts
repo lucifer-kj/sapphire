@@ -35,7 +35,7 @@ export function getGroqProvider() {
   });
 }
 
-export function getGroqModel(modelName: string = "llama-3.3-70b-versatile") {
+export function getGroqModel(modelName: string = "openai/gpt-oss-120b") {
   return getGroqProvider()(modelName);
 }
 
@@ -45,7 +45,7 @@ export function getEmbeddingModel() {
 }
 
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq Llama 3.3 fallback)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq GPT-OSS 120B fallback)
  * Used for: Creative Director, Prompt Engineering, Research Synthesis
  */
 export function getReasoningModel() {
@@ -55,7 +55,7 @@ export function getReasoningModel() {
   }
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
-    return getGroqModel("llama-3.3-70b-versatile");
+    return getGroqModel("openai/gpt-oss-120b");
   }
   return getGoogleProvider()("gemini-2.5-flash");
 }
@@ -65,11 +65,11 @@ export function getReasoningFallbackModel() {
   if (secondaryKey) {
     return getGoogleProvider(true)("gemini-2.5-pro");
   }
-  return getGroqProvider()("llama-3.3-70b-versatile");
+  return getGroqProvider()("openai/gpt-oss-120b");
 }
 
 /**
- * Ultra-Fast Light Task Model (Gemini 2.5 Flash primary, Groq fallback)
+ * Ultra-Fast Light Task Model (Gemini 2.5 Flash primary, Groq GPT-OSS 20B fallback)
  * Used for: High-Speed Intent Parsing, Fast Concept Refinements
  */
 export function getLightModel() {
@@ -77,7 +77,7 @@ export function getLightModel() {
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqProvider()("llama-3.3-70b-versatile");
+  return getGroqProvider()("openai/gpt-oss-20b");
 }
 
 export function getLightFallbackModel() {
@@ -85,7 +85,7 @@ export function getLightFallbackModel() {
   if (secondaryKey) {
     return getGoogleProvider(true)("gemini-2.5-flash");
   }
-  return getGroqProvider()("llama-3.3-70b-versatile");
+  return getGroqProvider()("openai/gpt-oss-20b");
 }
 
 /**

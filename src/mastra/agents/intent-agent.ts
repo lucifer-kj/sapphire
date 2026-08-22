@@ -26,8 +26,8 @@ Extract the core event/topic, marketing objective, cultural context, and creativ
       });
       return result.object;
     } catch (err) {
-      console.warn("Intent parsing via primary model failed, falling back to Groq Llama 3.3:", err);
-      const fallbackModel = getGroqModel("llama-3.3-70b-versatile");
+      console.warn("Intent parsing via primary model failed, falling back to Groq:", err);
+      const fallbackModel = getGroqModel("openai/gpt-oss-20b");
       const result = await generateObject({
         model: fallbackModel,
         schema: UserIntentSchema,

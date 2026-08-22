@@ -51,8 +51,8 @@ Platform: ${platform}`;
       });
       return result.object;
     } catch (err) {
-      console.warn("Layout Planner primary model failed, falling back to Groq Llama 3.3:", err);
-      const fallbackModel = getGroqModel("llama-3.3-70b-versatile");
+      console.warn("Layout Planner primary model failed, falling back to Groq:", err);
+      const fallbackModel = getGroqModel("openai/gpt-oss-120b");
       const result = await generateObject({
         model: fallbackModel,
         schema: DesignSpecificationSchema,

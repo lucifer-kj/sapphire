@@ -96,7 +96,7 @@ export class ImageGenerationService {
         return {
           url: polBase64,
           provider: "Pollinations AI (Flux)",
-          model: "flux-realism",
+          model: "flux-dev",
           durationMs,
           status: "fallback",
         };
@@ -110,7 +110,7 @@ export class ImageGenerationService {
     return {
       url: directUrl,
       provider: "Pollinations AI (Flux)",
-      model: "flux",
+      model: "flux-dev",
       durationMs,
       status: "fallback",
     };
@@ -267,7 +267,7 @@ export class ImageGenerationService {
       height: "1350",
       nologo: "true",
       seed: seed.toString(),
-      model: "flux-realism",
+      model: "flux-dev",
     });
 
     if (apiKey) {

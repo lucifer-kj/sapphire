@@ -41,14 +41,21 @@ export const ConceptItemSchema = ConceptBriefSchema.extend({
   locked_shot_list: LockedShotListSchema.optional(),
 });
 
-export const CreativeBriefSchema = z.object({
+export const CreativeBriefGenerationSchema = z.object({
   campaign_title: z.string(),
   concept_a: ConceptBriefSchema,
   concept_b: ConceptBriefSchema,
+});
+
+export const CreativeBriefSchema = z.object({
+  campaign_title: z.string(),
+  concept_a: ConceptItemSchema,
+  concept_b: ConceptItemSchema,
 });
 
 export type UserIntent = z.infer<typeof UserIntentSchema>;
 export type ResearchContext = z.infer<typeof ResearchContextSchema>;
 export type ConceptBrief = z.infer<typeof ConceptBriefSchema>;
 export type ConceptItem = z.infer<typeof ConceptItemSchema>;
+export type CreativeBriefGeneration = z.infer<typeof CreativeBriefGenerationSchema>;
 export type CreativeBrief = z.infer<typeof CreativeBriefSchema>;

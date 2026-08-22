@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { getReasoningModel, getGroqModel } from "@/lib/ai-model";
-import { CreativeBrief, CreativeBriefSchema, UserIntent } from "@/lib/schema/campaign";
+import { CreativeBrief, CreativeBriefGenerationSchema, UserIntent } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
 
 export class CreativeDirectorAgent {
@@ -41,21 +41,21 @@ Platform: ${platform}`;
       const model = getReasoningModel();
       const result = await generateObject({
         model,
-        schema: CreativeBriefSchema,
+        schema: CreativeBriefGenerationSchema,
         system: systemPrompt,
         prompt: userPrompt,
       });
-      return result.object;
+      return result.object as CreativeBrief;
     } catch (err) {
-      console.warn("Creative Director primary model failed, falling back to Groq Llama 3.3:", err);
-      const fallbackModel = getGroqModel("llama-3.3-70b-versatile");
+      console.warn("Creative Director primary model failed, falling back to Groq:", err);
+      const fallbackModel = getGroqModel("openai/gpt-oss-120b");
       const result = await generateObject({
         model: fallbackModel,
-        schema: CreativeBriefSchema,
+        schema: CreativeBriefGenerationSchema,
         system: systemPrompt,
         prompt: userPrompt,
       });
-      return result.object;
+      return result.object as CreativeBrief;
     }
   }
 }

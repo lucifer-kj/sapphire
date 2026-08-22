@@ -32,7 +32,7 @@ LinkedIn Caption: "${concept.caption_linkedin}"
 Platform: ${platform}`;
 
     try {
-      const model = getGroqModel("llama-3.3-70b-versatile");
+      const model = getGroqModel("openai/gpt-oss-120b");
       const result = await generateObject({
         model,
         schema: CriticResultSchema,
