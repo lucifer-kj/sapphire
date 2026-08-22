@@ -113,12 +113,10 @@ export class ImageGenerationService {
       },
       body: JSON.stringify({
         prompt: prompt.slice(0, 500),
-        width: 1080,
-        height: 1350,
-        num_steps: 4,
+        steps: 4,
         seed,
       }),
-      signal: AbortSignal.timeout(5000), // Strict 5s timeout
+      signal: AbortSignal.timeout(6000), // Strict 6s timeout
     });
 
     if (!res.ok) return null;

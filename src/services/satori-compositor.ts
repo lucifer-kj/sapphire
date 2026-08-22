@@ -112,20 +112,34 @@ export class SatoriCompositorService {
     // Separate layout nodes by semantic roles
     const textNodes = spec.layoutTree.filter((n) => n.type === "text");
     const pillBadges = spec.layoutTree.filter((n) => n.type === "pill_badge");
+    const ctaNodes = spec.layoutTree.filter((n) => n.type === "cta");
     const valueCards = spec.layoutTree.filter((n) => n.type === "value_card");
 
-    const eyebrow = textNodes.find((n) => n.role === "eyebrow")?.content || pillBadges[0]?.label || "INSIGHT";
-    const hook = textNodes.find((n) => n.role === "hook")?.content || "Elevate Your Perspective";
-    const subheadline = textNodes.find((n) => n.role === "subheadline")?.content || "";
-    const ctaText = textNodes.find((n) => n.role === "cta")?.content || "Swipe to explore →";
+    const cleanText = (str: string = "") =>
+      str
+        .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
+        .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+        .replace(/[→➜➔]/g, "")
+        .trim();
+
+    const rawEyebrow = pillBadges[0]?.content || textNodes.find((n) => n.role === "eyebrow")?.content || "FIELD GUIDE";
+    const eyebrow = cleanText(rawEyebrow).toUpperCase();
+
+    const rawHook = textNodes.find((n) => n.role === "hook")?.content || "Elevate Your Perspective";
+    const hook = cleanText(rawHook);
+
+    const subheadline = cleanText(textNodes.find((n) => n.role === "subheadline")?.content || "");
+    const rawCta = ctaNodes[0]?.content || textNodes.find((n) => n.role === "cta")?.content || "Swipe to explore";
+    const ctaText = cleanText(rawCta);
 
     // Adaptive typography calculation to prevent overflow
     const hookLength = hook.length;
-    let headlineFontSize = 64;
+    let headlineFontSize = 62;
     if (hookLength > 45) {
       headlineFontSize = 44;
     } else if (hookLength > 28) {
-      headlineFontSize = 54;
+      headlineFontSize = 52;
     }
 
     // Ensure valid base64 image or fallback safely without hanging
@@ -145,15 +159,16 @@ export class SatoriCompositorService {
       }
     }
 
-    // Scrim gradient
+    // High-contrast atmospheric scrim layer
     const scrimBackground = resolvedImageSrc
-      ? "linear-gradient(180deg, rgba(9,9,11,0.75) 0%, rgba(9,9,11,0.2) 35%, rgba(9,9,11,0.88) 100%)"
-      : "radial-gradient(circle at 50% 30%, rgba(39, 39, 42, 0.6) 0%, rgba(9, 9, 11, 0.95) 75%)";
+      ? "linear-gradient(180deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.30) 40%, rgba(9,9,11,0.92) 100%)"
+      : "radial-gradient(circle at 50% 30%, rgba(39, 39, 42, 0.7) 0%, rgba(9, 9, 11, 0.98) 75%)";
 
     const fontHeading = tokens.fontFamilyHeading || "Outfit";
     const fontBody = tokens.fontFamilyBody || "Plus Jakarta Sans";
+    const accentBg = tokens.accentColor || "#D97757";
 
-    // Satori React element tree in natural DOM painting order (NO zIndex)
+    // Satori React element tree in natural DOM painting order
     const element = React.createElement(
       "div",
       {
@@ -164,10 +179,10 @@ export class SatoriCompositorService {
           flexDirection: "column",
           justifyContent: "space-between",
           position: "relative",
-          backgroundColor: spec.canvas.backgroundColor || "#09090b",
+          backgroundColor: "#09090b",
           fontFamily: fontBody,
           padding: "70px 60px",
-          color: tokens.primaryColor,
+          color: "#FAF7F2",
           overflow: "hidden",
         },
       },
@@ -186,7 +201,7 @@ export class SatoriCompositorService {
           })
         : null,
 
-      // 2. Atmospheric scrim layer
+      // 2. Atmospheric contrast scrim layer
       React.createElement("div", {
         style: {
           position: "absolute",
@@ -216,17 +231,17 @@ export class SatoriCompositorService {
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              padding: "10px 20px",
-              backgroundColor: tokens.accentColor,
+              padding: "10px 22px",
+              backgroundColor: accentBg,
               borderRadius: "9999px",
-              color: "#ffffff",
-              fontSize: "20px",
+              color: "#FFFFFF",
+              fontSize: "19px",
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             },
           },
-          `✦ ${eyebrow}`
+          eyebrow
         ),
         React.createElement(
           "div",
@@ -234,9 +249,9 @@ export class SatoriCompositorService {
             style: {
               fontSize: "22px",
               fontWeight: 700,
-              color: tokens.primaryColor,
-              opacity: 0.9,
-              letterSpacing: "0.05em",
+              color: "#FFFFFF",
+              letterSpacing: "0.04em",
+              textShadow: "0 2px 10px rgba(0,0,0,0.8)",
             },
           },
           tokens.brandName
@@ -250,7 +265,7 @@ export class SatoriCompositorService {
           style: {
             display: "flex",
             flexDirection: "column",
-            gap: "24px",
+            gap: "20px",
             width: "100%",
             marginTop: "auto",
             marginBottom: "auto",
@@ -264,16 +279,16 @@ export class SatoriCompositorService {
               fontSize: `${headlineFontSize}px`,
               fontFamily: fontHeading,
               fontWeight: 700,
-              lineHeight: 1.1,
-              color: tokens.primaryColor,
-              textShadow: "0 4px 20px rgba(0,0,0,0.8)",
+              lineHeight: 1.12,
+              color: "#FFFFFF",
+              textShadow: "0 4px 24px rgba(0,0,0,0.95)",
               display: "flex",
               flexDirection: "column",
             },
           },
           hook
         ),
-        // Subheadline
+        // Subheadline (High-Contrast Zinc-200)
         subheadline
           ? React.createElement(
               "div",
@@ -281,15 +296,16 @@ export class SatoriCompositorService {
                 style: {
                   fontSize: "28px",
                   lineHeight: 1.35,
-                  color: tokens.mutedColor || "#D4D4D8",
-                  maxWidth: "900px",
-                  textShadow: "0 2px 10px rgba(0,0,0,0.7)",
+                  color: "#E4E4E7",
+                  maxWidth: "920px",
+                  fontWeight: 400,
+                  textShadow: "0 2px 14px rgba(0,0,0,0.9)",
                 },
               },
               subheadline
             )
           : null,
-        // Optional Value Cards
+        // Value Cards (if any)
         valueCards.length > 0
           ? React.createElement(
               "div",
@@ -297,7 +313,7 @@ export class SatoriCompositorService {
                 style: {
                   display: "flex",
                   gap: "16px",
-                  marginTop: "16px",
+                  marginTop: "12px",
                 },
               },
               valueCards.slice(0, 3).map((card, idx) =>
@@ -308,9 +324,9 @@ export class SatoriCompositorService {
                     style: {
                       display: "flex",
                       flexDirection: "column",
-                      gap: "6px",
+                      gap: "4px",
                       padding: "16px 20px",
-                      backgroundColor: "rgba(24, 24, 27, 0.75)",
+                      backgroundColor: "rgba(24, 24, 27, 0.85)",
                       borderRadius: "16px",
                       border: "1px solid rgba(255, 255, 255, 0.15)",
                       flex: 1,
@@ -318,12 +334,12 @@ export class SatoriCompositorService {
                   },
                   React.createElement(
                     "div",
-                    { style: { fontSize: "16px", color: tokens.accentColor, fontWeight: 700 } },
+                    { style: { fontSize: "16px", color: accentBg, fontWeight: 700 } },
                     card.indexNumber || `0${idx + 1}`
                   ),
                   React.createElement(
                     "div",
-                    { style: { fontSize: "20px", fontWeight: 700, color: tokens.primaryColor } },
+                    { style: { fontSize: "19px", fontWeight: 700, color: "#FFFFFF" } },
                     card.title
                   )
                 )
@@ -342,7 +358,7 @@ export class SatoriCompositorService {
             alignItems: "center",
             width: "100%",
             paddingTop: "24px",
-            borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.15)",
           },
         },
         React.createElement(
@@ -350,8 +366,9 @@ export class SatoriCompositorService {
           {
             style: {
               fontSize: "20px",
-              color: tokens.mutedColor || "#A1A1AA",
+              color: "#D4D4D8",
               fontWeight: 500,
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
             },
           },
           tokens.socialHandle
@@ -364,15 +381,16 @@ export class SatoriCompositorService {
               alignItems: "center",
               gap: "8px",
               padding: "10px 24px",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: "rgba(255, 255, 255, 0.15)",
               borderRadius: "9999px",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              fontSize: "20px",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
+              fontSize: "19px",
               fontWeight: 600,
-              color: tokens.primaryColor,
+              color: "#FFFFFF",
+              textShadow: "0 1px 4px rgba(0,0,0,0.8)",
             },
           },
-          ctaText
+          `${ctaText} ->`
         )
       )
     );

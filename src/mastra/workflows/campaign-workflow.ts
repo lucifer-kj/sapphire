@@ -127,8 +127,8 @@ export class CampaignWorkflow {
     }
     const renderStart = Date.now();
     const [bgImageA, bgImageB] = await Promise.all([
-      ImageGenerationService.generatePostImage(brief.concept_a.image_prompt),
-      ImageGenerationService.generatePostImage(brief.concept_b.image_prompt),
+      ImageGenerationService.generatePostImage(dslSpecA.photoPrompt || brief.concept_a.image_prompt),
+      ImageGenerationService.generatePostImage(dslSpecB.photoPrompt || brief.concept_b.image_prompt),
     ]);
 
     const [compositeA, compositeB] = await Promise.all([
