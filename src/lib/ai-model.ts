@@ -6,7 +6,6 @@ const googleApiKey =
   process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
   "";
 
-
 export function getGoogleApiKey(useSecondary: boolean = false) {
   if (useSecondary) {
     return (
@@ -45,84 +44,58 @@ export function getEmbeddingModel() {
 }
 
 /**
- * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq GPT-OSS 120B fallback)
- * Used for: Creative Director, Prompt Engineering, Research Synthesis
+ * Flagship Reasoning & Creative Director Model (Groq GPT-OSS 120B / Gemini 2.5 Flash)
  */
 export function getReasoningModel() {
-  const key = getGoogleApiKey();
-  if (key) {
-    return getGoogleProvider()("gemini-2.5-flash");
-  }
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
     return getGroqModel("openai/gpt-oss-120b");
   }
-  return getGoogleProvider()("gemini-2.5-flash");
-}
-
-export function getReasoningFallbackModel() {
-  const secondaryKey = getGoogleApiKey(true);
-  if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-2.5-pro");
-  }
-  return getGroqProvider()("openai/gpt-oss-120b");
-}
-
-/**
- * Ultra-Fast Light Task Model (Gemini 2.5 Flash primary, Groq GPT-OSS 20B fallback)
- * Used for: High-Speed Intent Parsing, Fast Concept Refinements
- */
-export function getLightModel() {
   const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqProvider()("openai/gpt-oss-20b");
+  return getGroqModel("openai/gpt-oss-120b");
 }
 
-export function getLightFallbackModel() {
-  const secondaryKey = getGoogleApiKey(true);
-  if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-2.5-flash");
+export function getReasoningFallbackModel() {
+  const key = getGoogleApiKey();
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqProvider()("openai/gpt-oss-20b");
+  return getGroqModel("openai/gpt-oss-120b");
 }
 
 /**
- * Multimodal Vision Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro fallback)
- * Used for: Reference image stylistic breakdown & visual palette extraction
+ * Ultra-Fast Light Task Model (Groq GPT-OSS 20B ~400ms)
+ */
+export function getLightModel() {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    return getGroqModel("openai/gpt-oss-20b");
+  }
+  const key = getGoogleApiKey();
+  if (key) {
+    return getGoogleProvider()("gemini-2.5-flash");
+  }
+  return getGroqModel("openai/gpt-oss-20b");
+}
+
+export function getLightFallbackModel() {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    return getGroqModel("openai/gpt-oss-20b");
+  }
+  return getGoogleProvider()("gemini-2.5-flash");
+}
+
+/**
+ * Multimodal Vision Model (Gemini 2.5 Flash)
  */
 export function getVisionModel() {
   const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqProvider()("llama-3.3-70b-versatile");
+  return getGroqModel("openai/gpt-oss-120b");
 }
-
-export function getVisionFallbackModel() {
-  const secondaryKey = getGoogleApiKey(true);
-  if (secondaryKey) {
-    return getGoogleProvider(true)("gemini-2.5-pro");
-  }
-  return getGroqProvider()("llama-3.3-70b-versatile");
-}
-
-/**
- * Critic & Brand Guard Model (Gemini 2.5 Flash primary, Gemini 2.5 Pro fallback)
- * Used for: Fast structured compliance auditing & brand scorecards
- */
-export function getCriticModel() {
-  const key = getGoogleApiKey();
-  if (key) {
-    return getGoogleProvider()("gemini-2.5-flash");
-  }
-  return getGroqProvider()("llama-3.3-70b-versatile");
-}
-
-
-/**
- * Compatibility aliases
- */
-export const getPrimaryModel = getReasoningModel;
-export const getFallbackModel = getReasoningFallbackModel;

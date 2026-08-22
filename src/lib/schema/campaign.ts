@@ -4,20 +4,20 @@ import { LockedShotListSchema } from "./shot-list";
 import { DesignSpecificationSchema } from "./layout-dsl";
 
 export const UserIntentSchema = z.object({
-  event: z.string().default("General Promotion"),
-  industry: z.string().default("Travel"),
-  objective: z.string().default("Brand Awareness & Engagement"),
-  target_platforms: z.array(z.string()).default(["instagram", "linkedin"]),
-  cultural_elements: z.array(z.string()).default([]),
-  creative_opportunity: z.string().default("Authentic storytelling aligned with brand positioning"),
+  event: z.string(),
+  industry: z.string(),
+  objective: z.string(),
+  target_platforms: z.array(z.string()),
+  cultural_elements: z.array(z.string()),
+  creative_opportunity: z.string(),
 });
 
 export const ResearchContextSchema = z.object({
-  search_queries: z.array(z.string()).default([]),
-  key_trends: z.array(z.string()).default([]),
-  visual_motifs: z.array(z.string()).default([]),
-  overused_patterns_to_avoid: z.array(z.string()).default([]),
-  summary: z.string().default("Research complete."),
+  search_queries: z.array(z.string()),
+  key_trends: z.array(z.string()),
+  visual_motifs: z.array(z.string()),
+  overused_patterns_to_avoid: z.array(z.string()),
+  summary: z.string(),
 });
 
 export const ConceptBriefSchema = z.object({

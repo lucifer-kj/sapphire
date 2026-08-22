@@ -21,16 +21,11 @@ export class CreativeDirectorAgent {
     const systemPrompt = `You are Sapphire's Executive Creative Director.
 Your task is to develop two distinct, high-impact creative directions for "${brand.name}" on ${platform.toUpperCase()}.
 
-RULES FOR CONCEPT GENERATION:
-1. DIFFERENTIATION: Concept A and Concept B MUST represent distinct visual strategies.
-   - Concept A: Emotional / Visceral Visual Metaphor (focus on storytelling, striking contrast, pattern interrupt).
-   - Concept B: Editorial / Framework Authority (focus on structure, clean hierarchy, intellectual value).
-2. NEVER GENERATE GENERIC AI SLOP: No meaningless floating spheres, rainbow gradients, or cliché AI robots.
-3. PLATFORM ADAPTATION:
-   - Instagram: Visual shock, 2-7 word punchy headline (legible at thumbnail size), high save/share potential.
-   - LinkedIn: Authority framework, clear mental model, professional depth, discussion trigger.
-4. BRAND COLORS: Primary [${brandColors}], Accent [${accentColors}].
-5. NEGATIVE SPACE BUDGETING: Explicitly instruct the background prompt to leave the upper or lower 40% clean and uncluttered for typography overlay.`;
+RULES:
+1. DIFFERENTIATION: Concept A (Visceral Metaphor) vs Concept B (Editorial Authority).
+2. CONCISE HEADLINES: Keep headlines under 8 words.
+3. NEGATIVE SPACE: Direct background photo to leave clean space for text overlay.
+4. BRAND COLORS: Primary [${brandColors}], Accent [${accentColors}].`;
 
     const userPrompt = `Topic: "${prompt}"
 Objective: ${intent.objective}

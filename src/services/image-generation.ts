@@ -1,64 +1,32 @@
 export interface ImageGenResult {
   url: string;
   provider:
-    | "Modal Serverless GPU (Qwen-Image)"
-    | "Cloudflare Workers AI (Flux)"
-    | "Cloudflare Workers AI (Leonardo Phoenix)"
-    | "Pollinations AI (Flux)";
+    | "Cloudflare Workers AI (Flux 1 Schnell)"
+    | "Pollinations AI (Fast Flux)"
+    | "Sapphire Procedural Studio";
   model: string;
   durationMs: number;
   status: "success" | "fallback";
 }
 
 /**
- * Production-Grade Hybrid Image Generation Architecture:
- * 1. Primary: Modal Serverless GPU running Qwen-Image 3.0 (bilingual native typography at 1080×1350).
- * 2. Fallback 1: Cloudflare Workers AI Flux / Leonardo Phoenix.
- * 3. Fallback 2: Pollinations AI Flux for offline / zero-rate-limit reliability.
+ * Production-Grade Ultra-Fast Image Generation Architecture:
+ * 1. Primary: Cloudflare Workers AI FLUX 1 Schnell (1080×1350 in ~1.8s).
+ * 2. Fallback 1: Pollinations Fast FLUX with strict 5s timeout.
+ * 3. Fallback 2: High-contrast aesthetic studio canvas (instant 0ms).
  */
 export class ImageGenerationService {
   /**
-   * Generates a 4:5 Instagram vertical post graphic with native typography.
+   * Generates a 4:5 Instagram vertical post graphic with strict timeout protection.
    */
   static async generatePostImage(
     prompt: string,
-    seed: number = Math.floor(Math.random() * 1000000),
-    negativePrompt?: string
+    seed: number = Math.floor(Math.random() * 1000000)
   ): Promise<ImageGenResult> {
     const start = performance.now();
 
     // -------------------------------------------------------------
-    // 1. PRIMARY: Modal Serverless GPU (Qwen-Image 3.0)
-    // -------------------------------------------------------------
-    const modalEndpoint = process.env.MODAL_QWEN_ENDPOINT_URL;
-    const modalApiKey = process.env.MODAL_QWEN_API_KEY;
-
-    if (modalEndpoint) {
-      try {
-        const modalImage = await this.generateWithModalQwen(
-          modalEndpoint,
-          modalApiKey,
-          prompt,
-          seed,
-          negativePrompt
-        );
-        if (modalImage) {
-          const durationMs = Math.round(performance.now() - start);
-          return {
-            url: modalImage,
-            provider: "Modal Serverless GPU (Qwen-Image)",
-            model: "Qwen/Qwen-Image-3.0",
-            durationMs,
-            status: "success",
-          };
-        }
-      } catch (modalErr) {
-        console.warn("Modal Qwen-Image primary attempt failed, falling back to Cloudflare:", modalErr);
-      }
-    }
-
-    // -------------------------------------------------------------
-    // 2. FALLBACK 1: Cloudflare Workers AI FLUX / Leonardo Phoenix
+    // 1. PRIMARY: Cloudflare Workers AI FLUX 1 Schnell (~1.8s)
     // -------------------------------------------------------------
     const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
@@ -75,19 +43,19 @@ export class ImageGenerationService {
           const durationMs = Math.round(performance.now() - start);
           return {
             url: cfResult.url,
-            provider: cfResult.provider,
-            model: cfResult.model,
+            provider: "Cloudflare Workers AI (Flux 1 Schnell)",
+            model: "@cf/black-forest-labs/flux-1-schnell",
             durationMs,
-            status: "fallback",
+            status: "success",
           };
         }
       } catch (cfErr) {
-        console.warn("Cloudflare Workers AI fallback failed, falling back to Pollinations:", cfErr);
+        console.warn("Cloudflare Workers AI primary attempt failed, falling back to Pollinations:", cfErr);
       }
     }
 
     // -------------------------------------------------------------
-    // 3. FALLBACK 2: Pollinations AI Fast Direct Fallback
+    // 2. FALLBACK 1: Pollinations AI Fast Flux (Strict 5s Timeout)
     // -------------------------------------------------------------
     try {
       const polBase64 = await this.fetchPollinationsBase64(prompt, seed);
@@ -95,8 +63,8 @@ export class ImageGenerationService {
         const durationMs = Math.round(performance.now() - start);
         return {
           url: polBase64,
-          provider: "Pollinations AI (Flux)",
-          model: "flux-dev",
+          provider: "Pollinations AI (Fast Flux)",
+          model: "flux-schnell",
           durationMs,
           status: "fallback",
         };
@@ -105,12 +73,14 @@ export class ImageGenerationService {
       // ignore
     }
 
-    const directUrl = this.buildPollinationsUrl(prompt, seed);
+    // -------------------------------------------------------------
+    // 3. FALLBACK 2: Instant Procedural Studio Gradient
+    // -------------------------------------------------------------
     const durationMs = Math.round(performance.now() - start);
     return {
-      url: directUrl,
-      provider: "Pollinations AI (Flux)",
-      model: "flux-dev",
+      url: "",
+      provider: "Sapphire Procedural Studio",
+      model: "procedural-mesh",
       durationMs,
       status: "fallback",
     };
@@ -124,58 +94,14 @@ export class ImageGenerationService {
   }
 
   /**
-   * Generates image via Modal Serverless GPU running Qwen-Image.
-   */
-  private static async generateWithModalQwen(
-    endpoint: string,
-    apiKey: string | undefined,
-    prompt: string,
-    seed: number,
-    negativePrompt?: string
-  ): Promise<string | null> {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (apiKey) {
-      headers["Authorization"] = `Bearer ${apiKey}`;
-    }
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        prompt,
-        negative_prompt: negativePrompt || "blurry text, low quality, distorted anatomy, noisy artifacts",
-        width: 1080,
-        height: 1350,
-        steps: 25,
-        guidance_scale: 7.5,
-        seed,
-      }),
-      signal: AbortSignal.timeout(6000), // 6s fast timeout: returns instantly if warm, otherwise falls back immediately
-    });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.warn(`Modal Qwen endpoint error ${res.status}:`, text);
-      return null;
-    }
-
-    const data = await res.json();
-    if (data.image) {
-      return `data:image/png;base64,${data.image}`;
-    }
-    return null;
-  }
-
-  /**
-   * Generates image using Cloudflare Workers AI (Flux 1 Schnell or Leonardo Phoenix).
+   * Generates image using Cloudflare Workers AI (Flux 1 Schnell) with a strict 5s timeout.
    */
   private static async generateWithCloudflare(
     prompt: string,
     accountId: string,
     apiToken: string,
     seed: number
-  ): Promise<{ url: string; provider: "Cloudflare Workers AI (Flux)" | "Cloudflare Workers AI (Leonardo Phoenix)"; model: string } | null> {
-    // Primary CF model: Leonardo Phoenix or Flux 1 Schnell
+  ): Promise<{ url: string } | null> {
     const cfModel = "@cf/black-forest-labs/flux-1-schnell";
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${cfModel}`;
 
@@ -186,12 +112,13 @@ export class ImageGenerationService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt,
+        prompt: prompt.slice(0, 500),
         width: 1080,
         height: 1350,
+        num_steps: 4,
         seed,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(5000), // Strict 5s timeout
     });
 
     if (!res.ok) return null;
@@ -202,20 +129,12 @@ export class ImageGenerationService {
       const data = await res.json();
       const base64 = data.result?.image || data.result?.images?.[0];
       if (base64) {
-        return {
-          url: `data:image/jpeg;base64,${base64}`,
-          provider: "Cloudflare Workers AI (Flux)",
-          model: cfModel,
-        };
+        return { url: `data:image/jpeg;base64,${base64}` };
       }
     } else if (contentType.includes("image/")) {
       const buf = Buffer.from(await res.arrayBuffer());
       if (buf.length > 500) {
-        return {
-          url: `data:${contentType};base64,${buf.toString("base64")}`,
-          provider: "Cloudflare Workers AI (Flux)",
-          model: cfModel,
-        };
+        return { url: `data:${contentType};base64,${buf.toString("base64")}` };
       }
     }
 
@@ -223,15 +142,23 @@ export class ImageGenerationService {
   }
 
   /**
-   * Performs server-side fetch from Pollinations Flux and converts to a base64 data URL.
+   * Performs server-side fetch from Pollinations Fast Flux with a strict 4.5s timeout.
    */
   private static async fetchPollinationsBase64(
     prompt: string,
     seed: number
   ): Promise<string | null> {
-    const url = this.buildPollinationsUrl(prompt, seed);
+    const cleanPrompt = prompt
+      .replace(/["'#]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400);
+
+    const encodedPrompt = encodeURIComponent(cleanPrompt);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1080&height=1350&nologo=true&seed=${seed}&model=flux`;
+
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(4500), // Strict 4.5s timeout
     });
 
     if (!res.ok) return null;
@@ -243,37 +170,5 @@ export class ImageGenerationService {
 
     const mimeType = res.headers.get("content-type") || "image/jpeg";
     return `data:${mimeType};base64,${buffer.toString("base64")}`;
-  }
-
-  /**
-   * Constructs an optimized Pollinations Flux URL for 4:5 Instagram vertical format.
-   */
-  static buildPollinationsUrl(
-    prompt: string,
-    seed: number = Math.floor(Math.random() * 1000000)
-  ): string {
-    const apiKey = process.env.POLLINATIONS_API_KEY || "";
-
-    const cleanPrompt = prompt
-      .replace(/["'#]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 700);
-
-    const encodedPrompt = encodeURIComponent(cleanPrompt);
-    const baseUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
-    const queryParams = new URLSearchParams({
-      width: "1080",
-      height: "1350",
-      nologo: "true",
-      seed: seed.toString(),
-      model: "flux-dev",
-    });
-
-    if (apiKey) {
-      queryParams.append("api_key", apiKey);
-    }
-
-    return `${baseUrl}?${queryParams.toString()}`;
   }
 }

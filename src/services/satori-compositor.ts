@@ -90,6 +90,11 @@ function loadFontRegistry(): FontEntry[] {
   return cachedFontRegistry;
 }
 
+// Warm font cache at startup
+try {
+  loadFontRegistry();
+} catch {}
+
 export class SatoriCompositorService {
   /**
    * Deterministically composites a Canva-grade 1080×1350 vertical social post
@@ -108,7 +113,6 @@ export class SatoriCompositorService {
     const textNodes = spec.layoutTree.filter((n) => n.type === "text");
     const pillBadges = spec.layoutTree.filter((n) => n.type === "pill_badge");
     const valueCards = spec.layoutTree.filter((n) => n.type === "value_card");
-    const diagrams = spec.layoutTree.filter((n) => n.type === "diagram");
 
     const eyebrow = textNodes.find((n) => n.role === "eyebrow")?.content || pillBadges[0]?.label || "INSIGHT";
     const hook = textNodes.find((n) => n.role === "hook")?.content || "Elevate Your Perspective";
@@ -117,23 +121,39 @@ export class SatoriCompositorService {
 
     // Adaptive typography calculation to prevent overflow
     const hookLength = hook.length;
-    let headlineFontSize = 68;
+    let headlineFontSize = 64;
     if (hookLength > 45) {
-      headlineFontSize = 46;
+      headlineFontSize = 44;
     } else if (hookLength > 28) {
-      headlineFontSize = 56;
+      headlineFontSize = 54;
     }
 
-    // Gradient scrim definitions
-    const scrimBackground =
-      spec.platform === "instagram"
-        ? "linear-gradient(180deg, rgba(9,9,11,0.7) 0%, rgba(9,9,11,0.2) 35%, rgba(9,9,11,0.85) 100%)"
-        : "linear-gradient(180deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.4) 40%, rgba(9,9,11,0.92) 100%)";
+    // Ensure valid base64 image or fallback safely without hanging
+    let resolvedImageSrc: string | null = null;
+    if (backgroundImageUrl && backgroundImageUrl.startsWith("data:image/")) {
+      resolvedImageSrc = backgroundImageUrl;
+    } else if (backgroundImageUrl && backgroundImageUrl.startsWith("http")) {
+      try {
+        const res = await fetch(backgroundImageUrl, { signal: AbortSignal.timeout(2500) });
+        if (res.ok) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          const mime = res.headers.get("content-type") || "image/jpeg";
+          resolvedImageSrc = `data:${mime};base64,${buf.toString("base64")}`;
+        }
+      } catch {
+        resolvedImageSrc = null;
+      }
+    }
+
+    // Scrim gradient
+    const scrimBackground = resolvedImageSrc
+      ? "linear-gradient(180deg, rgba(9,9,11,0.75) 0%, rgba(9,9,11,0.2) 35%, rgba(9,9,11,0.88) 100%)"
+      : "radial-gradient(circle at 50% 30%, rgba(39, 39, 42, 0.6) 0%, rgba(9, 9, 11, 0.95) 75%)";
 
     const fontHeading = tokens.fontFamilyHeading || "Outfit";
     const fontBody = tokens.fontFamilyBody || "Plus Jakarta Sans";
 
-    // Satori React element tree
+    // Satori React element tree in natural DOM painting order (NO zIndex)
     const element = React.createElement(
       "div",
       {
@@ -151,10 +171,10 @@ export class SatoriCompositorService {
           overflow: "hidden",
         },
       },
-      // 1. Background image (if provided)
-      backgroundImageUrl
+      // 1. Background image (if provided and resolved)
+      resolvedImageSrc
         ? React.createElement("img", {
-            src: backgroundImageUrl,
+            src: resolvedImageSrc,
             style: {
               position: "absolute",
               top: 0,
@@ -187,7 +207,6 @@ export class SatoriCompositorService {
             justifyContent: "space-between",
             alignItems: "center",
             width: "100%",
-            zIndex: 10,
           },
         },
         React.createElement(
@@ -224,7 +243,7 @@ export class SatoriCompositorService {
         )
       ),
 
-      // 4. Middle Content Section: Hook + Subhead + Cards / Diagrams
+      // 4. Middle Content Section: Hook + Subhead + Cards
       React.createElement(
         "div",
         {
@@ -233,7 +252,6 @@ export class SatoriCompositorService {
             flexDirection: "column",
             gap: "24px",
             width: "100%",
-            zIndex: 10,
             marginTop: "auto",
             marginBottom: "auto",
           },
@@ -323,7 +341,6 @@ export class SatoriCompositorService {
             justifyContent: "space-between",
             alignItems: "center",
             width: "100%",
-            zIndex: 10,
             paddingTop: "24px",
             borderTop: "1px solid rgba(255, 255, 255, 0.12)",
           },
