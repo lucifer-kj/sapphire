@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getLightModel, getGroqModel } from "@/lib/ai-model";
+import { getLightModel, getLightFallbackModel } from "@/lib/ai-model";
 import {
   DesignSpecification,
   LayoutItemSchema,
@@ -55,8 +55,8 @@ Platform: ${platform}`;
       });
       plan = result.object;
     } catch (err) {
-      console.warn("Layout Planner primary model failed, falling back to Groq:", err);
-      const fallbackModel = getGroqModel("openai/gpt-oss-120b");
+      console.warn("Layout Planner primary model failed, falling back:", err);
+      const fallbackModel = getLightFallbackModel();
       const result = await generateObject({
         model: fallbackModel,
         schema: LayoutPlanGenerationSchema,

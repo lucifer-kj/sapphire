@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getGroqModel, getReasoningModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 import { CriticResult, CriticResultSchema } from "@/lib/schema/critic";
 import { ConceptItem } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
@@ -32,7 +32,7 @@ LinkedIn Caption: "${concept.caption_linkedin}"
 Platform: ${platform}`;
 
     try {
-      const model = getGroqModel("openai/gpt-oss-120b");
+      const model = getReasoningModel();
       const result = await generateObject({
         model,
         schema: CriticResultSchema,
@@ -41,8 +41,8 @@ Platform: ${platform}`;
       });
       return result.object;
     } catch (err) {
-      console.warn("Critic audit via Groq failed, falling back to Gemini:", err);
-      const fallbackModel = getReasoningModel();
+      console.warn("Critic audit via primary model failed, falling back:", err);
+      const fallbackModel = getReasoningFallbackModel();
       const result = await generateObject({
         model: fallbackModel,
         schema: CriticResultSchema,

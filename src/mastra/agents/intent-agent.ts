@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getLightModel, getReasoningModel, getGroqModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 import { UserIntent, UserIntentSchema } from "@/lib/schema/campaign";
 import { BrandProfile } from "@/lib/schema/brand";
 
@@ -26,8 +26,8 @@ Extract the core event/topic, marketing objective, cultural context, and creativ
       });
       return result.object;
     } catch (err) {
-      console.warn("Intent parsing via primary model failed, falling back to Groq:", err);
-      const fallbackModel = getGroqModel("openai/gpt-oss-120b");
+      console.warn("Intent parsing via primary model failed, falling back:", err);
+      const fallbackModel = getReasoningFallbackModel();
       const result = await generateObject({
         model: fallbackModel,
         schema: UserIntentSchema,

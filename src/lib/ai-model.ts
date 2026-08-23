@@ -1,11 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 
-const googleApiKey =
-  process.env.SECONDARY_GOOGLE_GENERATIVE_AI_API_KEY ||
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-  "";
-
 export function getGoogleApiKey(useSecondary: boolean = false) {
   if (useSecondary) {
     return (
@@ -34,7 +29,7 @@ export function getGroqProvider() {
   });
 }
 
-export function getGroqModel(modelName: string = "openai/gpt-oss-120b") {
+export function getGroqModel(modelName: string = "llama-3.3-70b-versatile") {
   return getGroqProvider()(modelName);
 }
 
@@ -44,7 +39,7 @@ export function getEmbeddingModel() {
 }
 
 /**
- * Flagship Reasoning & Creative Director Model (Groq GPT-OSS 120B / Gemini 2.5 Flash)
+ * Flagship Reasoning & Creative Director Model (Gemini 2.5 Flash primary, Groq Llama 3.3 fallback)
  */
 export function getReasoningModel() {
   const key = getGoogleApiKey();
@@ -59,32 +54,32 @@ export function getReasoningModel() {
 }
 
 export function getReasoningFallbackModel() {
-  const key = getGoogleApiKey();
+  const key = getGoogleApiKey(true);
   if (key) {
-    return getGoogleProvider()("gemini-2.5-flash");
+    return getGoogleProvider(true)("gemini-2.5-flash");
   }
-  return getGroqModel("openai/gpt-oss-120b");
+  return getGroqModel("llama-3.3-70b-versatile");
 }
 
 /**
- * Ultra-Fast Light Task Model (Groq GPT-OSS 20B ~400ms)
+ * Ultra-Fast Light Task Model (Gemini 2.5 Flash ~500ms, Groq Llama 3.1 8B fallback)
  */
 export function getLightModel() {
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey) {
-    return getGroqModel("openai/gpt-oss-20b");
-  }
   const key = getGoogleApiKey();
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqModel("openai/gpt-oss-20b");
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    return getGroqModel("llama-3.1-8b-instant");
+  }
+  return getGoogleProvider()("gemini-2.5-flash");
 }
 
 export function getLightFallbackModel() {
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
-    return getGroqModel("openai/gpt-oss-20b");
+    return getGroqModel("llama-3.1-8b-instant");
   }
   return getGoogleProvider()("gemini-2.5-flash");
 }
@@ -97,5 +92,5 @@ export function getVisionModel() {
   if (key) {
     return getGoogleProvider()("gemini-2.5-flash");
   }
-  return getGroqModel("openai/gpt-oss-120b");
+  return getGroqModel("llama-3.3-70b-versatile");
 }
