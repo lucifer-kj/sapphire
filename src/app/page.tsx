@@ -592,6 +592,21 @@ export default function SapphireWorkspace() {
             }
 
             if (payload.type === "progress") {
+              if (payload.brief) {
+                setBrief(payload.brief);
+                setIsRightOpen(true);
+              }
+              if (payload.imageUrlA || payload.imageUrlB) {
+                setBrief((prev) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    concept_a: payload.imageUrlA ? { ...prev.concept_a, image_url: payload.imageUrlA } : prev.concept_a,
+                    concept_b: payload.imageUrlB ? { ...prev.concept_b, image_url: payload.imageUrlB } : prev.concept_b,
+                  };
+                });
+              }
+
               setPlanningSteps((prev) =>
                 prev.map((step, idx) => {
                   if (idx === payload.step) {

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
           prompt,
           brandId,
           platform === "linkedin" ? "linkedin" : "instagram",
-          async (step, totalSteps, summary, status) => {
+          async (step, totalSteps, summary, status, data) => {
             await writer.write(
               encoder.encode(
                 `data: ${JSON.stringify({
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
                   totalSteps,
                   status,
                   summary,
+                  ...(data || {}),
                 })}\n\n`
               )
             );

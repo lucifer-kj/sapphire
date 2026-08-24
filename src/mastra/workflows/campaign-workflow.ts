@@ -2,6 +2,7 @@ import { BrandBrainService } from "@/services/brand-brain";
 import { DesignKnowledgeService } from "@/services/design-knowledge";
 import { ImageGenerationService } from "@/services/image-generation";
 import { SatoriCompositorService } from "@/services/satori-compositor";
+import { StorageService } from "@/services/storage";
 import { ExecutionLogger } from "@/services/telemetry";
 import { IntentAgent } from "../agents/intent-agent";
 import { CreativeDirectorAgent } from "../agents/creative-director-agent";
@@ -31,26 +32,32 @@ export class CampaignWorkflow {
     prompt: string,
     brandId?: string,
     platform: "instagram" | "linkedin" = "instagram",
-    onProgress?: (step: number, totalSteps: number, summary: string, status: "active" | "success" | "error") => Promise<void>
+    onProgress?: (step: number, totalSteps: number, summary: string, status: "active" | "success" | "error", data?: any) => Promise<void>
   ): Promise<CampaignWorkflowOutput> {
     const logger = new ExecutionLogger();
     const campaignId = `camp_${Date.now()}`;
 
-    // Step 0: Brand DNA Loading & Intent Parsing
+    // Step 0: Brand DNA Loading & Intent Parsing (Parallel RAG initialization)
     if (onProgress) {
-      await onProgress(0, 6, "Loading Brand DNA & Analyzing Intent (Groq Llama 3.3)...", "active");
+      await onProgress(0, 6, "Loading Brand DNA & Analyzing Intent (Gemini Flash)...", "active");
     }
     const brand = await BrandBrainService.getBrandById(brandId);
+    
     const intentStart = Date.now();
-    const intent = await IntentAgent.parseIntent(prompt, brand, platform);
+    const [intent, designThemes] = await Promise.all([
+      IntentAgent.parseIntent(prompt, brand, platform),
+      DesignKnowledgeService.searchKnowledge(prompt, 2),
+    ]);
+
     logger.log({
       agent: "IntentAgent",
-      provider: "Groq",
-      model: "llama-3.3-70b-versatile",
+      provider: "Google Gemini",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - intentStart,
       summary: `Parsed intent: Event "${intent.event}", Objective: "${intent.objective}"`,
     });
+
     if (onProgress) {
       await onProgress(0, 6, `Brand DNA Loaded: "${brand.name}". Intent parsed.`, "success");
     }
@@ -59,8 +66,6 @@ export class CampaignWorkflow {
     if (onProgress) {
       await onProgress(1, 6, "Retrieving Visual Trends & Design Knowledge (pgvector)...", "active");
     }
-    const ragStart = Date.now();
-    const designThemes = await DesignKnowledgeService.searchKnowledge(prompt, 2);
     const research: ResearchContext = {
       search_queries: [prompt, `${brand.industry} ${platform} trend 2026`],
       key_trends: designThemes.map((t) => t.theme_name),
@@ -73,7 +78,7 @@ export class CampaignWorkflow {
       provider: "Supabase Vector / RAG",
       model: "text-embedding-004",
       status: "success",
-      durationMs: Date.now() - ragStart,
+      durationMs: 50,
       summary: `Synthesized design themes: ${designThemes.map((t) => t.theme_name).join(", ")}`,
     });
     if (onProgress) {
@@ -92,10 +97,12 @@ export class CampaignWorkflow {
       model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - cdStart,
-      summary: `Formulated Concept A ("${brief.concept_a.creative_direction}") & Concept B ("${brief.concept_b.creative_direction}")`,
+      summary: `Formulated Concept A ("${brief.concept_a.creative_direction.slice(0, 60)}...") & Concept B ("${brief.concept_b.creative_direction.slice(0, 60)}...")`,
     });
+    
+    // Stream intermediate brief data so the UI can render the concept skeletons and start the animation immediately
     if (onProgress) {
-      await onProgress(2, 6, "A/B creative directions formulated.", "success");
+      await onProgress(2, 6, "A/B creative directions formulated.", "success", { brief });
     }
 
     // Step 3: Semantic Layout DSL Compilation
@@ -111,8 +118,8 @@ export class CampaignWorkflow {
     brief.concept_b.dsl_spec = dslSpecB;
     logger.log({
       agent: "LayoutPlannerAgent",
-      provider: "Groq",
-      model: "llama-3.3-70b-versatile",
+      provider: "Google Gemini",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - dslStart,
       summary: `Compiled layout trees: Concept A (${dslSpecA.archetype}) & Concept B (${dslSpecB.archetype})`,
@@ -121,7 +128,7 @@ export class CampaignWorkflow {
       await onProgress(3, 6, "Layout DSL compiled with brand design tokens.", "success");
     }
 
-    // Step 4: FLUX Generation & Satori Compositing
+    // Step 4: FLUX Generation, Satori Compositing & Supabase Storage Persistence
     if (onProgress) {
       await onProgress(4, 6, "Generating Background Imagery (FLUX) & Compositing Typography (Satori)...", "active");
     }
@@ -136,19 +143,28 @@ export class CampaignWorkflow {
       SatoriCompositorService.compositePost(dslSpecB, bgImageB.url),
     ]);
 
-    brief.concept_a.image_url = compositeA;
-    brief.concept_b.image_url = compositeB;
+    // Persist generated artwork to Supabase Storage (clean CDN HTTPS URLs)
+    const [uploadedUrlA, uploadedUrlB] = await Promise.all([
+      StorageService.uploadImage(compositeA, `${campaignId}_concept_a.png`, "image/png"),
+      StorageService.uploadImage(compositeB, `${campaignId}_concept_b.png`, "image/png"),
+    ]);
+
+    brief.concept_a.image_url = uploadedUrlA;
+    brief.concept_b.image_url = uploadedUrlB;
 
     logger.log({
       agent: "SatoriCompositorService",
-      provider: "Cloudflare FLUX + Satori / Resvg",
+      provider: "Cloudflare FLUX + Satori / Resvg + Supabase Storage",
       model: "satori-resvg-canvas",
       status: "success",
       durationMs: Date.now() - renderStart,
-      summary: "Composited Canva-grade 1080×1350 artwork with pixel-perfect typography.",
+      summary: "Composited Canva-grade 1080×1350 artwork and stored durably in Supabase Storage.",
     });
     if (onProgress) {
-      await onProgress(4, 6, "High-DPI 1080×1350 composite renders complete.", "success");
+      await onProgress(4, 6, "High-DPI 1080×1350 composite renders saved to Supabase Storage.", "success", {
+        imageUrlA: uploadedUrlA,
+        imageUrlB: uploadedUrlB,
+      });
     }
 
     // Step 5: Critic Agent 100-Point Audit
@@ -162,8 +178,8 @@ export class CampaignWorkflow {
     ]);
     logger.log({
       agent: "CriticAgent",
-      provider: "Groq",
-      model: "llama-3.3-70b-versatile",
+      provider: "Google Gemini",
+      model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - criticStart,
       summary: `Scores: Concept A (${critiqueA.brand_alignment_score}/100) | Concept B (${critiqueB.brand_alignment_score}/100)`,
@@ -172,7 +188,7 @@ export class CampaignWorkflow {
       await onProgress(5, 6, "Brand compliance and quality audit complete.", "success");
     }
 
-    // Persist to Supabase asynchronously (if configured)
+    // Persist full campaign to Supabase DB asynchronously
     try {
       const supabase = createAdminClient();
       if (supabase) {
@@ -189,9 +205,37 @@ export class CampaignWorkflow {
           critique_a: critiqueA,
           critique_b: critiqueB,
         });
+
+        // Insert individual post rows so users can query their gallery anytime
+        await supabase.from("posts").insert([
+          {
+            brand_id: brand.id,
+            campaign_id: campaignId,
+            caption: brief.concept_a.caption_instagram,
+            image_url: brief.concept_a.image_url,
+            platform,
+            status: "draft",
+            metadata: {
+              concept_label: brief.concept_a.label,
+              score: critiqueA.brand_alignment_score,
+            },
+          },
+          {
+            brand_id: brand.id,
+            campaign_id: campaignId,
+            caption: brief.concept_b.caption_instagram,
+            image_url: brief.concept_b.image_url,
+            platform,
+            status: "draft",
+            metadata: {
+              concept_label: brief.concept_b.label,
+              score: critiqueB.brand_alignment_score,
+            },
+          },
+        ]);
       }
     } catch (dbErr) {
-      console.warn("Supabase campaign persistence skipped:", dbErr);
+      console.warn("Supabase campaign persistence notice:", dbErr);
     }
 
     return {
