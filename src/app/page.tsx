@@ -54,7 +54,9 @@ import { WorkflowLogEntry } from "@/lib/schema/telemetry";
 import { LogDrawer } from "@/components/telemetry/log-drawer";
 import { WorkspaceOnboardingModal } from "@/components/workspace/workspace-onboarding-modal";
 import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
-
+import { PromptResult } from "@/modules/prompt-intelligence/domain/prompt-result";
+import { PromptResultInspector } from "@/components/ui/prompt-result-inspector";
+import { GenerationMode } from "@/modules/prompt-intelligence/domain/prompt-intent";
 
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
@@ -62,44 +64,87 @@ import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
 import { AgentPlanning, PlanStep } from "@/components/ui/agent-planning";
 import { ImageGeneration } from "@/components/ui/image-generation";
 
-const createInitialPlanningSteps = (): PlanStep[] => [
-  {
-    id: "1",
-    title: "1. Intent Parsing & Brand DNA Extraction (Groq Llama 3.3)",
-    status: "pending",
-    icon: <BrainCircuit className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "2",
-    title: "2. Multimodal Visual Reference & Web Trends (Gemini 2.5 Flash)",
-    status: "pending",
-    icon: <Search className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "3",
-    title: "3. Creative Direction & A/B Archetype Formulation (Mastra)",
-    status: "pending",
-    icon: <Layers className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "4",
-    title: "4. Spatial Prompt Engineering & Satori Blueprint",
-    status: "pending",
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "5",
-    title: "5. FLUX Photorealistic Generation & Compositing (1080×1350)",
-    status: "pending",
-    icon: <ImageIcon className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "6",
-    title: "6. Critic Agent Brand Voice & Compliance Audit (100-pt Score)",
-    status: "pending",
-    icon: <ShieldCheck className="w-3.5 h-3.5" />,
-  },
-];
+const createInitialPlanningSteps = (mode: GenerationMode = "prompt_only"): PlanStep[] => {
+  if (mode === "prompt_only") {
+    return [
+      {
+        id: "1",
+        title: "1. Intent Parsing & Brand DNA Extraction (Gemini 2.5 Flash)",
+        status: "pending",
+        icon: <BrainCircuit className="w-3.5 h-3.5" />,
+      },
+      {
+        id: "2",
+        title: "2. Platform Rules & Visual Knowledge Retrieval (Hybrid KB RAG)",
+        status: "pending",
+        icon: <Search className="w-3.5 h-3.5" />,
+      },
+      {
+        id: "3",
+        title: "3. Creative Direction & Metaphor Formulation (Creative Director)",
+        status: "pending",
+        icon: <Layers className="w-3.5 h-3.5" />,
+      },
+      {
+        id: "4",
+        title: "4. Model Capability Routing & Prompt Spec Assembly",
+        status: "pending",
+        icon: <Sparkles className="w-3.5 h-3.5" />,
+      },
+      {
+        id: "5",
+        title: "5. Model-Aware Prompt Engineering & Syntax Formatting",
+        status: "pending",
+        icon: <ImageIcon className="w-3.5 h-3.5" />,
+      },
+      {
+        id: "6",
+        title: "6. Prompt Critic Quality & Compliance Audit (100-pt Rubric)",
+        status: "pending",
+        icon: <ShieldCheck className="w-3.5 h-3.5" />,
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "1",
+      title: "1. Intent Parsing & Brand DNA Extraction (Gemini 2.5 Flash)",
+      status: "pending",
+      icon: <BrainCircuit className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "2",
+      title: "2. Multimodal Visual Reference & Web Trends (Gemini 2.5 Flash)",
+      status: "pending",
+      icon: <Search className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "3",
+      title: "3. Creative Direction & A/B Archetype Formulation (Mastra)",
+      status: "pending",
+      icon: <Layers className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "4",
+      title: "4. Spatial Prompt Engineering & Satori Blueprint",
+      status: "pending",
+      icon: <Sparkles className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "5",
+      title: "5. FLUX Photorealistic Generation & Compositing (1080×1350)",
+      status: "pending",
+      icon: <ImageIcon className="w-3.5 h-3.5" />,
+    },
+    {
+      id: "6",
+      title: "6. Critic Agent Brand Voice & Compliance Audit (100-pt Score)",
+      status: "pending",
+      icon: <ShieldCheck className="w-3.5 h-3.5" />,
+    },
+  ];
+};
 
 interface ConceptVersionHistory {
   versionNumber: number;
@@ -108,13 +153,19 @@ interface ConceptVersionHistory {
 }
 
 export default function SapphireWorkspace() {
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("prompt_only");
+  const [promptResult, setPromptResult] = useState<PromptResult | null>(null);
+  const [promptVersionHistory, setPromptVersionHistory] = useState<PromptResult[]>([]);
+  const [isRefiningPrompt, setIsRefiningPrompt] = useState(false);
+
+
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [activeBrandProfile, setActiveBrandProfile] = useState<BrandProfile>(PRECONFIGURED_BRANDS[0]);
   const [activeBrand, setActiveBrand] = useState("Vagabond Travel Agency");
   const [isLoading, setIsLoading] = useState(false);
-  const [planningSteps, setPlanningSteps] = useState<PlanStep[]>(createInitialPlanningSteps());
+  const [planningSteps, setPlanningSteps] = useState<PlanStep[]>(createInitialPlanningSteps("prompt_only"));
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -127,6 +178,7 @@ export default function SapphireWorkspace() {
   const [learningToast, setLearningToast] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"ab" | "focus">("ab");
+
 
   const handleDeleteSession = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -537,7 +589,7 @@ export default function SapphireWorkspace() {
 
 
     // Reset planning steps to active state
-    const initialSteps = createInitialPlanningSteps();
+    const initialSteps = createInitialPlanningSteps(generationMode);
     initialSteps[0].status = "active";
     setPlanningSteps(initialSteps);
 
@@ -553,10 +605,11 @@ export default function SapphireWorkspace() {
         body: JSON.stringify({
           prompt: userMessage,
           brandId: activeBrandProfile.id,
+          platform: activePlatform,
+          mode: generationMode,
           referenceImage: currentRefImages.length === 1 ? currentRefImages[0] : currentRefImages.length > 1 ? currentRefImages : null,
         }),
       });
-
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: Failed to reach agent workflow.`);
@@ -632,6 +685,28 @@ export default function SapphireWorkspace() {
                   return step;
                 })
               );
+            } else if (payload.type === "prompt_complete") {
+              streamCompleted = true;
+              setPromptResult(payload.promptResult);
+              setPromptVersionHistory([payload.promptResult]);
+              setIsRightOpen(true);
+
+
+              setPlanningSteps((prev) =>
+                prev.map((step) => ({ ...step, status: "success" }))
+              );
+
+              const pr: PromptResult = payload.promptResult;
+              const assistantMsg = `✨ **Prompt Intelligence Complete for ${pr.platform.toUpperCase()} (${pr.post_type.replace(/_/g, " ")})**\n\n- **Creative Concept:** ${pr.interpreted_direction}\n- **Recommended Model:** ${pr.model_recommendation.displayName} (${pr.aspect_ratio})\n- **Prompt Critic Score:** ${pr.critic_evaluation.score}/100 (Passed)\n\nThe production-ready prompt specification has been rendered in the Inspector Canvas on the right. You can copy it with 1-click or converse to refine specific visual elements.`;
+
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: assistantMsg,
+                  timestamp: new Date().toLocaleTimeString(),
+                },
+              ]);
             } else if (payload.type === "complete") {
               streamCompleted = true;
               setCampaignId(payload.campaignId);
@@ -679,7 +754,7 @@ export default function SapphireWorkspace() {
                 ...prev,
                 {
                   role: "assistant",
-                  content: `Agent Workflow Error: ${payload.error}`,
+                  content: `Agent Workflow Error: ${payload.error || payload.message}`,
                   timestamp: new Date().toLocaleTimeString(),
                 },
               ]);
@@ -689,6 +764,7 @@ export default function SapphireWorkspace() {
           }
         }
       }
+
 
       if (!streamCompleted && !brief) {
         setMessages((prev) => [
@@ -715,9 +791,64 @@ export default function SapphireWorkspace() {
     }
   };
 
+  const handlePromptRefine = async (instruction: string) => {
+    if (!promptResult || isRefiningPrompt) return;
+    setIsRefiningPrompt(true);
 
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: `Refine prompt: "${instruction}"`, timestamp: new Date().toLocaleTimeString() },
+    ]);
+
+    try {
+      const res = await fetch("/api/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "prompt_only",
+          promptResult,
+          userInstruction: instruction,
+          brandId: activeBrandProfile.id,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Refinement error: HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.promptResult) {
+        setPromptResult(data.promptResult);
+        setPromptVersionHistory((prev) => [...prev, data.promptResult]);
+        setLearningToast(`Prompt refined to v${data.promptResult.version}. Rationale updated.`);
+
+        setTimeout(() => setLearningToast(null), 3500);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `✨ **Prompt Refined (v${data.promptResult.version})**\n\n${data.promptResult.rationale.creative_direction_reason}\n\nThe updated prompt specification is now active on the right Inspector panel.`,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
+      }
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Refinement Error: ${err.message || "Failed to refine prompt."}`,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+    } finally {
+      setIsRefiningPrompt(false);
+    }
+  };
 
   const handleRefineSubmit = async (conceptKey: "A" | "B") => {
+
     if (!refinementInput.trim() || !brief || isRefinementLoading) return;
 
     const currentConceptItem =
@@ -1432,6 +1563,70 @@ export default function SapphireWorkspace() {
           {/* Centered Composer Input (Claude Minimalist Elevated Style) */}
           <div className="p-4 border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
             <div className="max-w-3xl lg:max-w-4xl w-full mx-auto">
+              {/* Mode & Platform Selector Bar */}
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-1">
+                {/* Generation Mode Selector */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-900 border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGenerationMode("prompt_only");
+                      setPlanningSteps(createInitialPlanningSteps("prompt_only"));
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-text-xs font-semibold transition-all ${
+                      generationMode === "prompt_only"
+                        ? "bg-sapphire-terracotta text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Prompt Intelligence</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLearningToast("Creative image generation is quarantined in V1. Use Prompt Intelligence mode.");
+                      setTimeout(() => setLearningToast(null), 4000);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-text-xs font-medium text-zinc-500 hover:text-zinc-400 opacity-60 cursor-not-allowed"
+                    title="Image generation is quarantined in V1. Output is model-ready prompt specifications."
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Creative Generation</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
+                      V1 Paused
+                    </span>
+                  </button>
+                </div>
+
+                {/* Platform Selector */}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setActivePlatform("instagram")}
+                    className={`px-3 py-1 rounded-lg text-text-xs font-medium transition-all ${
+                      activePlatform === "instagram"
+                        ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    📸 Instagram (4:5)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePlatform("linkedin")}
+                    className={`px-3 py-1 rounded-lg text-text-xs font-medium transition-all ${
+                      activePlatform === "linkedin"
+                        ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    💼 LinkedIn (4:5 / 1:1)
+                  </button>
+                </div>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-2.5">
                 {/* Multi-Asset Visual Ingredients Manifest Bar */}
                 {referenceImages.length > 0 && (
@@ -1476,7 +1671,11 @@ export default function SapphireWorkspace() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your Instagram post direction or stack visual ingredients (Product + Mood + Composition)..."
+                    placeholder={
+                      generationMode === "prompt_only"
+                        ? `Describe your ${activePlatform === "instagram" ? "Instagram" : "LinkedIn"} post topic (e.g. "Luxury train journeys through the Swiss Alps" or "3 counter-intuitive lessons scaling B2B SaaS")...`
+                        : "Describe your post direction or stack visual ingredients..."
+                    }
                     rows={3}
                     className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-zinc-100 placeholder:text-zinc-500 font-sans"
                   />
@@ -1509,7 +1708,9 @@ export default function SapphireWorkspace() {
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <>
-                          <span>Generate</span>
+                          <span>
+                            {generationMode === "prompt_only" ? "Engineer Prompt" : "Generate"}
+                          </span>
                           <Send className="w-3 h-3" />
                         </>
                       )}
@@ -1522,7 +1723,7 @@ export default function SapphireWorkspace() {
         </main>
 
 
-        {/* RIGHT PANEL: Spatial Creative Canvas & A/B Concepts */}
+        {/* RIGHT PANEL: Spatial Creative Canvas & Prompt Result Inspector */}
         <aside
           className={`border-l border-white/5 bg-zinc-950 flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
             isRightOpen ? "flex-1 min-w-[340px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-l-0"
@@ -1531,25 +1732,33 @@ export default function SapphireWorkspace() {
           <div className="flex flex-col h-full min-w-[340px]">
             <div className="h-12 px-4 border-b border-white/5 flex items-center justify-between bg-zinc-950/80 shrink-0">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-zinc-400" />
+                {generationMode === "prompt_only" ? (
+                  <Sparkles className="w-4 h-4 text-sapphire-terracotta" />
+                ) : (
+                  <Layers className="w-4 h-4 text-zinc-400" />
+                )}
                 <h2 className="text-text-sm font-semibold text-zinc-100">
-                  Spatial Creative Canvas (Instagram 4:5)
+                  {generationMode === "prompt_only"
+                    ? `Prompt Intelligence Studio (${activePlatform === "instagram" ? "Instagram 4:5" : "LinkedIn"})`
+                    : `Spatial Creative Canvas (${activePlatform === "instagram" ? "Instagram 4:5" : "LinkedIn"})`}
                 </h2>
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode((prev) => (prev === "ab" ? "focus" : "ab"))}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-text-xs font-medium border transition-colors ${
-                    viewMode === "focus"
-                      ? "bg-sapphire-terracotta text-white border-sapphire-terracotta"
-                      : "border-white/5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100"
-                  }`}
-                  title="Toggle between A/B Dual Grid and Studio Focus View"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>{viewMode === "ab" ? "Vertical Feed View" : "Studio Focus View"}</span>
-                </button>
+                {generationMode === "campaign" && (
+                  <button
+                    onClick={() => setViewMode((prev) => (prev === "ab" ? "focus" : "ab"))}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-text-xs font-medium border transition-colors ${
+                      viewMode === "focus"
+                        ? "bg-sapphire-terracotta text-white border-sapphire-terracotta"
+                        : "border-white/5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100"
+                    }`}
+                    title="Toggle between A/B Dual Grid and Studio Focus View"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>{viewMode === "ab" ? "Vertical Feed View" : "Studio Focus View"}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsRightOpen(false)}
                   title="Collapse Right Canvas (Ctrl+Alt+B)"
@@ -1560,41 +1769,87 @@ export default function SapphireWorkspace() {
               </div>
             </div>
 
-            {/* Spatial Canvas Content Area (Vertical Stack Layout with Generous Spacing) */}
+            {/* Spatial Canvas / Prompt Inspector Content Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               <div className="max-w-2xl mx-auto space-y-8">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                  <div>
-                    <h3 className="text-heading-md font-semibold text-zinc-100">
-                      {viewMode === "ab" ? "Instagram Creative Directions (Vertical Feed)" : "Studio Focus Inspector"}
-                    </h3>
-                    <p className="text-text-xs text-zinc-400">
-                      {brief
-                        ? "1080×1350 Canva-grade visual compositions stacked with generous inspection space."
-                        : "Generated visual artwork will render here stacked vertically upon prompt submission."}
-                    </p>
-                  </div>
-                </div>
+                {/* Branch A: Prompt Intelligence Mode Active */}
+                {generationMode === "prompt_only" ? (
+                  promptResult ? (
+                    <PromptResultInspector
+                      result={promptResult}
+                      onRefine={handlePromptRefine}
+                      isRefining={isRefiningPrompt}
+                      versionHistory={promptVersionHistory}
+                      onSelectVersion={(v) => setPromptResult(v)}
+                    />
+                  ) : (
 
-                {/* View Mode 1: Vertical Stack Feed Layout (One below another with generous spacing) */}
-                {viewMode === "ab" ? (
-                  <div className="flex flex-col space-y-10">
-                    {/* Concept A Card */}
-                    <div
-                      className={`border rounded-3xl bg-zinc-900/80 p-6 space-y-4 shadow-xl transition-all ${
-                        selectedConcept === "A"
-                          ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
-                          : "border-white/5 hover:border-white/15"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-text-sm font-semibold px-3 py-1 rounded-xl bg-zinc-950 border border-white/5 text-zinc-100 truncate max-w-[280px]">
-                          {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
-                        </span>
-                        <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
-                          {selectedConcept === "A" ? "Active Selection" : "Direction A"}
-                        </span>
+                    <div className="p-8 rounded-3xl bg-zinc-900/60 border border-white/5 text-center space-y-4">
+                      <div className="w-12 h-12 rounded-2xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center mx-auto text-sapphire-terracotta">
+                        <Sparkles className="w-6 h-6" />
                       </div>
+                      <div className="space-y-1">
+                        <h3 className="text-heading-sm font-semibold text-zinc-100">
+                          Prompt Intelligence Ready
+                        </h3>
+                        <p className="text-text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+                          Enter a content idea in the composer. Sapphire will interpret your Brand DNA, apply platform psychology, select the optimal image model (FLUX, Midjourney, Ideogram), and engineer a production-ready prompt audited by a 100-point critic.
+                        </p>
+                      </div>
+
+                      <div className="pt-3 flex flex-wrap justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPrompt(`Luxury boutique hotel retreat in Kyoto, Japan during autumn with traditional architecture and serene zen garden atmosphere`)}
+                          className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-white/5 text-[11px] text-zinc-300 transition-colors text-left"
+                        >
+                          💡 Hotel Retreat in Kyoto (Editorial)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPrompt(`Why 90% of B2B AI startups fail to build a defensible data flywheel — executive framework`)}
+                          className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-white/5 text-[11px] text-zinc-300 transition-colors text-left"
+                        >
+                          💡 AI Startup Flywheel (LinkedIn Framework)
+                        </button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                      <div>
+                        <h3 className="text-heading-md font-semibold text-zinc-100">
+                          {viewMode === "ab" ? "Instagram Creative Directions (Vertical Feed)" : "Studio Focus Inspector"}
+                        </h3>
+                        <p className="text-text-xs text-zinc-400">
+                          {brief
+                            ? "1080×1350 Canva-grade visual compositions stacked with generous inspection space."
+                            : "Generated visual artwork will render here stacked vertically upon prompt submission."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* View Mode 1: Vertical Stack Feed Layout */}
+                    {viewMode === "ab" ? (
+                      <div className="flex flex-col space-y-10">
+                        {/* Concept A Card */}
+                        <div
+                          className={`border rounded-3xl bg-zinc-900/80 p-6 space-y-4 shadow-xl transition-all ${
+                            selectedConcept === "A"
+                              ? "border-sapphire-terracotta ring-1 ring-sapphire-terracotta/40"
+                              : "border-white/5 hover:border-white/15"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-text-sm font-semibold px-3 py-1 rounded-xl bg-zinc-950 border border-white/5 text-zinc-100 truncate max-w-[280px]">
+                              {brief ? brief.concept_a.label : "Concept A — Emotional Journey"}
+                            </span>
+                            <span className="text-[10px] font-semibold text-sapphire-blue bg-sapphire-blue/10 px-2.5 py-0.5 rounded-full border border-sapphire-blue/20">
+                              {selectedConcept === "A" ? "Active Selection" : "Direction A"}
+                            </span>
+                          </div>
+
 
                       {/* Plain-Language Founder Summary */}
                       {brief?.concept_a.design_blueprint?.founder_summary && (
@@ -2284,10 +2539,13 @@ export default function SapphireWorkspace() {
                     })()}
                   </div>
                 )}
+              </>
+            )}
               </div>
             </div>
           </div>
         </aside>
+
       </div>
 
 

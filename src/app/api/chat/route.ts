@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { CampaignWorkflow } from "@/mastra/workflows/campaign-workflow";
+import { PromptIntelligenceWorkflow } from "@/modules/prompt-intelligence/workflow/prompt-intelligence-workflow";
+import { GenerationMode } from "@/modules/prompt-intelligence/domain/prompt-intent";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -7,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, brandId, platform } = body;
+    const { prompt, brandId, platform, mode = "prompt_only" } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return new Response(
@@ -20,53 +22,98 @@ export async function POST(req: NextRequest) {
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
-    // Asynchronously execute workflow and stream progress events via SSE
+    const selectedMode: GenerationMode = mode === "campaign" ? "campaign" : "prompt_only";
+    const selectedPlatform = platform === "linkedin" ? "linkedin" : "instagram";
+
+    // Asynchronously execute appropriate workflow and stream progress events via SSE
     (async () => {
       try {
-        const result = await CampaignWorkflow.execute(
-          prompt,
-          brandId,
-          platform === "linkedin" ? "linkedin" : "instagram",
-          async (step, totalSteps, summary, status, data) => {
-            await writer.write(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "progress",
-                  step,
-                  totalSteps,
-                  status,
-                  summary,
-                  ...(data || {}),
-                })}\n\n`
-              )
-            );
-          }
-        );
+        if (selectedMode === "prompt_only") {
+          const promptResult = await PromptIntelligenceWorkflow.execute(
+            prompt,
+            brandId,
+            selectedPlatform,
+            async (step, totalSteps, summary, status, data) => {
+              await writer.write(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    type: "progress",
+                    mode: "prompt_only",
+                    step,
+                    totalSteps,
+                    status,
+                    summary,
+                    ...(data || {}),
+                  })}\n\n`
+                )
+              );
+            }
+          );
 
-        // Final payload for UI ingestion
-        await writer.write(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "complete",
-              campaignId: result.campaignId,
-              intent: result.intent,
-              research: result.research,
-              brief: result.brief,
-              conceptA: result.conceptA,
-              conceptB: result.conceptB,
-              critiqueA: result.critiqueA,
-              critiqueB: result.critiqueB,
-              logs: result.logs,
-            })}\n\n`
-          )
-        );
+          // Final payload for Prompt Intelligence UI ingestion
+          await writer.write(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "prompt_complete",
+                mode: "prompt_only",
+                promptResult,
+              })}\n\n`
+            )
+          );
+        } else {
+          // Check server-side image generation feature gate
+          const imageGenEnabled = process.env.IMAGE_GENERATION_ENABLED === "true";
+          if (!imageGenEnabled) {
+            throw new Error("Full campaign image generation is currently disabled. Please switch to Prompt Intelligence mode.");
+          }
+
+          const result = await CampaignWorkflow.execute(
+            prompt,
+            brandId,
+            selectedPlatform,
+            async (step, totalSteps, summary, status, data) => {
+              await writer.write(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    type: "progress",
+                    mode: "campaign",
+                    step,
+                    totalSteps,
+                    status,
+                    summary,
+                    ...(data || {}),
+                  })}\n\n`
+                )
+              );
+            }
+          );
+
+          // Final payload for Campaign UI ingestion
+          await writer.write(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "complete",
+                mode: "campaign",
+                campaignId: result.campaignId,
+                intent: result.intent,
+                research: result.research,
+                brief: result.brief,
+                conceptA: result.conceptA,
+                conceptB: result.conceptB,
+                critiqueA: result.critiqueA,
+                critiqueB: result.critiqueB,
+                logs: result.logs,
+              })}\n\n`
+            )
+          );
+        }
       } catch (err: any) {
-        console.error("Campaign workflow execution error:", err);
+        console.error("Workflow execution error:", err);
         await writer.write(
           encoder.encode(
             `data: ${JSON.stringify({
               type: "error",
-              message: err?.message || "An unexpected error occurred during campaign generation.",
+              message: err?.message || "An unexpected error occurred during workflow execution.",
             })}\n\n`
           )
         );

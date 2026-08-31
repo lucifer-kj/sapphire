@@ -26,6 +26,7 @@ export const DesignArchetypeEnum = z.enum([
 ]);
 
 export type DesignArchetype = z.infer<typeof DesignArchetypeEnum>;
+export const DesignArchetypeSchema = DesignArchetypeEnum;
 
 export const ColorRoleSchema = z.object({
   hex: z.string(),

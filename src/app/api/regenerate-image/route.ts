@@ -6,6 +6,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const isImageGenEnabled = process.env.IMAGE_GENERATION_ENABLED === "true";
+    if (!isImageGenEnabled) {
+      return NextResponse.json(
+        {
+          error: "Image generation is currently quarantined and disabled in production. Use Prompt Intelligence mode.",
+          status: "disabled",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { prompt } = body;
 

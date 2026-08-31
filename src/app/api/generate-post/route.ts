@@ -11,8 +11,20 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const isImageGenEnabled = process.env.IMAGE_GENERATION_ENABLED === "true";
+    if (!isImageGenEnabled) {
+      return NextResponse.json(
+        {
+          error: "Pixel image generation is currently disabled in favor of Prompt Intelligence mode.",
+          status: "disabled",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { moodboard, brandId, userPrompt = "Custom Instagram Post" } = body;
+
 
     if (!moodboard) {
       return NextResponse.json({ error: "Moodboard data is required." }, { status: 400 });

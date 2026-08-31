@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateObject } from "ai";
+import { z } from "zod";
 import { RefinementAgent } from "@/mastra/agents/refinement-agent";
 import { ImageGenerationService } from "@/services/image-generation";
 import { BrandBrainService } from "@/services/brand-brain";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
+import { PromptResult } from "@/modules/prompt-intelligence/domain/prompt-result";
+import { PromptSpecification } from "@/modules/prompt-intelligence/domain/prompt-spec";
+import { PromptFormattersService } from "@/modules/prompt-intelligence/services/prompt-formatters";
+import { PromptValidatorService } from "@/modules/prompt-intelligence/services/prompt-validator";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
+
+const PromptRefineUpdateSchema = z.object({
+  creative_concept: z.string(),
+  subject: z.string(),
+  environment: z.string(),
+  lighting: z.string(),
+  camera_and_optics: z.string(),
+  color_and_materials: z.string(),
+  negative_constraints: z.array(z.string()),
+  explanation_of_change: z.string(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,19 +34,115 @@ export async function POST(req: NextRequest) {
       userInstruction,
       currentConcept,
       currentVersionNumber = 1,
+      promptResult,
+      mode,
     } = body;
 
-    if (!userInstruction || !currentConcept) {
+    if (!userInstruction) {
       return NextResponse.json(
-        { error: "userInstruction and currentConcept object are required." },
+        { error: "userInstruction is required." },
         { status: 400 }
       );
     }
 
-    // 1. Fetch Brand context
     const brand = await BrandBrainService.getBrandById(brandId);
 
-    // 2. Run Refinement Agent
+    // -------------------------------------------------------------
+    // Branch A: Prompt Intelligence Mode Refinement
+    // -------------------------------------------------------------
+    if (mode === "prompt_only" || promptResult) {
+      const existingResult: PromptResult = promptResult;
+      const currentSpec: PromptSpecification = existingResult.specification;
+
+      const refinePrompt = `Refine this existing prompt specification based on user instruction:
+User Instruction: "${userInstruction}"
+
+Current Prompt Specification:
+- Platform: ${currentSpec.platform}
+- Concept: ${currentSpec.creative_concept}
+- Subject: ${currentSpec.subject}
+- Setting: ${currentSpec.environment}
+- Lighting: ${currentSpec.lighting}
+- Camera & Optics: ${currentSpec.camera_and_optics}
+- Color & Materials: ${currentSpec.color_and_materials}
+- Negative Constraints: ${currentSpec.negative_constraints.join(", ")}
+
+Brand: ${brand.name} (${brand.industry})
+
+Apply the modifications with surgical precision while preserving concept continuity and anti-cliché guardrails.`;
+
+      let updatedFields: z.infer<typeof PromptRefineUpdateSchema>;
+      try {
+        const res = await generateObject({
+          model: getReasoningModel(),
+          schema: PromptRefineUpdateSchema,
+          system: "You are Sapphire's Principal Prompt Refinement Director. You surgically modify prompt specifications based on user instructions.",
+          prompt: refinePrompt,
+        });
+        updatedFields = res.object;
+      } catch {
+        const fallbackRes = await generateObject({
+          model: getReasoningFallbackModel(),
+          schema: PromptRefineUpdateSchema,
+          system: "You are Sapphire's Principal Prompt Refinement Director.",
+          prompt: refinePrompt,
+        });
+        updatedFields = fallbackRes.object;
+      }
+
+      const updatedSpec: PromptSpecification = {
+        ...currentSpec,
+        creative_concept: updatedFields.creative_concept,
+        subject: updatedFields.subject,
+        environment: updatedFields.environment,
+        lighting: updatedFields.lighting,
+        camera_and_optics: updatedFields.camera_and_optics,
+        color_and_materials: updatedFields.color_and_materials,
+        negative_constraints: updatedFields.negative_constraints,
+        version: existingResult.version + 1,
+      };
+
+      const formattedBundle = PromptFormattersService.formatPromptBundle(updatedSpec);
+      const criticEvaluation = await PromptValidatorService.evaluatePrompt(
+        updatedSpec,
+        formattedBundle.primary.finalPrompt,
+        brand
+      );
+
+      const updatedResult: PromptResult = {
+        ...existingResult,
+        version: existingResult.version + 1,
+        parent_version_id: existingResult.id,
+        specification: updatedSpec,
+        final_prompt: formattedBundle.primary.finalPrompt,
+        negative_prompt: formattedBundle.primary.negativePrompt,
+        all_model_formats: formattedBundle.allModelFormats,
+        syntax_tokens: formattedBundle.syntaxTokens,
+        critic_evaluation: criticEvaluation,
+        rationale: {
+          ...existingResult.rationale,
+          creative_direction_reason: `${existingResult.rationale.creative_direction_reason} (Refinement: ${updatedFields.explanation_of_change})`,
+        },
+      };
+
+
+      return NextResponse.json({
+        success: true,
+        mode: "prompt_only",
+        promptResult: updatedResult,
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Branch B: Full Creative Concept Refinement
+    // -------------------------------------------------------------
+    if (!currentConcept) {
+      return NextResponse.json(
+        { error: "currentConcept object is required for campaign mode." },
+        { status: 400 }
+      );
+    }
+
     const refinement = await RefinementAgent.refineConcept(
       userInstruction,
       currentConcept,
@@ -38,22 +152,17 @@ export async function POST(req: NextRequest) {
     const refinedBlueprint =
       refinement.updated_design_blueprint || currentConcept.design_blueprint;
 
-    // 3. Generate updated AI artwork via Leonardo Phoenix
     const seed = Math.floor(Math.random() * 1000000);
     const imageResult = await ImageGenerationService.generatePostImage(
       refinement.updated_image_prompt,
       seed
     );
     const newImageUrl = imageResult.url;
-
     const newVersionNumber = Number(currentVersionNumber) + 1;
 
-    // 4. Save non-destructive version to Supabase concept_versions & update concept
     try {
       const supabase = createAdminClient();
-
       if (conceptId) {
-        // Insert new version record
         await supabase.from("concept_versions").insert({
           concept_id: conceptId,
           version_number: newVersionNumber,
@@ -64,7 +173,6 @@ export async function POST(req: NextRequest) {
           modified_aspects: refinement.modified_aspects as any,
         });
 
-        // Update main concepts active record
         await supabase
           .from("concepts")
           .update({
@@ -78,23 +186,24 @@ export async function POST(req: NextRequest) {
           .eq("id", conceptId);
       }
     } catch (err) {
-      console.warn("Supabase persistence fallback in /api/refine:", err);
+      console.warn("Supabase concept refinement versioning notice:", err);
     }
 
     return NextResponse.json({
       success: true,
-      versionNumber: newVersionNumber,
-      userInstruction,
-      refinement,
-      updatedConcept: {
+      mode: "campaign",
+      concept: {
         ...currentConcept,
         creative_direction: refinement.updated_creative_direction,
+        visual_style: currentConcept.visual_style,
         image_prompt: refinement.updated_image_prompt,
         image_url: newImageUrl,
         caption_instagram: refinement.updated_caption_instagram,
         caption_linkedin: refinement.updated_caption_linkedin,
         design_blueprint: refinedBlueprint,
       },
+      modifiedAspects: refinement.modified_aspects,
+      versionNumber: newVersionNumber,
     });
   } catch (error: any) {
     console.error("Error in /api/refine route:", error);

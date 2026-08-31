@@ -53,9 +53,13 @@ export const CreativeBriefSchema = z.object({
   concept_b: ConceptItemSchema,
 });
 
+export const GenerationModeSchema = z.enum(["campaign", "prompt_only"]);
+export type GenerationMode = z.infer<typeof GenerationModeSchema>;
+
 export type UserIntent = z.infer<typeof UserIntentSchema>;
 export type ResearchContext = z.infer<typeof ResearchContextSchema>;
 export type ConceptBrief = z.infer<typeof ConceptBriefSchema>;
 export type ConceptItem = z.infer<typeof ConceptItemSchema>;
 export type CreativeBriefGeneration = z.infer<typeof CreativeBriefGenerationSchema>;
 export type CreativeBrief = z.infer<typeof CreativeBriefSchema>;
+
