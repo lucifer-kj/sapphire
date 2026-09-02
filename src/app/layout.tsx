@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SplashScreen } from "@/components/ui/splash-screen";
 
 export const metadata: Metadata = {
   title: "Sapphire — Autonomous AI Creative Director",
@@ -10,7 +11,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="h-full bg-sapphire-bg text-sapphire-dark antialiased font-sans flex flex-col selection:bg-sapphire-subtle">
+        <SplashScreen />
         {children}
       </body>
     </html>
   );
 }
+

@@ -111,9 +111,14 @@ export class BrandBrainService {
       return PRECONFIGURED_BRANDS[0];
     }
 
-    // Check preconfigured brands by ID or name
+    // Check preconfigured brands by ID or name or slug
+    const cleanId = brandId.toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const preconfigured = PRECONFIGURED_BRANDS.find(
-      (b) => b.id === brandId || b.name.toLowerCase() === brandId.toLowerCase()
+      (b) =>
+        b.id === brandId ||
+        b.id === cleanId ||
+        b.name.toLowerCase() === brandId.toLowerCase() ||
+        b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanId
     );
     if (preconfigured) {
       return preconfigured;
@@ -127,7 +132,8 @@ export class BrandBrainService {
       if (isUuid) {
         query = query.eq("id", brandId);
       } else {
-        query = query.or(`id.eq.${brandId},name.ilike.%${brandId}%`);
+        const searchTerms = brandId.replace(/-/g, " ");
+        query = query.or(`name.ilike.%${searchTerms}%,description.ilike.%${searchTerms}%`);
       }
 
       const { data, error } = await query.limit(1).maybeSingle();
@@ -141,6 +147,7 @@ export class BrandBrainService {
       console.warn(`Fallback to default brand for ID ${brandId}:`, err);
       return PRECONFIGURED_BRANDS[0];
     }
+
   }
 
   /**
@@ -152,37 +159,68 @@ export class BrandBrainService {
     try {
       const supabase = createAdminClient();
       const isUuid = validated.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(validated.id);
-      const payload = {
-        ...validated,
-        id: isUuid ? validated.id : undefined,
+      
+      // Clean payload without invalid non-uuid id
+      const payload: Record<string, any> = {
+        name: validated.name,
+        industry: validated.industry || "General",
+        description: validated.description || null,
+        positioning: validated.positioning || null,
+        target_audience: validated.target_audience || null,
+        social_handle: validated.social_handle || null,
+        visual_identity: validated.visual_identity || {},
+        voice: validated.voice || {},
+        learned_preferences: validated.learned_preferences || {},
       };
 
-      const { data, error } = await supabase
-        .from("brands")
-        .upsert(payload, { onConflict: "name" })
-        .select()
-        .single();
+      if (isUuid) {
+        payload.id = validated.id;
+      }
 
-      if (error) {
-        // If error with onConflict, fallback to simple insert
-        const { data: insertData, error: insertError } = await supabase
+      // 1. Check if brand with same ID or name already exists in Supabase
+      let existingId: string | null = null;
+      if (isUuid) {
+        const { data: byId } = await supabase.from("brands").select("id").eq("id", validated.id).maybeSingle();
+        if (byId?.id) existingId = byId.id;
+      }
+
+      if (!existingId) {
+        const { data: byName } = await supabase.from("brands").select("id").ilike("name", validated.name).maybeSingle();
+        if (byName?.id) existingId = byName.id;
+      }
+
+      // 2. Update if exists, else Insert
+      if (existingId) {
+        const { data: updated, error: updateError } = await supabase
+          .from("brands")
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq("id", existingId)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.warn("Notice updating brand in Supabase:", updateError.message);
+          return validated;
+        }
+        return BrandProfileSchema.parse(updated);
+      } else {
+        const { data: inserted, error: insertError } = await supabase
           .from("brands")
           .insert(payload)
           .select()
           .single();
 
         if (insertError) {
-          console.warn("Supabase insert notice in saveBrand:", insertError.message);
+          console.warn("Notice inserting brand into Supabase:", insertError.message);
           return validated;
         }
-        return BrandProfileSchema.parse(insertData);
+        return BrandProfileSchema.parse(inserted);
       }
-
-      return BrandProfileSchema.parse(data);
     } catch (err) {
-      console.warn("Notice: Database unreachable, persisting brand profile in client layer:", err);
+      console.warn("Notice: Database operation fallback, returning validated brand profile:", err);
       return validated;
     }
   }
+
 }
 

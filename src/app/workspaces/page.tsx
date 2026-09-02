@@ -20,7 +20,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-const STORAGE_KEY = "sapphire_user_workspaces";
+import {
+  STORAGE_KEY,
+  ACTIVE_WORKSPACE_KEY,
+  mergeWorkspaces,
+  getLocalWorkspaces,
+  saveLocalWorkspace,
+  slugify,
+} from "@/lib/utils/workspace-sync";
 
 export default function WorkspacesPage() {
   const router = useRouter();
@@ -30,36 +37,28 @@ export default function WorkspacesPage() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Load workspaces globally from API & sync with localStorage
+  // Load workspaces safely: local first, then merge server without wiping local
   useEffect(() => {
     let isMounted = true;
 
     async function loadWorkspaces() {
       // 1. Initial immediate load from local cache
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setWorkspaces(parsed);
-            }
-          }
-        } catch (err) {
-          console.warn("Error reading workspaces from storage:", err);
-        }
+      const cached = getLocalWorkspaces();
+      if (isMounted) {
+        setWorkspaces(cached);
       }
 
-      // 2. Fetch global workspaces from Supabase via API
+      // 2. Fetch global workspaces from Supabase via API & merge
       try {
         const res = await fetch("/api/workspaces");
         if (res.ok) {
           const data = await res.json();
           if (data.workspaces && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
             if (isMounted) {
-              setWorkspaces(data.workspaces);
+              const merged = mergeWorkspaces(cached, data.workspaces);
+              setWorkspaces(merged);
               if (typeof window !== "undefined") {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.workspaces));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
               }
             }
           }
@@ -101,18 +100,35 @@ export default function WorkspacesPage() {
   };
 
   const handleOnboardingComplete = async (newBrand: BrandProfile) => {
+    const slug = slugify(newBrand.name);
     const brandWithId: BrandProfile = {
       ...newBrand,
-      id: newBrand.id || newBrand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      id: newBrand.id || slug,
     };
 
-    const updated = [brandWithId, ...workspaces.filter((w) => w.id !== brandWithId.id)];
-    await saveWorkspaces(updated, brandWithId);
+    // 1. Save to local storage immediately
+    const updated = saveLocalWorkspace(brandWithId);
+    setWorkspaces(updated);
     setIsOnboardingOpen(false);
 
-    // Navigate to studio with the new workspace
-    router.push(`/?workspace=${brandWithId.id}`);
+    // 2. Persist to Supabase
+    try {
+      await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(brandWithId),
+      });
+    } catch (err) {
+      console.warn("Error persisting workspace globally:", err);
+    }
+
+    // 3. Set active workspace in local storage & navigate
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ACTIVE_WORKSPACE_KEY, brandWithId.id || slug);
+    }
+    router.push(`/?workspace=${brandWithId.id || slug}`);
   };
+
 
   const handleDeleteWorkspace = async (id?: string) => {
     if (!id) return;
@@ -371,12 +387,18 @@ export default function WorkspacesPage() {
                         {brand.social_handle || "@brand"}
                       </span>
                       <button
-                        onClick={() => router.push(`/?workspace=${brandId}`)}
+                        onClick={() => {
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem(ACTIVE_WORKSPACE_KEY, brandId);
+                          }
+                          router.push(`/?workspace=${brandId}`);
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-text-xs font-semibold bg-zinc-800 hover:bg-sapphire-terracotta hover:text-white border border-white/5 transition-all shadow-sm"
                       >
                         <span>Open Studio</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
+
                     </div>
                   </div>
                 );

@@ -63,7 +63,19 @@ import { CommandPalette } from "@/components/navigation/command-palette";
 import { WorkflowNodeGraph } from "@/components/workflow/workflow-node-graph";
 import { KnowledgeBaseModal } from "@/components/settings/knowledge-base-modal";
 import { StudioComposer } from "@/components/ui/studio-composer";
+
 import { ReasoningAccordion } from "@/components/ui/reasoning-accordion";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
+import {
+  STORAGE_KEY,
+  ACTIVE_WORKSPACE_KEY,
+  mergeWorkspaces,
+  getLocalWorkspaces,
+  saveLocalWorkspace,
+  findBrand,
+  slugify,
+} from "@/lib/utils/workspace-sync";
+
 
 
 
@@ -174,8 +186,10 @@ export default function SapphireWorkspace() {
   const [prompt, setPrompt] = useState("");
   const [activeBrandProfile, setActiveBrandProfile] = useState<BrandProfile>(PRECONFIGURED_BRANDS[0]);
   const [activeBrand, setActiveBrand] = useState("Vagabond Travel Agency");
+  const [allWorkspaces, setAllWorkspaces] = useState<BrandProfile[]>(PRECONFIGURED_BRANDS);
   const [isLoading, setIsLoading] = useState(false);
   const [planningSteps, setPlanningSteps] = useState<PlanStep[]>(createInitialPlanningSteps("prompt_only"));
+
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -429,6 +443,7 @@ export default function SapphireWorkspace() {
   };
 
   // Load workspace globally from API & URL parameter (?workspace=...) or localStorage
+
   useEffect(() => {
     let isMounted = true;
 
@@ -437,49 +452,51 @@ export default function SapphireWorkspace() {
 
       const params = new URLSearchParams(window.location.search);
       const wsParam = params.get("workspace");
-
-      let loadedWorkspaces: BrandProfile[] = [];
+      const lastActiveId = localStorage.getItem(ACTIVE_WORKSPACE_KEY);
 
       // 1. Initial fast local cache read
-      try {
-        const raw = localStorage.getItem("sapphire_user_workspaces");
-        if (raw) {
-          loadedWorkspaces = JSON.parse(raw);
-        }
-      } catch (err) {
-        console.warn("Could not load user workspaces:", err);
+      const local = getLocalWorkspaces();
+      if (isMounted) {
+        setAllWorkspaces(local);
       }
 
-      // 2. Fetch global workspaces from API
+      let currentWorkspaces = local;
+
+      // 2. Fetch global workspaces from API & merge without wiping local
       try {
         const res = await fetch("/api/workspaces");
         if (res.ok) {
           const data = await res.json();
           if (data.workspaces && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
-            loadedWorkspaces = data.workspaces;
-            localStorage.setItem("sapphire_user_workspaces", JSON.stringify(data.workspaces));
+            currentWorkspaces = mergeWorkspaces(local, data.workspaces);
+            if (isMounted) {
+              setAllWorkspaces(currentWorkspaces);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(currentWorkspaces));
+            }
           }
         }
       } catch (apiErr) {
-        console.warn("Could not fetch global workspaces in studio:", apiErr);
+        console.warn("Notice reading server workspaces in studio:", apiErr);
       }
 
       if (!isMounted) return;
 
-      if (wsParam && loadedWorkspaces.length > 0) {
-        const found = loadedWorkspaces.find(
-          (b) => b.id === wsParam || b.name.toLowerCase() === wsParam.toLowerCase()
-        );
+      // 3. Match target brand: URL param takes precedence, then lastActiveId, then first workspace
+      const targetQuery = wsParam || lastActiveId;
+      if (targetQuery) {
+        const found = findBrand(currentWorkspaces, targetQuery);
         if (found) {
           setActiveBrandProfile(found);
           setActiveBrand(found.name);
+          localStorage.setItem(ACTIVE_WORKSPACE_KEY, found.id || slugify(found.name));
           return;
         }
       }
 
-      if (loadedWorkspaces.length > 0) {
-        setActiveBrandProfile(loadedWorkspaces[0]);
-        setActiveBrand(loadedWorkspaces[0].name);
+      if (currentWorkspaces.length > 0) {
+        setActiveBrandProfile(currentWorkspaces[0]);
+        setActiveBrand(currentWorkspaces[0].name);
+        localStorage.setItem(ACTIVE_WORKSPACE_KEY, currentWorkspaces[0].id || slugify(currentWorkspaces[0].name));
       }
     }
 
@@ -1438,10 +1455,26 @@ export default function SapphireWorkspace() {
                   <PanelLeftOpen className="w-4 h-4" />
                 </button>
               )}
-              <span className="text-[11px] font-medium text-zinc-400 hidden sm:inline">
-                Active Brand: <strong className="text-zinc-200">{activeBrandProfile.name}</strong>
-              </span>
+              <WorkspaceSwitcher
+                activeBrand={activeBrandProfile}
+                workspaces={allWorkspaces}
+                onSelectWorkspace={(brand) => {
+                  setActiveBrandProfile(brand);
+                  setActiveBrand(brand.name);
+                  const idOrSlug = brand.id || slugify(brand.name);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set("workspace", idOrSlug);
+                    window.history.pushState({}, "", newUrl.toString());
+                  }
+                  setLearningToast(`Switched workspace to "${brand.name}"`);
+                  setTimeout(() => setLearningToast(null), 3000);
+                }}
+                onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
+              />
             </div>
+
 
             {/* Center Command Palette Quick Search Button */}
             <button
@@ -2510,15 +2543,9 @@ export default function SapphireWorkspace() {
           setActiveBrand(brandWithId.name);
           setIsOnboardingModalOpen(false);
 
-          // 1. Sync to local storage
-          try {
-            const raw = localStorage.getItem("sapphire_user_workspaces");
-            const existing: BrandProfile[] = raw ? JSON.parse(raw) : [];
-            const updated = [brandWithId, ...existing.filter((b) => b.id !== brandWithId.id)];
-            localStorage.setItem("sapphire_user_workspaces", JSON.stringify(updated));
-          } catch (e) {
-            console.warn("Error caching workspace:", e);
-          }
+          // 1. Sync to local storage immediately
+          const updated = saveLocalWorkspace(brandWithId);
+          setAllWorkspaces(updated);
 
           // 2. Persist to server API
           try {
@@ -2532,11 +2559,14 @@ export default function SapphireWorkspace() {
           }
 
           // 3. Update URL search param seamlessly
-          if (typeof window !== "undefined" && brandWithId.id) {
+          const idOrSlug = brandWithId.id || slugify(brandWithId.name);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
             const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set("workspace", brandWithId.id);
+            newUrl.searchParams.set("workspace", idOrSlug);
             window.history.pushState({}, "", newUrl.toString());
           }
+
 
 
           setLearningToast(`🎉 Workspace "${brandWithId.name}" saved & activated!`);
