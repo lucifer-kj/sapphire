@@ -80,11 +80,19 @@ import {
 
 
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
-
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
-
 import { AgentPlanning, PlanStep } from "@/components/ui/agent-planning";
 import { ImageGeneration } from "@/components/ui/image-generation";
+import { motion, AnimatePresence } from "framer-motion";
+import { SPRING } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/use-media-query";
+import { DesktopSidebar } from "@/components/desktop/desktop-sidebar";
+import { DesktopFeed } from "@/components/desktop/desktop-feed";
+import { MobileSpatialView } from "@/components/mobile/mobile-spatial-view";
+import { MobileHistoryPanel } from "@/components/mobile/mobile-history-panel";
+import { MobileStudioFeed } from "@/components/mobile/mobile-studio-feed";
+import { MobileCanvasView } from "@/components/mobile/mobile-canvas-view";
+
 
 const createInitialPlanningSteps = (mode: GenerationMode = "prompt_only"): PlanStep[] => {
   if (mode === "prompt_only") {
@@ -195,6 +203,10 @@ export default function SapphireWorkspace() {
 
   const [chatPage, setChatPage] = useState(1);
   const CHATS_PER_PAGE = 5;
+
+  const isMobile = useIsMobile();
+  const [mobilePreviewImage, setMobilePreviewImage] = useState<{ url: string; title: string } | null>(null);
+
 
   // Platform Switcher State
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
@@ -660,10 +672,12 @@ export default function SapphireWorkspace() {
         body: JSON.stringify({
           prompt: userMessage,
           brandId: activeBrandProfile.id,
+          brandProfile: activeBrandProfile,
           platform: activePlatform,
           mode: generationMode,
           referenceImage: currentRefImages.length === 1 ? currentRefImages[0] : currentRefImages.length > 1 ? currentRefImages : null,
         }),
+
       });
 
       if (!res.ok) {
@@ -871,7 +885,9 @@ export default function SapphireWorkspace() {
           promptResult,
           userInstruction: instruction,
           brandId: activeBrandProfile.id,
+          brandProfile: activeBrandProfile,
         }),
+
       });
 
       if (!res.ok) {
@@ -1059,8 +1075,255 @@ export default function SapphireWorkspace() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // -------------------------------------------------------------
+  // Mobile Spatial View (Smartphones & Portrait Tablets < 1024px)
+  // -------------------------------------------------------------
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-sapphire-bg text-sapphire-dark selection:bg-sapphire-subtle">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+
+        {/* Floating Cognitive Learning Toast */}
+        {learningToast && (
+          <div className="fixed top-4 inset-x-4 z-50 max-w-sm mx-auto bg-zinc-900 border border-sapphire-terracotta/30 text-zinc-100 px-4 py-2.5 rounded-2xl shadow-xl animate-fade-in flex items-center gap-2 text-xs font-medium">
+            <Sparkles className="w-4 h-4 text-sapphire-terracotta shrink-0" />
+            <span className="truncate">{learningToast}</span>
+          </div>
+        )}
+
+        <MobileSpatialView
+          sidebar={
+            <MobileHistoryPanel
+              activeBrandProfile={activeBrandProfile}
+              savedCampaigns={savedCampaigns}
+              campaignId={campaignId}
+              chatPage={chatPage}
+              chatsPerPage={CHATS_PER_PAGE}
+              onSelectCampaign={handleSelectCampaign}
+              onDeleteSession={handleDeleteSession}
+              onSetChatPage={setChatPage}
+              quotaInfo={quotaInfo}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onNewCampaign={handleNewConversation}
+            />
+          }
+          feed={
+            <MobileStudioFeed
+              activeBrandProfile={activeBrandProfile}
+              allWorkspaces={allWorkspaces}
+              onSelectWorkspace={(brand) => {
+                setActiveBrandProfile(brand);
+                setActiveBrand(brand.name);
+                const idOrSlug = brand.id || slugify(brand.name);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
+                  const newUrl = new URL(window.location.href);
+                  newUrl.searchParams.set("workspace", idOrSlug);
+                  window.history.pushState({}, "", newUrl.toString());
+                }
+                setLearningToast(`Switched workspace to "${brand.name}"`);
+                setTimeout(() => setLearningToast(null), 3000);
+              }}
+              onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
+              onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+              onOpenNodeGraph={() => setIsNodeGraphOpen(true)}
+              onOpenLogs={() => setIsLogsOpen(true)}
+              messages={messages}
+              referenceAnalysis={referenceAnalysis}
+              research={research}
+              isLoading={isLoading}
+              planningSteps={planningSteps}
+              agentTreeEndRef={agentTreeEndRef}
+              prompt={prompt}
+              onChangePrompt={setPrompt}
+              onSubmit={handleSubmit}
+              activePlatform={activePlatform}
+              onChangePlatform={(p) => {
+                setActivePlatform(p);
+                setLearningToast(`Platform target set to ${p.toUpperCase()}`);
+                setTimeout(() => setLearningToast(null), 3000);
+              }}
+              generationMode={generationMode}
+              onChangeGenerationMode={(m) => {
+                setGenerationMode(m);
+                setPlanningSteps(createInitialPlanningSteps(m));
+              }}
+              referenceImages={referenceImages}
+              onAddReferenceImage={(base64) => {
+                setReferenceImages((prev) => [...prev, base64].slice(0, 3));
+              }}
+              onRemoveReferenceImage={removeReferenceImage}
+            />
+          }
+          canvas={
+            <MobileCanvasView
+              generationMode={generationMode}
+              activePlatform={activePlatform}
+              promptResult={promptResult}
+              onPromptRefine={handlePromptRefine}
+              isRefiningPrompt={isRefiningPrompt}
+              promptVersionHistory={promptVersionHistory}
+              onSelectPromptVersion={setPromptResult}
+              onUpdatePromptResult={setPromptResult}
+              brief={brief}
+              selectedConcept={selectedConcept}
+              onSelectConcept={setSelectedConcept}
+              critiqueA={critiqueA}
+              critiqueB={critiqueB}
+              isRegeneratingA={isRegeneratingA}
+              isRegeneratingB={isRegeneratingB}
+              isLoading={isLoading}
+              imageErrorA={imageErrorA}
+              imageErrorB={imageErrorB}
+              onApproveConcept={(conceptType) => {
+                setSelectedConcept(conceptType);
+                setShowApprovalModal(true);
+              }}
+              onRegenerateConcept={handleRegenerateImage}
+              prompt={prompt}
+              onPreviewImage={(url, title) => setMobilePreviewImage({ url, title })}
+            />
+          }
+          previewImageUrl={mobilePreviewImage?.url || null}
+          previewImageTitle={mobilePreviewImage?.title || "Artwork Preview"}
+          onClosePreviewImage={() => setMobilePreviewImage(null)}
+          hasUnreadCanvas={Boolean(brief?.concept_a?.image_url || promptResult)}
+        />
+
+        {/* Dual Personal & Client OpenBrand Onboarding Modal */}
+        <WorkspaceOnboardingModal
+          isOpen={isOnboardingModalOpen}
+          onClose={() => setIsOnboardingModalOpen(false)}
+          onComplete={async (newBrand) => {
+            const brandWithId: BrandProfile = {
+              ...newBrand,
+              id: newBrand.id || newBrand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            };
+            setActiveBrandProfile(brandWithId);
+            setActiveBrand(brandWithId.name);
+            setIsOnboardingModalOpen(false);
+
+            const updated = saveLocalWorkspace(brandWithId);
+            setAllWorkspaces(updated);
+
+            try {
+              await fetch("/api/workspaces", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(brandWithId),
+              });
+            } catch (apiErr) {
+              console.warn("Error persisting workspace to server:", apiErr);
+            }
+
+            const idOrSlug = brandWithId.id || slugify(brandWithId.name);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.set("workspace", idOrSlug);
+              window.history.pushState({}, "", newUrl.toString());
+            }
+
+            setLearningToast(`🎉 Workspace "${brandWithId.name}" saved & activated!`);
+            setTimeout(() => setLearningToast(null), 5000);
+          }}
+        />
+
+        {/* Brand Brain & Settings Drawer */}
+        <BrandBrainDrawer
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          brand={activeBrandProfile}
+          quotaInfo={quotaInfo}
+          onRefreshQuota={fetchQuota}
+          isRefreshingQuota={isRefreshingQuota}
+          onSavePreferences={(prefs, email) => {
+            setActiveBrandProfile((prev) => ({
+              ...prev,
+              learned_preferences: prefs,
+            }));
+            if (email) setRecipientEmail(email);
+          }}
+        />
+
+        {/* Dedicated Agent Telemetry & Logs Drawer */}
+        <LogDrawer
+          isOpen={isLogsOpen}
+          onClose={() => setIsLogsOpen(false)}
+          logs={workflowLogs}
+        />
+
+        {/* Global Command Palette */}
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          activeBrand={activeBrand}
+          onSelectBrand={(newBrand) => {
+            setActiveBrandProfile(newBrand);
+            setActiveBrand(newBrand.name);
+            setLearningToast(`Switched brand to "${newBrand.name}"`);
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+          generationMode={generationMode}
+          onSetGenerationMode={(newMode) => {
+            setGenerationMode(newMode);
+            setPlanningSteps(createInitialPlanningSteps(newMode));
+            setLearningToast(
+              `Switched mode to ${
+                newMode === "prompt_only" ? "Prompt Intelligence" : "Campaign Generation"
+              }`
+            );
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+          activePlatform={activePlatform}
+          onSetPlatform={(newPlatform) => {
+            setActivePlatform(newPlatform);
+            setLearningToast(`Platform target set to ${newPlatform.toUpperCase()}`);
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+          onOpenNodeGraph={() => setIsNodeGraphOpen(true)}
+          onOpenKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+          onOpenBrandBrain={() => setIsSettingsOpen(true)}
+          onOpenTelemetry={() => setIsLogsOpen(true)}
+          onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
+          onSelectTemplate={(templateText) => {
+            setPrompt(templateText);
+            setLearningToast("Template brief loaded into composer");
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+        />
+
+        {/* Visual Multi-Agent DAG Execution Graph Modal */}
+        <WorkflowNodeGraph
+          isOpen={isNodeGraphOpen}
+          onClose={() => setIsNodeGraphOpen(false)}
+          steps={planningSteps}
+          logs={workflowLogs}
+          activeBrandName={activeBrandProfile.name}
+          platform={activePlatform}
+        />
+
+        {/* Knowledge Base & Strategy Rules Modal */}
+        <KnowledgeBaseModal
+          isOpen={isKnowledgeBaseOpen}
+          onClose={() => setIsKnowledgeBaseOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Desktop Spatial Studio (Laptops & Desktops >= 1024px)
+  // -------------------------------------------------------------
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-sapphire-bg text-sapphire-dark selection:bg-sapphire-subtle">
+
       <input
         type="file"
         ref={fileInputRef}
@@ -1234,479 +1497,89 @@ export default function SapphireWorkspace() {
           </div>
         )}
 
-        {/* LEFT PANEL: Navigation, Asset Gallery & History */}
-        <aside
-          className={`border-r border-white/5 bg-zinc-950 flex flex-col transition-all duration-300 ease-in-out shrink-0 select-none ${
-            isLeftOpen ? "w-[270px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-r-0"
-          }`}
-        >
-          <div className="w-[270px] flex flex-col h-full">
-            {/* Unified Top Header: Active Workspace Brand Profile & Actions */}
-            <div className="h-14 px-3.5 border-b border-white/5 bg-zinc-950 flex items-center justify-between">
-              <Link href="/workspaces" className="flex items-center gap-2.5 min-w-0 group" title="Manage Workspaces / Switch Brand">
-                <div className="w-7 h-7 rounded-xl bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-xs text-zinc-200 shrink-0 group-hover:border-sapphire-terracotta transition-colors">
-                  {activeBrandProfile.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-text-xs font-semibold text-zinc-200 group-hover:text-zinc-100 leading-tight">
-                    {activeBrandProfile.name}
-                  </p>
-                  <span className="text-[10px] text-zinc-400 truncate block">
-                    {activeBrandProfile.industry}
-                  </span>
-                </div>
-              </Link>
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  title="Brand Brain Settings"
-                  className="p-1.5 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-900 transition-colors"
-                >
-                  <Sliders className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setIsLeftOpen(false)}
-                  title="Collapse Left Panel (Ctrl+B)"
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+        {/* LEFT PANEL: Navigation, Asset Gallery & History (Desktop) */}
+        <DesktopSidebar
+          isOpen={isLeftOpen}
+          onClose={() => setIsLeftOpen(false)}
+          activeBrandProfile={activeBrandProfile}
+          savedCampaigns={savedCampaigns}
+          campaignId={campaignId}
+          chatPage={chatPage}
+          chatsPerPage={CHATS_PER_PAGE}
+          onSelectCampaign={handleSelectCampaign}
+          onDeleteSession={handleDeleteSession}
+          onSetChatPage={setChatPage}
+          quotaInfo={quotaInfo}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onNewCampaign={handleNewConversation}
+        />
 
-            {/* Scrollable Gallery & Chronological History */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-4 text-text-xs">
-              {/* Workspace Gallery Section */}
-              {savedCampaigns.some((c) => c.raw?.brief?.concept_a?.image_url) && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400 px-1">
-                    <span>CREATIVE GALLERY</span>
-                    <span className="font-mono text-[10px]">
-                      {savedCampaigns.filter((c) => c.raw?.brief?.concept_a?.image_url).length} Assets
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {savedCampaigns
-                      .filter((c) => c.raw?.brief?.concept_a?.image_url)
-                      .slice(0, 6)
-                      .map((c) => {
-                        const img = c.raw?.brief?.concept_a?.image_url;
-                        return (
-                          <div
-                            key={c.id}
-                            onClick={() => handleSelectCampaign(c)}
-                            title={c.campaign_title}
-                            className="aspect-[4/5] rounded-lg overflow-hidden border border-white/5 bg-zinc-900 cursor-pointer hover:border-sapphire-terracotta transition-all relative group"
-                          >
-                            <img
-                              src={img}
-                              alt={c.campaign_title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-
-              {/* Chronological Campaign Stream with Thumbnails & Pagination & Delete Action */}
-              <div className="space-y-2 pt-2 border-t border-white/5">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400 px-1">
-                  <span>RECENT SESSIONS</span>
-                  <span className="font-mono text-[10px]">
-                    {savedCampaigns.length} total
-                  </span>
-                </div>
-
-                {savedCampaigns.length > 0 ? (
-                  <>
-                    <div className="space-y-1">
-                      {savedCampaigns
-                        .slice((chatPage - 1) * CHATS_PER_PAGE, chatPage * CHATS_PER_PAGE)
-                        .map((c) => {
-                          const isActive = campaignId === c.id;
-                          const thumb = c.raw?.brief?.concept_a?.image_url;
-                          return (
-                            <div
-                              key={c.id}
-                              onClick={() => handleSelectCampaign(c)}
-                              className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer group ${
-                                isActive
-                                  ? "bg-zinc-900 text-zinc-100 font-semibold border border-white/10 shadow-sm"
-                                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/70 border border-transparent"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                {thumb ? (
-                                  <img
-                                    src={thumb}
-                                    alt=""
-                                    className="w-8 h-10 rounded-md object-cover border border-white/5 shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-10 rounded-md bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0 text-zinc-500">
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="truncate text-text-xs text-zinc-200 font-medium leading-tight">
-                                    {c.campaign_title}
-                                  </p>
-                                  <span className="text-[10px] text-zinc-500 block pt-0.5">
-                                    {new Date(c.created_at).toLocaleDateString(undefined, {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Hover Delete Button (Deletes Session History Only) */}
-                              <button
-                                onClick={(e) => handleDeleteSession(e, c.id)}
-                                title="Delete session history (preserves gallery assets)"
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/40 transition-all shrink-0"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                    </div>
-
-                    {/* Pagination Controls */}
-                    {savedCampaigns.length > CHATS_PER_PAGE && (
-                      <div className="flex items-center justify-between pt-2 px-1 text-[11px] text-zinc-500 border-t border-white/5">
-                        <button
-                          disabled={chatPage === 1}
-                          onClick={() => setChatPage((p) => Math.max(1, p - 1))}
-                          className="px-2 py-0.5 rounded border border-white/5 bg-zinc-900 disabled:opacity-40 disabled:pointer-events-none hover:text-zinc-200"
-                        >
-                          Prev
-                        </button>
-                        <span className="font-mono text-[10px]">
-                          {chatPage} / {Math.ceil(savedCampaigns.length / CHATS_PER_PAGE)}
-                        </span>
-                        <button
-                          disabled={chatPage >= Math.ceil(savedCampaigns.length / CHATS_PER_PAGE)}
-                          onClick={() => setChatPage((p) => p + 1)}
-                          className="px-2 py-0.5 rounded border border-white/5 bg-zinc-900 disabled:opacity-40 disabled:pointer-events-none hover:text-zinc-200"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="p-4 text-center text-zinc-500 text-text-xs border border-white/5 bg-zinc-900/30 rounded-xl">
-                    <p className="font-medium">No previous campaigns.</p>
-                    <p className="text-[10px] pt-1 text-zinc-500">
-                      Submit a prompt to create artwork.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Minimalist Bottom Footer: Micro-Quota Tracker */}
-            <div className="p-3 border-t border-white/5 bg-zinc-950/50 space-y-2">
-              <div
-                onClick={() => setIsSettingsOpen(true)}
-                className="group cursor-pointer p-2.5 rounded-xl bg-zinc-900/70 hover:bg-zinc-900 border border-white/5 transition-all"
-                title="Click to manage Brand Brain & Quotas"
-              >
-                <div className="flex items-center justify-between text-[11px] font-medium text-zinc-200 pb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-sapphire-terracotta" />
-                    <span>
-                      {quotaInfo ? `${quotaInfo.remainingNeurons.toLocaleString()} Neurons` : "Daily Quota"}
-                    </span>
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-500 group-hover:text-zinc-300">
-                    {quotaInfo ? `${quotaInfo.estimatedPostsRemaining} left` : "Free Tier"}
-                  </span>
-                </div>
-                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-sapphire-terracotta h-1.5 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, quotaInfo?.percentUsed || 16)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-
-
-
-        {/* CENTER PANEL: Conversational Workspace */}
-        <main className="flex-1 flex flex-col bg-sapphire-bg overflow-hidden min-w-0 relative">
-          {/* Top Global Navigation Bar & Command Palette Trigger */}
-          <div className="h-12 px-4 border-b border-white/5 bg-zinc-950/80 backdrop-blur flex items-center justify-between shrink-0 z-10">
-            <div className="flex items-center gap-2">
-              {!isLeftOpen && (
-                <button
-                  onClick={() => setIsLeftOpen(true)}
-                  title="Expand Left Panel (Ctrl+B)"
-                  className="p-1.5 rounded-lg text-text-xs text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-white/5 transition-colors shadow-sm"
-                >
-                  <PanelLeftOpen className="w-4 h-4" />
-                </button>
-              )}
-              <WorkspaceSwitcher
-                activeBrand={activeBrandProfile}
-                workspaces={allWorkspaces}
-                onSelectWorkspace={(brand) => {
-                  setActiveBrandProfile(brand);
-                  setActiveBrand(brand.name);
-                  const idOrSlug = brand.id || slugify(brand.name);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
-                    const newUrl = new URL(window.location.href);
-                    newUrl.searchParams.set("workspace", idOrSlug);
-                    window.history.pushState({}, "", newUrl.toString());
-                  }
-                  setLearningToast(`Switched workspace to "${brand.name}"`);
-                  setTimeout(() => setLearningToast(null), 3000);
-                }}
-                onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
-              />
-            </div>
-
-
-            {/* Center Command Palette Quick Search Button */}
-            <button
-              type="button"
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] text-zinc-400 hover:text-zinc-200 transition-all shadow-xs"
-            >
-              <Search className="w-3.5 h-3.5 text-sapphire-terracotta" />
-              <span className="hidden sm:inline">Search...</span>
-              <kbd className="px-1.5 py-0.2 rounded bg-zinc-950 text-[9px] font-mono text-zinc-400 border border-white/5">
-                ⌘K
-              </kbd>
-            </button>
-
-            {/* Right Tools: Node Graph, KB, Telemetry (Icon-Only) */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setIsNodeGraphOpen(true)}
-                title="Visual Multi-Agent DAG Node Graph"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-400 hover:bg-zinc-900 transition-colors"
-              >
-                <Layers className="w-4 h-4 text-amber-400" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsKnowledgeBaseOpen(true)}
-                title="Knowledge Base & Strategy Rules"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition-colors"
-              >
-                <BookOpen className="w-4 h-4 text-emerald-400" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsLogsOpen(true)}
-                title="Telemetry Traces & Workflow Telemetry"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-400 hover:bg-zinc-900 transition-colors"
-              >
-                <Activity className="w-4 h-4 text-sapphire-blue" />
-              </button>
-
-
-              {!isRightOpen && (
-                <button
-                  onClick={() => setIsRightOpen(true)}
-                  title="Expand Right Canvas (Ctrl+Alt+B)"
-                  className="p-1.5 rounded-lg text-text-xs text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-white/5 transition-colors shadow-sm ml-1"
-                >
-                  <PanelRightOpen className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-
-          {/* Centered Conversation Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="max-w-3xl lg:max-w-4xl mx-auto space-y-6">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`p-5 rounded-2xl transition-all ${
-                    msg.role === "user"
-                      ? "bg-zinc-900/70 border border-white/5 ml-6 md:ml-16 text-zinc-300 shadow-sm"
-                      : msg.role === "system"
-                      ? "bg-zinc-900/40 border border-white/5 text-zinc-400 text-text-xs"
-                      : "bg-zinc-900/85 bg-gradient-to-br from-sapphire-terracotta/[0.03] to-transparent border border-white/5 mr-6 md:mr-16 shadow-md"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[11px] text-zinc-400 font-medium mb-2">
-                    <span className="flex items-center gap-1.5 font-semibold text-zinc-200">
-                      {msg.role === "user" ? (
-                        "You"
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                          Sapphire Creative Director
-                        </>
-                      )}
-                    </span>
-                    <span className="text-zinc-500">{msg.timestamp}</span>
-                  </div>
-                  <p className="text-[13px] md:text-text-sm text-zinc-200 leading-relaxed md:leading-7 whitespace-pre-wrap font-sans">
-                    {msg.content}
-                  </p>
-                </div>
-              ))}
-
-              {/* Multimodal Visual Blueprint Manifest Card */}
-              {referenceAnalysis && (
-                <div className="border border-white/5 rounded-2xl p-5 bg-zinc-900/80 space-y-3.5 shadow-md animate-fade-in">
-                  <div className="flex items-center justify-between text-text-xs font-medium text-zinc-400 border-b border-white/5 pb-2.5">
-                    <span className="flex items-center gap-1.5 text-zinc-200 font-semibold">
-                      <Layers className="w-3.5 h-3.5 text-sapphire-terracotta" />
-                      Visual Blueprint Manifest
-                    </span>
-                    <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Synthesized
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-text-xs">
-                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
-                        Camera & Optics
-                      </span>
-                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
-                        {referenceAnalysis.camera_optics || referenceAnalysis.photography_style}
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
-                        Lighting Vector
-                      </span>
-                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
-                        {referenceAnalysis.lighting_vector || referenceAnalysis.lighting}
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
-                        Negative Space Budget
-                      </span>
-                      <p className="text-zinc-200 font-medium text-[11px] leading-relaxed">
-                        {referenceAnalysis.spatial_negative_space_plan || referenceAnalysis.negative_space_zone || "Upper 40% reserved for headline typography"}
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block">
-                        Palette Anchors
-                      </span>
-                      <div className="flex items-center gap-1.5 pt-0.5">
-                        {(referenceAnalysis.color_palette_anchors || referenceAnalysis.color_palette).slice(0, 4).map((c, i) => (
-                          <div key={i} className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded border border-white/5">
-                            <div className="w-2.5 h-2.5 rounded-full border border-white/10 shadow-xs" style={{ backgroundColor: c }} />
-                            <span className="font-mono text-[9px] text-zinc-300">{c}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {research && (
-                <div className="border border-white/5 rounded-2xl p-5 bg-zinc-900/80 space-y-2.5 shadow-md">
-                  <div className="flex items-center justify-between text-text-xs font-medium text-zinc-400">
-                    <span className="flex items-center gap-1.5 text-zinc-200 font-semibold">
-                      <Search className="w-3.5 h-3.5 text-sapphire-blue" />
-                      Research Synthesis
-                    </span>
-                    <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Complete
-                    </span>
-                  </div>
-                  <p className="text-text-xs text-zinc-300 leading-relaxed md:leading-6">{research.summary}</p>
-                </div>
-              )}
-
-              {/* Reasoning Accordion (Prompt-Kit / DeepSeek R1 UI) */}
-              {isLoading && (
-                <ReasoningAccordion
-                  isThinking={true}
-                  thoughtContent="Deconstructing brief into brand tokens, retrieving platform rules, formulating visual metaphor, and routing optimal model..."
-                  modelName="Gemini 2.5 Flash"
-                />
-              )}
-
-              {/* Dynamic Live Multi-Agent Planning & Orchestration Timeline */}
-              {(isLoading || brief || planningSteps.some((s) => s.status === "success" || s.status === "active" || s.status === "error")) && (
-                <AgentPlanning
-                  title={
-                    generationMode === "prompt_only"
-                      ? "Prompt Intelligence DAG Execution (Serverless)"
-                      : "Multi-Agent Pipeline Step Traces"
-                  }
-                  steps={planningSteps}
-                  className="animate-in fade-in duration-300"
-                />
-              )}
-
-              {/* Auto-scroll target anchor */}
-              <div ref={agentTreeEndRef} className="h-4 pointer-events-none" />
-            </div>
-          </div>
-
-
-
-          {/* Centered Composer Input (21st.dev / Claude Elevated Studio Composer) */}
-          <div className="p-4 border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
-            <div className="max-w-3xl lg:max-w-4xl w-full mx-auto">
-              <StudioComposer
-                prompt={prompt}
-                onChangePrompt={setPrompt}
-                onSubmit={handleSubmit}
-                isLoading={isLoading}
-                platform={activePlatform}
-                onChangePlatform={(p) => {
-                  setActivePlatform(p);
-                  setLearningToast(`Platform target set to ${p.toUpperCase()}`);
-                  setTimeout(() => setLearningToast(null), 3000);
-                }}
-                generationMode={generationMode}
-                onChangeGenerationMode={(m) => {
-                  setGenerationMode(m);
-                  setPlanningSteps(createInitialPlanningSteps(m));
-                }}
-                referenceImages={referenceImages}
-                onAddReferenceImage={(base64) => {
-                  setReferenceImages((prev) => [...prev, base64].slice(0, 3));
-                }}
-                onRemoveReferenceImage={(idx) => {
-                  removeReferenceImage(idx);
-                }}
-              />
-            </div>
-          </div>
-        </main>
-
+        {/* CENTER PANEL: Conversational Workspace (Desktop) */}
+        <DesktopFeed
+          isLeftOpen={isLeftOpen}
+          onOpenLeft={() => setIsLeftOpen(true)}
+          isRightOpen={isRightOpen}
+          onOpenRight={() => setIsRightOpen(true)}
+          activeBrandProfile={activeBrandProfile}
+          allWorkspaces={allWorkspaces}
+          onSelectWorkspace={(brand) => {
+            setActiveBrandProfile(brand);
+            setActiveBrand(brand.name);
+            const idOrSlug = brand.id || slugify(brand.name);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(ACTIVE_WORKSPACE_KEY, idOrSlug);
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.set("workspace", idOrSlug);
+              window.history.pushState({}, "", newUrl.toString());
+            }
+            setLearningToast(`Switched workspace to "${brand.name}"`);
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+          onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenNodeGraph={() => setIsNodeGraphOpen(true)}
+          onOpenKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+          onOpenLogs={() => setIsLogsOpen(true)}
+          messages={messages}
+          referenceAnalysis={referenceAnalysis}
+          research={research}
+          isLoading={isLoading}
+          planningSteps={planningSteps}
+          agentTreeEndRef={agentTreeEndRef}
+          prompt={prompt}
+          onChangePrompt={setPrompt}
+          onSubmit={handleSubmit}
+          activePlatform={activePlatform}
+          onChangePlatform={(p) => {
+            setActivePlatform(p);
+            setLearningToast(`Platform target set to ${p.toUpperCase()}`);
+            setTimeout(() => setLearningToast(null), 3000);
+          }}
+          generationMode={generationMode}
+          onChangeGenerationMode={(m) => {
+            setGenerationMode(m);
+            setPlanningSteps(createInitialPlanningSteps(m));
+          }}
+          referenceImages={referenceImages}
+          onAddReferenceImage={(base64) => {
+            setReferenceImages((prev) => [...prev, base64].slice(0, 3));
+          }}
+          onRemoveReferenceImage={removeReferenceImage}
+          workflowLogs={workflowLogs}
+        />
 
         {/* RIGHT PANEL: Spatial Creative Canvas & Prompt Result Inspector */}
-        <aside
-          className={`border-l border-white/5 bg-zinc-950 flex flex-col transition-all duration-300 ease-in-out shrink-0 ${
+        <motion.aside
+          animate={{
+            width: isRightOpen ? "auto" : 0,
+            opacity: isRightOpen ? 1 : 0,
+          }}
+          transition={SPRING.snappy}
+          className={`border-l border-white/5 bg-sapphire-surface flex flex-col shrink-0 border-toplit ${
             isRightOpen ? "flex-1 min-w-[340px] opacity-100" : "w-0 opacity-0 overflow-hidden pointer-events-none border-l-0"
           }`}
         >
+
           <div className="flex flex-col h-full min-w-[340px]">
             <div className="h-12 px-4 border-b border-white/5 flex items-center justify-between bg-zinc-950/80 shrink-0">
               <div className="flex items-center gap-2">
@@ -2524,9 +2397,10 @@ export default function SapphireWorkspace() {
               </div>
             </div>
           </div>
-        </aside>
+        </motion.aside>
 
       </div>
+
 
 
 

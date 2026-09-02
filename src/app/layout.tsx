@@ -1,6 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SplashScreen } from "@/components/ui/splash-screen";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#09090b",
+};
 
 export const metadata: Metadata = {
   title: "Sapphire — Autonomous AI Creative Director",
@@ -10,6 +19,7 @@ export const metadata: Metadata = {
     apple: "/logo.png",
   },
 };
+
 
 export default function RootLayout({
   children,

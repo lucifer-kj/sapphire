@@ -193,50 +193,50 @@ export default function WorkspacesPage() {
       </header>
 
       {/* 2. Main Portal Content */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-5 md:px-6 md:py-10 space-y-6 md:space-y-10">
         {/* Hero Section */}
-        <div className="space-y-3 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-text-xs font-medium bg-sapphire-terracotta/10 text-sapphire-terracotta border border-sapphire-terracotta/20">
+        <div className="space-y-2 md:space-y-3 max-w-3xl">
+          <div className="inline-flex items-center gap-1.5 md:gap-2 px-2.5 py-0.5 md:px-3 md:py-1 rounded-full text-[11px] md:text-text-xs font-medium bg-sapphire-terracotta/10 text-sapphire-terracotta border border-sapphire-terracotta/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Autonomous Brand Intelligence & Workspace Hub</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-zinc-100">
             Create or Select a Workspace
           </h1>
-          <p className="text-text-sm text-zinc-400 leading-relaxed">
+          <p className="text-xs md:text-text-sm text-zinc-400 leading-relaxed">
             Extract brand DNA directly from any client website or calibrate a bespoke personal creator identity.
           </p>
         </div>
 
         {/* Top Section: Two Primary Onboarding Flows (High-End Dashboard Hero Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
           {/* Path A: Client Brand Workspace (OpenBrand Extraction) */}
           <div
             onClick={() => handleOpenOnboarding("client_extract")}
-            className="p-10 sm:p-12 rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15"
+            className="p-5 sm:p-7 md:p-10 rounded-2xl md:rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15 press-scale"
           >
             <div className="absolute top-0 right-0 w-48 h-48 bg-sapphire-terracotta/5 rounded-full blur-3xl pointer-events-none group-hover:bg-sapphire-terracotta/10 transition-colors" />
 
-            <div className="space-y-6">
-              <div className="w-14 h-14 rounded-2xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center text-sapphire-terracotta group-hover:scale-105 transition-transform">
-                <Globe className="w-7 h-7" />
+            <div className="space-y-3 md:space-y-5">
+              <div className="w-10 h-10 md:w-13 md:h-13 rounded-xl md:rounded-2xl bg-sapphire-terracotta/10 border border-sapphire-terracotta/20 flex items-center justify-center text-sapphire-terracotta group-hover:scale-105 transition-transform">
+                <Globe className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-sapphire-terracotta transition-colors">
+              <div className="space-y-1 md:space-y-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg md:text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-sapphire-terracotta transition-colors">
                     Client Brand Workspace
                   </h2>
-                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-sapphire-terracotta/10 text-sapphire-terracotta uppercase tracking-wider">
+                  <span className="text-[9px] md:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sapphire-terracotta/10 text-sapphire-terracotta uppercase tracking-wider">
                     Autonomous
                   </span>
                 </div>
-                <p className="text-text-xs md:text-[13px] text-zinc-400 leading-relaxed">
-                  Enter any client website URL. Sapphire’s OpenBrand crawler autonomously extracts color palettes, typography rules, logos, taglines, and positioning into a durable Brand Brain.
+                <p className="text-xs md:text-[13px] text-zinc-400 leading-relaxed">
+                  Enter any client website URL. Sapphire’s crawler autonomously extracts brand tokens, fonts, and positioning into a Brand Brain.
                 </p>
               </div>
             </div>
 
-            <div className="pt-8 flex items-center justify-between text-text-xs font-semibold text-sapphire-terracotta group-hover:translate-x-1 transition-transform">
+            <div className="pt-4 md:pt-6 flex items-center justify-between text-xs md:text-text-xs font-semibold text-sapphire-terracotta group-hover:translate-x-1 transition-transform">
               <span>Extract Client Brand</span>
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -245,30 +245,30 @@ export default function WorkspacesPage() {
           {/* Path B: Personal / Creator Workspace */}
           <div
             onClick={() => handleOpenOnboarding("personal")}
-            className="p-10 sm:p-12 rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15"
+            className="p-5 sm:p-7 md:p-10 rounded-2xl md:rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between relative overflow-hidden border border-white/5 hover:border-white/15 press-scale"
           >
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none group-hover:bg-white/10 transition-colors" />
 
-            <div className="space-y-6">
-              <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-white/5 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
-                <User className="w-7 h-7" />
+            <div className="space-y-3 md:space-y-5">
+              <div className="w-10 h-10 md:w-13 md:h-13 rounded-xl md:rounded-2xl bg-zinc-800 border border-white/5 flex items-center justify-center text-zinc-200 group-hover:scale-105 transition-transform">
+                <User className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-white transition-colors">
+              <div className="space-y-1 md:space-y-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg md:text-2xl font-bold text-zinc-100 tracking-tight group-hover:text-white transition-colors">
                     Personal Creator Workspace
                   </h2>
-                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 uppercase tracking-wider border border-white/5">
+                  <span className="text-[9px] md:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 uppercase tracking-wider border border-white/5">
                     Cognitive
                   </span>
                 </div>
-                <p className="text-text-xs md:text-[13px] text-zinc-400 leading-relaxed">
-                  Tailored for creators, agencies, and founders. Answer strategic cognitive questions, select a customized multi-color palette, and pick from 4 curated design templates.
+                <p className="text-xs md:text-[13px] text-zinc-400 leading-relaxed">
+                  Tailored for creators, agencies, and founders. Answer strategic questions and pick from 4 curated design templates.
                 </p>
               </div>
             </div>
 
-            <div className="pt-8 flex items-center justify-between text-text-xs font-semibold text-zinc-200 group-hover:translate-x-1 transition-transform">
+            <div className="pt-4 md:pt-6 flex items-center justify-between text-xs md:text-text-xs font-semibold text-zinc-200 group-hover:translate-x-1 transition-transform">
               <span>Setup Personal Brand</span>
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -276,7 +276,8 @@ export default function WorkspacesPage() {
         </div>
 
         {/* Bottom Section: Existing Workspaces Grid */}
-        <div className="space-y-6 pt-6 border-t border-white/5">
+        <div className="space-y-4 md:space-y-6 pt-4 md:pt-6 border-t border-white/5">
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
@@ -314,20 +315,20 @@ export default function WorkspacesPage() {
                 return (
                   <div
                     key={brandId}
-                    className="p-6 rounded-2xl bg-zinc-900/70 border border-white/5 hover:border-white/15 transition-all duration-200 flex flex-col justify-between group relative shadow-md"
+                    className="p-4 sm:p-5 md:p-6 rounded-xl md:rounded-2xl bg-zinc-900/70 border border-white/5 hover:border-white/15 transition-all duration-200 flex flex-col justify-between group relative shadow-md press-scale"
                   >
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                       {/* Card Header */}
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-text-sm text-zinc-200">
+                        <div className="flex items-center gap-2.5 md:gap-3">
+                          <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-zinc-800 border border-white/5 flex items-center justify-center font-bold text-xs md:text-text-sm text-zinc-200">
                             {brand.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="font-bold text-text-sm text-zinc-100 group-hover:text-sapphire-terracotta transition-colors">
+                            <h3 className="font-bold text-xs md:text-text-sm text-zinc-100 group-hover:text-sapphire-terracotta transition-colors leading-tight">
                               {brand.name}
                             </h3>
-                            <span className="text-[11px] text-zinc-400">
+                            <span className="text-[10px] md:text-[11px] text-zinc-400">
                               {brand.industry}
                             </span>
                           </div>
@@ -353,7 +354,7 @@ export default function WorkspacesPage() {
                           <button
                             onClick={() => setDeleteConfirmId(brandId)}
                             title="Delete workspace"
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
+                            className="opacity-70 md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -361,29 +362,29 @@ export default function WorkspacesPage() {
                       </div>
 
                       {/* Positioning / Description */}
-                      <p className="text-text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] md:text-text-xs text-zinc-400 line-clamp-2 leading-relaxed">
                         {brand.positioning || brand.description || "Active Brand Brain with customized visual rules."}
                       </p>
 
                       {/* Color Palette Tokens */}
-                      <div className="flex items-center gap-1.5 pt-1">
+                      <div className="flex items-center gap-1.5 pt-0.5">
                         {colors.map((c, i) => (
                           <div
                             key={i}
-                            className="w-4 h-4 rounded-full border border-white/10 shadow-hairline"
+                            className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full border border-white/10 shadow-hairline"
                             style={{ backgroundColor: c }}
                             title={c}
                           />
                         ))}
-                        <span className="text-[10px] font-mono text-zinc-500 ml-1">
+                        <span className="text-[9px] md:text-[10px] font-mono text-zinc-500 ml-1">
                           {brand.visual_identity?.fonts?.heading || "Plus Jakarta Sans"}
                         </span>
                       </div>
                     </div>
 
                     {/* Open Studio Action */}
-                    <div className="pt-5 mt-4 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-[11px] text-zinc-500">
+                    <div className="pt-3 md:pt-4 mt-3 md:mt-4 border-t border-white/5 flex items-center justify-between">
+                      <span className="text-[10px] md:text-[11px] text-zinc-500">
                         {brand.social_handle || "@brand"}
                       </span>
                       <button
@@ -393,15 +394,15 @@ export default function WorkspacesPage() {
                           }
                           router.push(`/?workspace=${brandId}`);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-text-xs font-semibold bg-zinc-800 hover:bg-sapphire-terracotta hover:text-white border border-white/5 transition-all shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs md:text-text-xs font-semibold bg-zinc-800 hover:bg-sapphire-terracotta hover:text-white border border-white/5 transition-all shadow-sm press-scale"
                       >
                         <span>Open Studio</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
-
                     </div>
                   </div>
                 );
+
               })}
             </div>
           ) : (

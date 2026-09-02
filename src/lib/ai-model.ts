@@ -53,11 +53,24 @@ export function getReasoningModel() {
   return getGoogleProvider()("gemini-2.5-flash");
 }
 
+/**
+ * Real-Time Grounding & Fact-Checking Model (Gemini 2.5 Flash with Google Search Grounding)
+ */
+export function getGroundingModel() {
+  const key = getGoogleApiKey();
+  if (key) {
+    return (getGoogleProvider() as any)("gemini-2.5-flash", { useSearchGrounding: true });
+  }
+  return getReasoningModel();
+}
+
+
 export function getReasoningFallbackModel() {
   const key = getGoogleApiKey(true);
   if (key) {
     return getGoogleProvider(true)("gemini-2.5-flash");
   }
+
   return getGroqModel("llama-3.3-70b-versatile");
 }
 

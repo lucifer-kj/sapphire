@@ -52,7 +52,7 @@ export const LayoutPlanGenerationSchema = z.object({
   eyebrow: z.string().describe("1-3 words category pill badge, e.g. MILAN RITUAL"),
   hook: z.string().describe("2-7 words punchy headline, e.g. The Secret Espresso of Brera"),
   subheadline: z.string().describe("1 short sentence supporting copy"),
-  cta: z.string().describe("Call to action button text, e.g. Discover Hidden Cafés →"),
+  cta: z.string().describe("Call to action button text, e.g. Discover Hidden CafÃ©s â  "),
   value_cards: z.array(
     z.object({
       title: z.string(),

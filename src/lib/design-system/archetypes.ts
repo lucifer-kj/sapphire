@@ -124,7 +124,7 @@ export const DesignBlueprintSchema = z.object({
       suffix: z.string().optional().default(""),
     })
     .optional(),
-  cta_text: z.string().default("Learn More ➔"),
+  cta_text: z.string().default("Learn More â  "),
   social_handle: z.string().default("@sapphire"),
   brand_name: z.string().default("Sapphire"),
   font_family_hook: z
@@ -449,7 +449,7 @@ export const DESIGN_KNOWLEDGE_GRAPH = {
     scrapbook_maximalist: {
       voidRegion: "Deliberate collage layering with 3-5 overlapping elements",
       subjectPlacement: "Hero photo framed inside tilted card with washi tape accents",
-      cameraDirective: "Layered tactile collage with 3-5 elements at 2-6° micro-rotations, natural lighting, 35mm f/4 sharp focus",
+      cameraDirective: "Layered tactile collage with 3-5 elements at 2-6Â° micro-rotations, natural lighting, 35mm f/4 sharp focus",
     },
     bold_funky: {
       voidRegion: "High-contrast color blocked background with minimal supporting elements",

@@ -1,9 +1,9 @@
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import { BrandBrainService } from "@/services/brand-brain";
 import { DesignKnowledgeService } from "@/services/design-knowledge";
 import { ExecutionLogger } from "@/services/telemetry";
-import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
+import { getReasoningModel, getReasoningFallbackModel, getGroundingModel } from "@/lib/ai-model";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DesignArchetype } from "@/lib/design-system/archetypes";
 import { Platform, PostType } from "../domain/prompt-intent";
@@ -13,6 +13,8 @@ import { ModelRouterService } from "../services/model-router";
 import { PromptFormattersService } from "../services/prompt-formatters";
 import { PromptValidatorService } from "../services/prompt-validator";
 import { PLATFORM_VISUAL_RULES, POST_TYPE_GUIDANCE } from "../knowledge/platform-rules";
+import { BrandProfile } from "@/lib/schema/brand";
+
 
 const IntentSynthesisSchema = z.object({
   topic: z.string().describe("Core topic or hook"),
@@ -72,25 +74,49 @@ export class PromptIntelligenceWorkflow {
     prompt: string,
     brandId?: string,
     platform: Platform = "instagram",
-    onProgress?: (step: number, totalSteps: number, summary: string, status: "active" | "success" | "error", data?: any) => Promise<void>
+    onProgress?: (step: number, totalSteps: number, summary: string, status: "active" | "success" | "error", data?: any) => Promise<void>,
+    explicitBrandProfile?: BrandProfile
   ): Promise<PromptResult> {
     const logger = new ExecutionLogger();
     const resultId = `prompt_${Date.now()}`;
 
     // -------------------------------------------------------------
-    // Stage 0: Brand DNA Loading & Intent Analysis (Parallel)
+    // Stage 0: Brand DNA Loading & Researching Topic Grounding
     // -------------------------------------------------------------
     if (onProgress) {
-      await onProgress(0, 6, "Loading Brand DNA & Analyzing Creative Intent (Gemini 2.5 Flash)...", "active");
+      await onProgress(0, 6, "Loading Brand DNA & Researching Topic Grounding (Gemini 2.5 Search)...", "active");
     }
-    const brand = await BrandBrainService.getBrandById(brandId);
+
+    const brand = explicitBrandProfile || (await BrandBrainService.getBrandById(brandId));
     const intentStart = Date.now();
+
+    // Stage 0.5: Real-World Topic Research & Entity Grounding
+    let topicDossier = "";
+    try {
+      const groundingRes = await generateText({
+        model: getGroundingModel(),
+        system: "You are Sapphire's Principal Research Analyst. You accurately ground user topics, technical terms, company announcements, protocols, and industry frameworks in verified facts.",
+        prompt: `Research and factually explain this topic: "${prompt}".
+If this involves a technology, protocol (e.g. Google A2A), framework, acronym, or real company announcement:
+1. State the exact, verified definition and what the acronym actually stands for.
+2. Explain its core technological architecture, purpose, and value proposition.
+3. Clarify common misconceptions.
+If it is a general creative/lifestyle concept, provide key real-world sensory and cultural anchors.
+Keep your factual summary crisp and authoritative (under 120 words).`,
+      });
+      topicDossier = groundingRes.text;
+    } catch (groundingErr) {
+      console.warn("Topic grounding notice:", groundingErr);
+    }
 
     const intentPrompt = `Analyze this content brief for Brand "${brand.name}" on social platform ${platform.toUpperCase()}:
 User Brief: "${prompt}"
 Industry: ${brand.industry}
 Brand Tone: ${brand.voice?.tone || "Elevated"}
 Brand Positioning: ${brand.positioning || "Modern excellence"}
+
+Verified Real-World Context:
+${topicDossier || "No specific external entity detected."}
 
 Classify the post type and extract the strategic intent.`;
 
@@ -134,10 +160,10 @@ Classify the post type and extract the strategic intent.`;
     }
 
     const platformRules = PLATFORM_VISUAL_RULES[platform];
-    const postTypeGuidance = POST_TYPE_GUIDANCE[intent.post_type] || {
-      visualGoal: "High-contrast editorial composition with clear focal point.",
-      recommendedArchetype: "editorial_magazine",
-      hookFormula: "Immediate scroll-stop visual interest.",
+    const postTypeGuidance = POST_TYPE_GUIDANCE[intent.post_type as PostType] || {
+      recommendedArchetypes: ["editorial_magazine", "conceptual_split"],
+      visualGoal: "Command visual attention with editorial polish",
+      keyElements: ["High contrast subject", "Legible headline zone"],
     };
 
     const designKnowledge = await DesignKnowledgeService.searchKnowledge(
@@ -145,8 +171,9 @@ Classify the post type and extract the strategic intent.`;
       2
     );
 
+
     logger.log({
-      agent: "DesignKnowledgeService",
+      agent: "KnowledgeAgent",
       provider: "Hybrid KB RAG",
       model: "local-kb-markdown",
       status: "success",
@@ -175,34 +202,65 @@ Objective: "${intent.content_objective}"
 Target Audience: "${intent.target_audience}"
 Visual Opportunity: "${intent.visual_opportunity}"
 
-Brand Context:
-- Name: ${brand.name}
-- Industry: ${brand.industry}
-- Visual Identity: ${brand.visual_identity?.photography_style || "Authentic editorial commercial"}
-- Primary Colors: ${brand.visual_identity?.primary_colors?.join(", ") || "#181816, #FAF9F5"}
-- Forbidden Clichés: ${brand.voice?.forbidden_phrases?.join(", ") || "None"}
+VERIFIED REAL-WORLD TOPIC DOSSIER (STRICT ACCURACY MANDATE):
+${topicDossier || "General creative exploration."}
+*RULE: Base all technical claims, terminology, and system definitions strictly on this verified factual dossier. Do NOT guess, alter, or hallucinate acronyms.*
 
-Platform Constraints & Guidance:
-- Composition Doctrine: ${platformRules.compositionDoctrine}
-- Post Type Goal: ${postTypeGuidance.visualGoal}
-- Anti-Patterns to Avoid: ${platformRules.antiPatternsToAvoid.join("; ")}
+MANDATORY BRAND IDENTITY LOCK:
+- Exact Brand Name: "${brand.name}"
+- Exact Industry: "${brand.industry}"
+- Visual Identity Style: ${brand.visual_identity?.photography_style || "Authentic editorial commercial"}
+- Primary Colors (HEX): ${brand.visual_identity?.primary_colors?.join(", ") || "#181816, #FAF9F5"}
+- Secondary Colors (HEX): ${brand.visual_identity?.secondary_colors?.join(", ") || "#D97757"}
+- Brand Watermark / Signature: MUST strictly be "${brand.name}". NEVER substitute default or other brand names.
+- Industry Domain Alignment: Align visual subjects strictly with "${brand.industry}". If the brand is Business Design, Strategy, or Tech, NEVER frame it as travel, vacation, or coffee.
+
+RADICAL PLATFORM DIVERGENCE:
+${platform === "linkedin" ? `
+[LINKEDIN B2B STRATEGIC AUTHORITY DOCTRINE]:
+- Visual Tone: High-contrast, dark mode, executive, technical sophistication.
+- Recommended Archetypes: 'saas_dotgrid', 'conceptual_split', or 'editorial_magazine'.
+- Photographic Setting: Sleek obsidian hardware, matte dark devices with technical architecture flows, clean minimalist engineering studio or architectural executive environment, tactile high-end materials (matte ceramic, brushed aluminum, tinted architectural glass).
+- Eyebrow Badge: Strategic technical tag (e.g. "[SYSTEM ARCHITECTURE]", "[PROTOCOL ANALYSIS]", "[ENTERPRISE BRIEFING]").
+- Headline Grammar: Paradigm shift or strategic insight (4-7 words, e.g. "A2A: THE OPERATING PROTOCOL FOR AUTONOMOUS AGENTS").
+- Subheadline: Analytical value proposition (e.g. "How Google's Agent2Agent standard replaces fragmented workflows with secure multi-agent orchestration.").
+- CTA Text: Enterprise engagement (e.g. "Explore the Architectural Analysis", "Read the Implementation Blueprint").
+- Caption Blueprint:
+  1. High-impact strategic hook line (first 2 lines before 'see more').
+  2. The Enterprise Friction / Status Quo.
+  3. 3-4 structured bullet points detailing architectural advantages.
+  4. Strategic debate question to drive executive comments.
+` : `
+[INSTAGRAM VISUAL CULTURE & AESTHETIC DOCTRINE]:
+- Visual Tone: Sensory, cultural, emotive, highly cinematic, thumb-stopping visual pacing.
+- Recommended Archetypes: 'editorial_magazine', 'vintage_poster', or 'conceptual_split'.
+- Photographic Setting: Warm natural or dramatic raking light, authentic candid textures, tactile craftsmanship, deep atmospheric shadows, cinematic depth.
+- Eyebrow Badge: Minimalist cultural tag (e.g. "EDITION 04", "ESSENTIALS").
+- Headline Grammar: Poetic, curiosity-gap, evocative hook (e.g. "THE ARCHITECTURE OF SILENCE").
+- CTA Text: Community action (e.g. "Save for Later", "Tap Link in Bio to Explore").
+- Caption Blueprint:
+  1. Short, evocative opening hook.
+  2. Atmospheric micro-storytelling.
+  3. Clear Link in Bio action.
+  4. 5-8 curated aesthetic hashtags.
+`}
 
 CRITICAL ANTI-CLICHÉ & CREATIVE QUALITY MANDATES:
 1. STRICT INDUSTRY ANTI-CLICHÉ GUARDRAILS:
    - Coffee / Café: FORBIDDEN: Hands holding a coffee mug, rain drops on a window pane, crude retail discount signs (e.g. "40% OFF", "Limited Offer"), and generic cozy stock aesthetics. MANDATED: High-concept artisanal depth — kinetic pour-over chemistry, espresso extraction micro-physics, warm raking morning light catching rising steam, raw slate countertops, architectural terrazzo, and sensory coffee craft.
    - Travel / Hospitality: FORBIDDEN: Tourist from behind looking at sunset, passport on bed, generic tropical beaches. MANDATED: Intimate documentary moments, atmospheric architectural framing, authentic cultural textures, and kinetic local transit.
-   - SaaS / Tech: FORBIDDEN: Floating blue holograms, handshake over laptop, generic glowing network nodes. MANDATED: Tactile hardware, dark minimalist typography, abstract architectural geometries, and high-contrast data matrices.
+   - Business Design / SaaS / Tech: FORBIDDEN: Floating blue holograms, handshake over laptop, generic glowing network nodes, cartoonish infographics. MANDATED: Tactile hardware, dark minimalist typography, abstract architectural geometries, and high-contrast data matrices with brand primary hex accents.
 
 2. EDITORIAL HEADLINE DOCTRINE:
    - NEVER generate cheap retail discount slogans (e.g. "40% OFF", "Special Discount", "Sale This Week"). Social media audiences scroll past blatant advertisements.
-   - Formulate evocative, cultural, curiosity-gap, or poetic editorial hooks that command attention (e.g. "THE MONSOON EXTRACTION", "SLOW RITUALS FOR COLD RAIN", "THE GEOMETRY OF ROASTING", "ANATOMY OF A PERFECT MORNING").
+   - Formulate evocative, cultural, curiosity-gap, or strategic editorial hooks that command attention.
 
 3. SPATIAL SAFE-ZONE LAW (ZERO TYPOGRAPHY COLLISION):
    - You MUST design the photographic scene so that the selected text_placement_zone (e.g. "top_third") is composed with clean, calm, low-detail negative space (such as deep atmospheric shadows, clean architectural wall, or soft bokeh).
    - The hero subject MUST be positioned strictly in the remaining area (e.g. the lower two-thirds) to ensure 100% zero collision between the headline and the image subject.
 
 CRITICAL DELIVERABLES:
-1. Complete Graphic Typography Layout: Punchy Headline, Kicker Eyebrow Badge, Subheadline, Call to Action (CTA), Brand Signature, and safe-zone placement.
+1. Complete Graphic Typography Layout: Punchy Headline, Kicker Eyebrow Badge, Subheadline, Call to Action (CTA), Brand Signature ("${brand.name}"), and safe-zone placement.
 2. Photographic Scene & Negative Space Plan: Camera optics (e.g. 50mm f/1.2), lighting architecture, tactile materials, and explicit negative space zone.
 3. Complete Social Media Caption: Platform-native hook, story/value, bullet points, and CTA with 4-6 hashtags.`;
 
@@ -286,9 +344,10 @@ CRITICAL DELIVERABLES:
         kicker_badge: cdSynthesis.typography_layout.kicker_badge,
         subheadline: cdSynthesis.typography_layout.subheadline,
         cta_text: cdSynthesis.typography_layout.cta_text,
-        brand_watermark: cdSynthesis.typography_layout.brand_watermark || brand.name,
+        brand_watermark: brand.name,
         font_pairing_recommendation: cdSynthesis.typography_layout.font_pairing_recommendation,
         text_placement_zone: cdSynthesis.typography_layout.text_placement_zone,
+
       },
       caption_text: cdSynthesis.caption_text,
       hashtags: cdSynthesis.hashtags,
@@ -408,8 +467,9 @@ CRITICAL DELIVERABLES:
           intent,
           research: {
             search_queries: [prompt],
-            key_trends: designKnowledge.map((t) => t.theme_name),
-            visual_motifs: designKnowledge.map((t) => t.prompt_keywords),
+            key_trends: designKnowledge.map((t: any) => t.theme_name),
+            visual_motifs: designKnowledge.map((t: any) => t.prompt_keywords),
+
             overused_patterns_to_avoid: platformRules.antiPatternsToAvoid,
             summary: cdSynthesis.interpreted_direction,
           },

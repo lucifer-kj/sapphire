@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, brandId, platform, mode = "prompt_only" } = body;
+    const { prompt, brandId, brandProfile, platform, mode = "prompt_only" } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return new Response(
@@ -47,8 +47,10 @@ export async function POST(req: NextRequest) {
                   })}\n\n`
                 )
               );
-            }
+            },
+            brandProfile
           );
+
 
           // Final payload for Prompt Intelligence UI ingestion
           await writer.write(
