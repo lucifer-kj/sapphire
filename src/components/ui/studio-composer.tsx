@@ -231,14 +231,9 @@ export function StudioComposer({
           />
         </div>
 
-        {/* Right: Submit Button with Keyboard Directive */}
+        {/* Right: Submit Button */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline flex items-center gap-1">
-            <span>Press</span>
-            <kbd className="px-1.5 py-0.2 rounded bg-zinc-900 text-[9px] border border-white/5">
-              Enter ↵
-            </kbd>
-          </span>
+
 
           <Button
             type="button"

@@ -135,53 +135,97 @@ export function GenerativeArtifactCanvas({
       )}
 
 
-      {/* Interactive Mockup Preview Card */}
+      {/* Interactive Mockup Preview Card (Compact & Zone-Aware) */}
       {typography && (
-        <div className="relative aspect-[4/5] max-w-sm mx-auto rounded-3xl bg-gradient-to-b from-zinc-950 via-zinc-900 to-black border border-white/15 p-6 flex flex-col justify-between shadow-2xl overflow-hidden group">
+        <div className="relative aspect-[4/5] max-w-[320px] mx-auto rounded-3xl bg-gradient-to-b from-zinc-950 via-zinc-900 to-black border border-white/15 p-5 flex flex-col justify-between shadow-2xl overflow-hidden group">
           {/* Ambient subtle light glow */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sapphire-terracotta/20 via-transparent to-transparent pointer-events-none" />
 
-          {/* Top Zone: Kicker Eyebrow Badge + Main Bold Headline */}
-          <div className="space-y-2 relative z-10">
-            {typography.kicker_badge && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-sapphire-terracotta/20 border border-sapphire-terracotta/40 text-[10px] font-bold uppercase tracking-wider text-sapphire-terracotta backdrop-blur">
-                <span>{typography.kicker_badge}</span>
+          {/* If Top Zone: Typography on top, scenery in middle/lower */}
+          {typography.text_placement_zone !== "bottom_third" ? (
+            <>
+              {/* Top Zone: Kicker Eyebrow Badge + Main Bold Headline */}
+              <div className="space-y-1.5 relative z-10">
+                {typography.kicker_badge && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sapphire-terracotta/20 border border-sapphire-terracotta/40 text-[9px] font-bold uppercase tracking-wider text-sapphire-terracotta backdrop-blur">
+                    <span>{typography.kicker_badge}</span>
+                  </div>
+                )}
+
+                <h2 className="text-lg md:text-xl font-bold font-serif text-white leading-tight tracking-tight drop-shadow-lg">
+                  {typography.headline}
+                </h2>
+
+                {typography.subheadline && (
+                  <p className="text-[11px] text-zinc-300 font-sans leading-relaxed drop-shadow-md">
+                    {typography.subheadline}
+                  </p>
+                )}
               </div>
-            )}
 
-            <h2 className="text-xl md:text-2xl font-bold font-serif text-white leading-tight tracking-tight drop-shadow-lg">
-              {typography.headline}
-            </h2>
-
-            {typography.subheadline && (
-              <p className="text-xs text-zinc-300 font-sans leading-relaxed drop-shadow-md">
-                {typography.subheadline}
-              </p>
-            )}
-          </div>
-
-          {/* Center Photographic Focal Placeholder */}
-          <div className="border border-dashed border-white/15 rounded-2xl p-5 text-center my-4 text-[10px] text-zinc-500 font-mono bg-zinc-950/40 backdrop-blur-xs">
-            <Camera className="w-4 h-4 mx-auto mb-1 text-zinc-600" />
-            <span>[ Hero Photographic Scenery Focal Zone ]</span>
-            <div className="text-[9px] text-zinc-600 mt-0.5">
-              Clean Negative Space ({negativeSpacePct}%)
-            </div>
-          </div>
-
-          {/* Bottom Zone: CTA Action + Brand Watermark */}
-          <div className="space-y-2 pt-3 border-t border-white/10 relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1 drop-shadow-md">
-                <span>👉 {typography.cta_text}</span>
+              {/* Lower Photographic Focal Placeholder */}
+              <div className="border border-dashed border-white/15 rounded-xl p-3 text-center my-2 text-[10px] text-zinc-500 font-mono bg-zinc-950/40 backdrop-blur-xs flex-1 flex flex-col items-center justify-center">
+                <Camera className="w-4 h-4 mx-auto mb-1 text-zinc-600" />
+                <span>[ Hero Photographic Scenery Focal Zone ]</span>
+                <div className="text-[8px] text-zinc-600 mt-0.5">
+                  Upper Clean Negative Space ({negativeSpacePct}%)
+                </div>
               </div>
-              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider drop-shadow-sm">
-                {typography.brand_watermark || brandName}
-              </span>
-            </div>
-          </div>
+
+              {/* Bottom Margin: CTA Action + Brand Watermark */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10 relative z-10">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-zinc-200">
+                    👉 {typography.cta_text}
+                  </span>
+                  <span className="font-mono text-[10px] text-zinc-400">
+                    {typography.brand_watermark}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* If Bottom Zone: Scenery on top, typography on bottom */}
+              <div className="border border-dashed border-white/15 rounded-xl p-3 text-center mb-2 text-[10px] text-zinc-500 font-mono bg-zinc-950/40 backdrop-blur-xs flex-1 flex flex-col items-center justify-center">
+                <Camera className="w-4 h-4 mx-auto mb-1 text-zinc-600" />
+                <span>[ Hero Photographic Scenery Focal Zone ]</span>
+                <div className="text-[8px] text-zinc-600 mt-0.5">
+                  Lower Clean Negative Space ({negativeSpacePct}%)
+                </div>
+              </div>
+
+              <div className="space-y-1.5 relative z-10 pt-2 border-t border-white/10">
+                {typography.kicker_badge && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sapphire-terracotta/20 border border-sapphire-terracotta/40 text-[9px] font-bold uppercase tracking-wider text-sapphire-terracotta backdrop-blur">
+                    <span>{typography.kicker_badge}</span>
+                  </div>
+                )}
+
+                <h2 className="text-lg md:text-xl font-bold font-serif text-white leading-tight tracking-tight drop-shadow-lg">
+                  {typography.headline}
+                </h2>
+
+                {typography.subheadline && (
+                  <p className="text-[11px] text-zinc-300 font-sans leading-relaxed drop-shadow-md">
+                    {typography.subheadline}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between text-[11px] pt-1">
+                  <span className="font-semibold text-zinc-200">
+                    👉 {typography.cta_text}
+                  </span>
+                  <span className="font-mono text-[10px] text-zinc-400">
+                    {typography.brand_watermark}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
+
     </div>
   );
 }

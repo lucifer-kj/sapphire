@@ -187,9 +187,23 @@ Platform Constraints & Guidance:
 - Post Type Goal: ${postTypeGuidance.visualGoal}
 - Anti-Patterns to Avoid: ${platformRules.antiPatternsToAvoid.join("; ")}
 
-CRITICAL REQUIREMENT: A complete social media post is not just raw background scenery. You MUST formulate:
-1. Complete Graphic Typography Layout: Punchy Headline (e.g. "KYOTO: THE ART OF STILLNESS"), Kicker Eyebrow Badge, Subheadline, Call to Action (CTA), and Brand Signature.
-2. Photographic Scene & Negative Space Plan: Camera lens (e.g. 50mm f/1.2), lighting architecture, tactile materials, and explicit negative space zone.
+CRITICAL ANTI-CLICHÉ & CREATIVE QUALITY MANDATES:
+1. STRICT INDUSTRY ANTI-CLICHÉ GUARDRAILS:
+   - Coffee / Café: FORBIDDEN: Hands holding a coffee mug, rain drops on a window pane, crude retail discount signs (e.g. "40% OFF", "Limited Offer"), and generic cozy stock aesthetics. MANDATED: High-concept artisanal depth — kinetic pour-over chemistry, espresso extraction micro-physics, warm raking morning light catching rising steam, raw slate countertops, architectural terrazzo, and sensory coffee craft.
+   - Travel / Hospitality: FORBIDDEN: Tourist from behind looking at sunset, passport on bed, generic tropical beaches. MANDATED: Intimate documentary moments, atmospheric architectural framing, authentic cultural textures, and kinetic local transit.
+   - SaaS / Tech: FORBIDDEN: Floating blue holograms, handshake over laptop, generic glowing network nodes. MANDATED: Tactile hardware, dark minimalist typography, abstract architectural geometries, and high-contrast data matrices.
+
+2. EDITORIAL HEADLINE DOCTRINE:
+   - NEVER generate cheap retail discount slogans (e.g. "40% OFF", "Special Discount", "Sale This Week"). Social media audiences scroll past blatant advertisements.
+   - Formulate evocative, cultural, curiosity-gap, or poetic editorial hooks that command attention (e.g. "THE MONSOON EXTRACTION", "SLOW RITUALS FOR COLD RAIN", "THE GEOMETRY OF ROASTING", "ANATOMY OF A PERFECT MORNING").
+
+3. SPATIAL SAFE-ZONE LAW (ZERO TYPOGRAPHY COLLISION):
+   - You MUST design the photographic scene so that the selected text_placement_zone (e.g. "top_third") is composed with clean, calm, low-detail negative space (such as deep atmospheric shadows, clean architectural wall, or soft bokeh).
+   - The hero subject MUST be positioned strictly in the remaining area (e.g. the lower two-thirds) to ensure 100% zero collision between the headline and the image subject.
+
+CRITICAL DELIVERABLES:
+1. Complete Graphic Typography Layout: Punchy Headline, Kicker Eyebrow Badge, Subheadline, Call to Action (CTA), Brand Signature, and safe-zone placement.
+2. Photographic Scene & Negative Space Plan: Camera optics (e.g. 50mm f/1.2), lighting architecture, tactile materials, and explicit negative space zone.
 3. Complete Social Media Caption: Platform-native hook, story/value, bullet points, and CTA with 4-6 hashtags.`;
 
     let cdSynthesis: z.infer<typeof CreativeDirectionSynthesisSchema>;
@@ -197,9 +211,10 @@ CRITICAL REQUIREMENT: A complete social media post is not just raw background sc
       const cdRes = await generateObject({
         model: getReasoningModel(),
         schema: CreativeDirectionSynthesisSchema,
-        system: "You are Sapphire's Executive Creative Director. You formulate complete, Canva-grade social media posts with punchy typography headlines, brand badges, CTAs, and photographic direction.",
+        system: "You are Sapphire's Executive Creative Director. You formulate unignorable, magazine-grade social media posts with punchy typography headlines, brand badges, CTAs, and photographic direction. You strictly forbid generic AI stock clichés and retail discount ads.",
         prompt: cdPrompt,
       });
+
       cdSynthesis = cdRes.object;
     } catch {
       const cdFallback = await generateObject({

@@ -239,6 +239,7 @@ export default function SapphireWorkspace() {
   // Multi-Asset Visual Ingredient Stacking State (up to 3 references)
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const agentTreeEndRef = useRef<HTMLDivElement>(null);
 
 
   // Lightbox Modal State
@@ -518,6 +519,14 @@ export default function SapphireWorkspace() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeBrand]);
+
+  // Auto-scroll down smoothly to the active agent execution tree
+  useEffect(() => {
+    if (isLoading || planningSteps.some((s) => s.status === "active")) {
+      agentTreeEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [planningSteps, isLoading, messages.length]);
+
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1157,38 +1166,8 @@ export default function SapphireWorkspace() {
           </Link>
         </div>
 
-        {/* Center: Platform Switcher Segmented Control */}
-        <div className="hidden md:flex items-center bg-zinc-900 p-0.5 rounded-xl border border-white/5 text-text-xs font-medium shadow-inner">
-          <button
-            onClick={() => setActivePlatform("instagram")}
-            className={`px-3.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activePlatform === "instagram"
-                ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span>Instagram</span>
-          </button>
-          <button
-            onClick={() => {
-              setActivePlatform("linkedin");
-              setLearningToast("💼 LinkedIn Multi-Slide Carousel pipeline in development — Instagram Studio active.");
-              setTimeout(() => setLearningToast(null), 4000);
-            }}
-            className={`px-3.5 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
-              activePlatform === "linkedin"
-                ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <span>LinkedIn</span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-500 font-mono">
-              Coming Soon
-            </span>
-          </button>
-        </div>
-
         <div className="flex items-center gap-3">
+
           {(isLoading || isRefinementLoading || isDelivering) && (
             <div className="flex items-center gap-1.5 text-text-xs text-sapphire-terracotta bg-sapphire-terracotta/10 px-2.5 py-1 rounded-md border border-sapphire-terracotta/20 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-sapphire-terracotta" />
@@ -1471,43 +1450,41 @@ export default function SapphireWorkspace() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] text-zinc-400 hover:text-zinc-200 transition-all shadow-xs"
             >
               <Search className="w-3.5 h-3.5 text-sapphire-terracotta" />
-              <span>Search commands & brands...</span>
-              <kbd className="hidden sm:inline-block px-1.5 py-0.2 rounded bg-zinc-950 text-[9px] font-mono text-zinc-400 border border-white/5">
+              <span className="hidden sm:inline">Search...</span>
+              <kbd className="px-1.5 py-0.2 rounded bg-zinc-950 text-[9px] font-mono text-zinc-400 border border-white/5">
                 ⌘K
               </kbd>
             </button>
 
-            {/* Right Tools: Node Graph, KB, Telemetry */}
-            <div className="flex items-center gap-1.5">
+            {/* Right Tools: Node Graph, KB, Telemetry (Icon-Only) */}
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setIsNodeGraphOpen(true)}
-                title="Open Visual Multi-Agent DAG Node Graph"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+                title="Visual Multi-Agent DAG Node Graph"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-400 hover:bg-zinc-900 transition-colors"
               >
-                <Layers className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Node Graph</span>
+                <Layers className="w-4 h-4 text-amber-400" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsKnowledgeBaseOpen(true)}
-                title="Open Knowledge Base & Strategy Rules"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+                title="Knowledge Base & Strategy Rules"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900 transition-colors"
               >
-                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden md:inline">Knowledge</span>
+                <BookOpen className="w-4 h-4 text-emerald-400" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsLogsOpen(true)}
-                title="Telemetry Traces"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+                title="Telemetry Traces & Workflow Telemetry"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-400 hover:bg-zinc-900 transition-colors"
               >
-                <Activity className="w-3.5 h-3.5 text-sapphire-blue" />
-                <span className="hidden md:inline">Logs</span>
+                <Activity className="w-4 h-4 text-sapphire-blue" />
               </button>
+
 
               {!isRightOpen && (
                 <button
@@ -1651,8 +1628,12 @@ export default function SapphireWorkspace() {
                   className="animate-in fade-in duration-300"
                 />
               )}
+
+              {/* Auto-scroll target anchor */}
+              <div ref={agentTreeEndRef} className="h-4 pointer-events-none" />
             </div>
           </div>
+
 
 
           {/* Centered Composer Input (21st.dev / Claude Elevated Studio Composer) */}
@@ -2520,14 +2501,49 @@ export default function SapphireWorkspace() {
       <WorkspaceOnboardingModal
         isOpen={isOnboardingModalOpen}
         onClose={() => setIsOnboardingModalOpen(false)}
-        onComplete={(newBrand) => {
-          setActiveBrandProfile(newBrand);
-          setActiveBrand(newBrand.name);
+        onComplete={async (newBrand) => {
+          const brandWithId: BrandProfile = {
+            ...newBrand,
+            id: newBrand.id || newBrand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          };
+          setActiveBrandProfile(brandWithId);
+          setActiveBrand(brandWithId.name);
           setIsOnboardingModalOpen(false);
-          setLearningToast(`🎉 Workspace "${newBrand.name}" initialized with OpenBrand DNA!`);
+
+          // 1. Sync to local storage
+          try {
+            const raw = localStorage.getItem("sapphire_user_workspaces");
+            const existing: BrandProfile[] = raw ? JSON.parse(raw) : [];
+            const updated = [brandWithId, ...existing.filter((b) => b.id !== brandWithId.id)];
+            localStorage.setItem("sapphire_user_workspaces", JSON.stringify(updated));
+          } catch (e) {
+            console.warn("Error caching workspace:", e);
+          }
+
+          // 2. Persist to server API
+          try {
+            await fetch("/api/workspaces", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(brandWithId),
+            });
+          } catch (apiErr) {
+            console.warn("Error persisting workspace to server:", apiErr);
+          }
+
+          // 3. Update URL search param seamlessly
+          if (typeof window !== "undefined" && brandWithId.id) {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set("workspace", brandWithId.id);
+            window.history.pushState({}, "", newUrl.toString());
+          }
+
+
+          setLearningToast(`🎉 Workspace "${brandWithId.name}" saved & activated!`);
           setTimeout(() => setLearningToast(null), 5000);
         }}
       />
+
 
 
 

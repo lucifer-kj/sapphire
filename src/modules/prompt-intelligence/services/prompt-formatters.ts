@@ -62,17 +62,23 @@ export class PromptFormattersService {
       aspect_ratio,
     } = spec;
 
+    const isTopZone = typography_layout.text_placement_zone === "top_third";
+    const spatialGuide = isTopZone
+      ? `Spatial Hierarchy: The upper 38% of the vertical frame is composed as pristine, calm negative space with zero visual clutter, specifically reserved for typography. The hero subject is anchored strictly in the lower two-thirds.`
+      : `Spatial Hierarchy: The hero subject is positioned in the upper two-thirds. The lower 38% of the frame is composed as pristine, calm negative space reserved for typography.`;
+
     const parts = [
       `A high-end editorial social media poster design in ${aspect_ratio} ratio for "${brand_tokens.brand_name || "Brand"}"`,
-      `Hero Visual: ${subject} situated in ${environment}`,
+      spatialGuide,
+      `Hero Subject: ${subject} situated in ${environment}`,
       `Lighting Architecture: ${lighting}`,
       `Cinematography: ${camera_and_optics}, ${color_and_materials}`,
-      `Graphic Typography & Layout:`,
-      typography_layout.kicker_badge ? `- Top Eyebrow Badge: "${typography_layout.kicker_badge}" in small elegant uppercase lettering` : "",
+      `Typography & Safe-Zone Layout (Rendered strictly in the ${isTopZone ? "upper 38%" : "lower 38%"} clean zone):`,
+      typography_layout.kicker_badge ? `- Eyebrow Pill Badge: "${typography_layout.kicker_badge}" in small elegant uppercase lettering` : "",
       `- Main Bold Headline: "${typography_layout.headline}" displayed prominently in ${typography_layout.font_pairing_recommendation}`,
-      typography_layout.subheadline ? `- Subheadline Text: "${typography_layout.subheadline}" in clean complementary typography` : "",
-      `- Call To Action / Footer: "${typography_layout.cta_text}" with brand signature "${typography_layout.brand_watermark}" at the bottom`,
-      `Composition: ${typography_layout.text_placement_zone.replace(/_/g, " ")}, 8% safe margin perimeter, crisp high-contrast layout, award-winning social poster art, 8k resolution, zero plastic CGI sheen`,
+      typography_layout.subheadline ? `- Subheadline: "${typography_layout.subheadline}" in clean complementary typography` : "",
+      `- Footer Margin CTA: "${typography_layout.cta_text}" with brand watermark "${typography_layout.brand_watermark}" at the bottom perimeter`,
+      `Quality: crisp high-contrast graphic layout, award-winning social poster art, 8k resolution, zero plastic CGI sheen`,
     ].filter(Boolean);
 
     return parts.join(". ");
@@ -89,10 +95,15 @@ export class PromptFormattersService {
       negative_constraints,
     } = spec;
 
+    const isTopZone = typography_layout.text_placement_zone === "top_third";
+    const negativeSpaceRule = isTopZone
+      ? `Spatial Framing: Camera frames looking level or down with the upper 40% composed as clean, moody negative space (soft shadowed architectural wall or dark atmosphere) strictly free of subject clutter. Hero subject is anchored in the lower 60%.`
+      : `Spatial Framing: Hero subject is framed in the upper 60%, with the lower 40% composed as calm, uncluttered negative space.`;
+
     const parts = [
       `A masterwork commercial editorial photograph: ${subject}`,
       `Environment & Setting: ${environment}`,
-      `Spatial Negative Space Plan: The ${typography_layout.text_placement_zone.replace(/_/g, " ")} of the frame is composed with clean, calm negative space specifically reserved for typography overlay`,
+      negativeSpaceRule,
       `Lighting Architecture: ${lighting}`,
       `Cinematography & Optics: ${camera_and_optics}`,
       `Textures & Color Grade: ${color_and_materials}`,
@@ -119,17 +130,19 @@ export class PromptFormattersService {
       negative_constraints,
     } = spec;
 
+    const isTopZone = typography_layout.text_placement_zone === "top_third";
     const posterPrompt = [
       `Commercial editorial social media poster design in ${aspect_ratio} ratio`,
+      `Spatial Framing: ${isTopZone ? "Upper 38% is clean dark negative space for typography; hero subject is anchored strictly in lower two-thirds" : "Lower 38% is clean negative space for typography; hero subject in upper two-thirds"}`,
       `Hero Subject: ${subject} in ${environment}`,
       `Lighting & Mood: ${lighting}, ${color_and_materials}`,
       `Cinematography: ${camera_and_optics}`,
-      `In-Image Typography Layout:`,
+      `In-Image Typography Layout (strictly in the ${isTopZone ? "top third" : "bottom third"} clean zone):`,
       typography_layout.kicker_badge ? `Eyebrow text badge reads "${typography_layout.kicker_badge}"` : "",
       `Main bold headline text reads "${typography_layout.headline}" in elegant ${typography_layout.font_pairing_recommendation}`,
       typography_layout.subheadline ? `Subheadline text reads "${typography_layout.subheadline}"` : "",
-      `Footer branding reads "${typography_layout.cta_text} | ${typography_layout.brand_watermark}"`,
-      `Layout: ${typography_layout.text_placement_zone.replace(/_/g, " ")}, 8% perimeter safe zone margins, perfect sharp typography, balanced graphic composition`,
+      `Bottom margin footer reads "${typography_layout.cta_text} | ${typography_layout.brand_watermark}"`,
+      `Layout: 8% perimeter safe zone margins, perfect sharp typography, balanced graphic composition, zero text-subject overlap`,
     ].filter(Boolean).join(". ");
 
     return {
@@ -140,6 +153,7 @@ export class PromptFormattersService {
       photographicPrompt: this.buildUniversalPhotographicPrompt(spec),
     };
   }
+
 
   private static formatForMidjourney(spec: PromptSpecification): FormattedModelOutput {
     const {
