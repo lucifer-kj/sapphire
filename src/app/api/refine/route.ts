@@ -22,6 +22,17 @@ const PromptRefineUpdateSchema = z.object({
   camera_and_optics: z.string(),
   color_and_materials: z.string(),
   negative_constraints: z.array(z.string()),
+  typography_layout: z.object({
+    headline: z.string(),
+    kicker_badge: z.string().optional(),
+    subheadline: z.string().optional(),
+    cta_text: z.string(),
+    brand_watermark: z.string(),
+    font_pairing_recommendation: z.string(),
+    text_placement_zone: z.enum(["top_third", "bottom_third", "split_center", "sidebar_margin"]),
+  }).optional(),
+  caption_text: z.string().optional(),
+  hashtags: z.array(z.string()).default([]),
   explanation_of_change: z.string(),
 });
 
@@ -54,7 +65,7 @@ export async function POST(req: NextRequest) {
       const existingResult: PromptResult = promptResult;
       const currentSpec: PromptSpecification = existingResult.specification;
 
-      const refinePrompt = `Refine this existing prompt specification based on user instruction:
+      const refinePrompt = `Refine this existing prompt specification and typography layout based on user instruction:
 User Instruction: "${userInstruction}"
 
 Current Prompt Specification:
@@ -65,18 +76,20 @@ Current Prompt Specification:
 - Lighting: ${currentSpec.lighting}
 - Camera & Optics: ${currentSpec.camera_and_optics}
 - Color & Materials: ${currentSpec.color_and_materials}
+- Headline: "${currentSpec.typography_layout?.headline || ""}"
+- CTA: "${currentSpec.typography_layout?.cta_text || ""}"
 - Negative Constraints: ${currentSpec.negative_constraints.join(", ")}
 
 Brand: ${brand.name} (${brand.industry})
 
-Apply the modifications with surgical precision while preserving concept continuity and anti-cliché guardrails.`;
+Apply the modifications with surgical precision while preserving concept continuity, headline punch, and anti-cliché guardrails.`;
 
       let updatedFields: z.infer<typeof PromptRefineUpdateSchema>;
       try {
         const res = await generateObject({
           model: getReasoningModel(),
           schema: PromptRefineUpdateSchema,
-          system: "You are Sapphire's Principal Prompt Refinement Director. You surgically modify prompt specifications based on user instructions.",
+          system: "You are Sapphire's Principal Prompt Refinement Director. You surgically modify prompt specifications and post typography based on user instructions.",
           prompt: refinePrompt,
         });
         updatedFields = res.object;
@@ -99,6 +112,9 @@ Apply the modifications with surgical precision while preserving concept continu
         camera_and_optics: updatedFields.camera_and_optics,
         color_and_materials: updatedFields.color_and_materials,
         negative_constraints: updatedFields.negative_constraints,
+        typography_layout: updatedFields.typography_layout || currentSpec.typography_layout,
+        caption_text: updatedFields.caption_text || currentSpec.caption_text,
+        hashtags: updatedFields.hashtags.length > 0 ? updatedFields.hashtags : currentSpec.hashtags,
         version: existingResult.version + 1,
       };
 
@@ -116,6 +132,11 @@ Apply the modifications with surgical precision while preserving concept continu
         specification: updatedSpec,
         final_prompt: formattedBundle.primary.finalPrompt,
         negative_prompt: formattedBundle.primary.negativePrompt,
+        poster_prompt: formattedBundle.posterPrompt,
+        photographic_prompt: formattedBundle.photographicPrompt,
+        typography_layout: updatedSpec.typography_layout,
+        caption_text: updatedSpec.caption_text,
+        hashtags: updatedSpec.hashtags,
         all_model_formats: formattedBundle.allModelFormats,
         syntax_tokens: formattedBundle.syntaxTokens,
         critic_evaluation: criticEvaluation,
@@ -124,6 +145,7 @@ Apply the modifications with surgical precision while preserving concept continu
           creative_direction_reason: `${existingResult.rationale.creative_direction_reason} (Refinement: ${updatedFields.explanation_of_change})`,
         },
       };
+
 
 
       return NextResponse.json({

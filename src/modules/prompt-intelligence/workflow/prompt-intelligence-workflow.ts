@@ -5,10 +5,9 @@ import { DesignKnowledgeService } from "@/services/design-knowledge";
 import { ExecutionLogger } from "@/services/telemetry";
 import { getReasoningModel, getReasoningFallbackModel } from "@/lib/ai-model";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BrandProfile } from "@/lib/schema/brand";
 import { DesignArchetype } from "@/lib/design-system/archetypes";
 import { Platform, PostType } from "../domain/prompt-intent";
-import { PromptSpecification } from "../domain/prompt-spec";
+import { PromptSpecification, TypographyLayoutSchema } from "../domain/prompt-spec";
 import { PromptResult } from "../domain/prompt-result";
 import { ModelRouterService } from "../services/model-router";
 import { PromptFormattersService } from "../services/prompt-formatters";
@@ -41,6 +40,17 @@ const CreativeDirectionSynthesisSchema = z.object({
   camera_and_optics: z.string().describe("Camera angle, framing, focal length (e.g. 85mm f/1.4, 50mm f/1.2), depth of field falloff"),
   color_and_materials: z.string().describe("Curated 3-4 color palette anchors and tactile material textures (e.g. matte ceramic, rough linen, brushed steel)"),
   negative_constraints: z.array(z.string()).describe("Visual clichés, plastic smoothing, and unwanted elements explicitly forbidden"),
+  typography_layout: z.object({
+    headline: z.string().describe("Punchy, scroll-stopping headline text (e.g. 'KYOTO: THE ART OF STILLNESS')"),
+    kicker_badge: z.string().optional().describe("Small eyebrow badge (e.g. 'PRIVATE EXPEDITIONS 2026')"),
+    subheadline: z.string().optional().describe("Supporting contextual line"),
+    cta_text: z.string().describe("Call to action (e.g. 'Tap Link in Bio for the 7-Day Itinerary')"),
+    brand_watermark: z.string().describe("Brand signature or handle (e.g. 'Vagabond Travel Agency')"),
+    font_pairing_recommendation: z.string().describe("Suggested typography pairing (e.g. 'Playfair Display Serif + Inter Sans')"),
+    text_placement_zone: z.enum(["top_third", "bottom_third", "split_center", "sidebar_margin"]),
+  }),
+  caption_text: z.string().describe("Complete social media post caption tailored to platform audience"),
+  hashtags: z.array(z.string()).default([]),
   reference_strategy_type: z.enum([
     "none",
     "style_reference",
@@ -156,7 +166,7 @@ Classify the post type and extract the strategic intent.`;
     }
     const cdStart = Date.now();
 
-    const cdPrompt = `Synthesize a distinctive, magazine-grade visual concept and photographic direction for this post:
+    const cdPrompt = `Synthesize an unignorable, magazine-grade social media post for Brand "${brand.name}":
 
 Platform: ${platform.toUpperCase()}
 Post Type: ${intent.post_type}
@@ -177,14 +187,17 @@ Platform Constraints & Guidance:
 - Post Type Goal: ${postTypeGuidance.visualGoal}
 - Anti-Patterns to Avoid: ${platformRules.antiPatternsToAvoid.join("; ")}
 
-Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), lighting architecture, tactile materials, and organic textures. Exclude plastic AI tropes and generic stock corporate motifs.`;
+CRITICAL REQUIREMENT: A complete social media post is not just raw background scenery. You MUST formulate:
+1. Complete Graphic Typography Layout: Punchy Headline (e.g. "KYOTO: THE ART OF STILLNESS"), Kicker Eyebrow Badge, Subheadline, Call to Action (CTA), and Brand Signature.
+2. Photographic Scene & Negative Space Plan: Camera lens (e.g. 50mm f/1.2), lighting architecture, tactile materials, and explicit negative space zone.
+3. Complete Social Media Caption: Platform-native hook, story/value, bullet points, and CTA with 4-6 hashtags.`;
 
     let cdSynthesis: z.infer<typeof CreativeDirectionSynthesisSchema>;
     try {
       const cdRes = await generateObject({
         model: getReasoningModel(),
         schema: CreativeDirectionSynthesisSchema,
-        system: "You are Sapphire's Executive Creative Director. You formulate unignorable, magazine-grade visual concepts tailored for social scroll-stopping impact with precise photographic vocabulary.",
+        system: "You are Sapphire's Executive Creative Director. You formulate complete, Canva-grade social media posts with punchy typography headlines, brand badges, CTAs, and photographic direction.",
         prompt: cdPrompt,
       });
       cdSynthesis = cdRes.object;
@@ -204,13 +217,14 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
       model: "gemini-2.5-flash",
       status: "success",
       durationMs: Date.now() - cdStart,
-      summary: `Formulated concept: "${cdSynthesis.creative_concept.slice(0, 60)}..." (Archetype: ${cdSynthesis.archetype})`,
+      summary: `Formulated post: "${cdSynthesis.typography_layout.headline}" (Archetype: ${cdSynthesis.archetype})`,
     });
 
     if (onProgress) {
-      await onProgress(2, 6, `Creative direction formulated: "${cdSynthesis.interpreted_direction}"`, "success", {
+      await onProgress(2, 6, `Post formulated: "${cdSynthesis.typography_layout.headline}"`, "success", {
         direction: cdSynthesis.interpreted_direction,
         archetype: cdSynthesis.archetype,
+        headline: cdSynthesis.typography_layout.headline,
       });
     }
 
@@ -225,7 +239,7 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
       platform,
       postType: intent.post_type as PostType,
       archetype: cdSynthesis.archetype as DesignArchetype,
-      hasInImageTextNeeded: cdSynthesis.archetype === "vintage_poster" || cdSynthesis.archetype === "comparison_split",
+      hasInImageTextNeeded: true,
       visualStyle: cdSynthesis.subject,
       hasReferenceImage: false,
     });
@@ -252,6 +266,17 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
         tone: brand.voice?.tone,
         forbidden_motifs: brand.voice?.forbidden_phrases || [],
       },
+      typography_layout: {
+        headline: cdSynthesis.typography_layout.headline,
+        kicker_badge: cdSynthesis.typography_layout.kicker_badge,
+        subheadline: cdSynthesis.typography_layout.subheadline,
+        cta_text: cdSynthesis.typography_layout.cta_text,
+        brand_watermark: cdSynthesis.typography_layout.brand_watermark || brand.name,
+        font_pairing_recommendation: cdSynthesis.typography_layout.font_pairing_recommendation,
+        text_placement_zone: cdSynthesis.typography_layout.text_placement_zone,
+      },
+      caption_text: cdSynthesis.caption_text,
+      hashtags: cdSynthesis.hashtags,
       target_model: modelRecommendation.recommendedModel,
       aspect_ratio: modelRecommendation.aspectRatio,
       reference_strategy: {
@@ -278,7 +303,7 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
     // Stage 4: Model-Aware Multi-Format Prompt Formatting
     // -------------------------------------------------------------
     if (onProgress) {
-      await onProgress(4, 6, "Engineering Production-Ready Prompt Syntax Across Models...", "active");
+      await onProgress(4, 6, "Engineering Poster Typography Prompts Across Models...", "active");
     }
 
     const formattedBundle = PromptFormattersService.formatPromptBundle(promptSpec);
@@ -289,11 +314,11 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
       model: modelRecommendation.recommendedModel,
       status: "success",
       durationMs: 10,
-      summary: "Rendered multi-model optimized prompt strings and syntax tokens.",
+      summary: "Rendered dual poster and photographic prompt bundles.",
     });
 
     if (onProgress) {
-      await onProgress(4, 6, "Production prompt engineered and formatted.", "success");
+      await onProgress(4, 6, "Poster typography prompts engineered.", "success");
     }
 
     // -------------------------------------------------------------
@@ -336,6 +361,11 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
       reference_strategy: promptSpec.reference_strategy,
       final_prompt: formattedBundle.primary.finalPrompt,
       negative_prompt: formattedBundle.primary.negativePrompt,
+      poster_prompt: formattedBundle.posterPrompt,
+      photographic_prompt: formattedBundle.photographicPrompt,
+      typography_layout: promptSpec.typography_layout,
+      caption_text: promptSpec.caption_text,
+      hashtags: promptSpec.hashtags,
       all_model_formats: formattedBundle.allModelFormats,
       syntax_tokens: formattedBundle.syntaxTokens,
       specification: promptSpec,
@@ -357,7 +387,7 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
         await supabase.from("campaigns").insert({
           id: resultId,
           brand_id: brand.id,
-          campaign_title: `${brand.name} — ${intent.topic} (Prompt Specification)`,
+          campaign_title: `${brand.name} — ${intent.topic} (Social Post Specification)`,
           topic: prompt,
           platform,
           intent,
@@ -369,27 +399,27 @@ Directive: Detail photographic camera lenses (e.g. 85mm f/1.4, 50mm f/1.2), ligh
             summary: cdSynthesis.interpreted_direction,
           },
           concept_a: {
-            label: "Prompt Specification",
+            label: "Graphic Poster Specification",
             creative_direction: cdSynthesis.interpreted_direction,
             visual_style: cdSynthesis.subject,
             composition: cdSynthesis.camera_and_optics,
             lighting: cdSynthesis.lighting,
             color_palette: [cdSynthesis.color_and_materials],
-            image_prompt: formattedBundle.primary.finalPrompt,
-            caption_instagram: "",
-            caption_linkedin: "",
-            optimized_image_prompt: formattedBundle.primary.finalPrompt,
+            image_prompt: formattedBundle.posterPrompt,
+            caption_instagram: cdSynthesis.caption_text,
+            caption_linkedin: cdSynthesis.caption_text,
+            optimized_image_prompt: formattedBundle.posterPrompt,
           },
           concept_b: {
-            label: "Model Recommendation",
+            label: "Photographic Background",
             creative_direction: modelRecommendation.selectionReason,
             visual_style: modelRecommendation.displayName,
             composition: modelRecommendation.aspectRatio,
-            lighting: "",
+            lighting: cdSynthesis.lighting,
             color_palette: [],
-            image_prompt: formattedBundle.primary.finalPrompt,
-            caption_instagram: "",
-            caption_linkedin: "",
+            image_prompt: formattedBundle.photographicPrompt,
+            caption_instagram: cdSynthesis.caption_text,
+            caption_linkedin: cdSynthesis.caption_text,
           },
         });
       }

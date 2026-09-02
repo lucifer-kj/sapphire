@@ -6,6 +6,8 @@ export interface FormattedPromptBundle {
   primary: FormattedModelOutput;
   allModelFormats: Record<SupportedModelFamily, FormattedModelOutput>;
   syntaxTokens: PromptSyntaxToken[];
+  posterPrompt: string;
+  photographicPrompt: string;
 }
 
 export class PromptFormattersService {
@@ -22,18 +24,22 @@ export class PromptFormattersService {
       stable_diffusion_xl: this.formatForSDXL(spec),
     };
 
-    const primary = allModelFormats[spec.target_model] || allModelFormats.flux_1_dev;
+    const primary = allModelFormats[spec.target_model] || allModelFormats.ideogram_v2;
     const syntaxTokens = this.extractSyntaxTokens(spec);
+    const posterPrompt = this.buildUniversalPosterPrompt(spec);
+    const photographicPrompt = this.buildUniversalPhotographicPrompt(spec);
 
     return {
       primary,
       allModelFormats,
       syntaxTokens,
+      posterPrompt,
+      photographicPrompt,
     };
   }
 
   /**
-   * Backwards compatible single-model formatter.
+   * Single-model formatter.
    */
   static formatPrompt(spec: PromptSpecification): FormattedModelOutput {
     const bundle = this.formatPromptBundle(spec);
@@ -41,54 +47,97 @@ export class PromptFormattersService {
   }
 
   // --------------------------------------------------------------------------
-  // Model-Specific Formatters
+  // Universal Post Modes
   // --------------------------------------------------------------------------
 
-  private static formatForFluxDev(spec: PromptSpecification): FormattedModelOutput {
+  public static buildUniversalPosterPrompt(spec: PromptSpecification): string {
     const {
       subject,
       environment,
       lighting,
       camera_and_optics,
       color_and_materials,
-      negative_constraints,
+      typography_layout,
       brand_tokens,
+      aspect_ratio,
+    } = spec;
+
+    const parts = [
+      `A high-end editorial social media poster design in ${aspect_ratio} ratio for "${brand_tokens.brand_name || "Brand"}"`,
+      `Hero Visual: ${subject} situated in ${environment}`,
+      `Lighting Architecture: ${lighting}`,
+      `Cinematography: ${camera_and_optics}, ${color_and_materials}`,
+      `Graphic Typography & Layout:`,
+      typography_layout.kicker_badge ? `- Top Eyebrow Badge: "${typography_layout.kicker_badge}" in small elegant uppercase lettering` : "",
+      `- Main Bold Headline: "${typography_layout.headline}" displayed prominently in ${typography_layout.font_pairing_recommendation}`,
+      typography_layout.subheadline ? `- Subheadline Text: "${typography_layout.subheadline}" in clean complementary typography` : "",
+      `- Call To Action / Footer: "${typography_layout.cta_text}" with brand signature "${typography_layout.brand_watermark}" at the bottom`,
+      `Composition: ${typography_layout.text_placement_zone.replace(/_/g, " ")}, 8% safe margin perimeter, crisp high-contrast layout, award-winning social poster art, 8k resolution, zero plastic CGI sheen`,
+    ].filter(Boolean);
+
+    return parts.join(". ");
+  }
+
+  public static buildUniversalPhotographicPrompt(spec: PromptSpecification): string {
+    const {
+      subject,
+      environment,
+      lighting,
+      camera_and_optics,
+      color_and_materials,
+      typography_layout,
+      negative_constraints,
     } = spec;
 
     const parts = [
       `A masterwork commercial editorial photograph: ${subject}`,
       `Environment & Setting: ${environment}`,
+      `Spatial Negative Space Plan: The ${typography_layout.text_placement_zone.replace(/_/g, " ")} of the frame is composed with clean, calm negative space specifically reserved for typography overlay`,
       `Lighting Architecture: ${lighting}`,
       `Cinematography & Optics: ${camera_and_optics}`,
-      `Textures & Color Grade: ${color_and_materials}${brand_tokens.primary_color ? `, accentuating ${brand_tokens.primary_color} tones` : ""}`,
-      `Photographic Fidelity: authentic natural skin/material textures, micro-contrast, organic film grain, 8k resolution, crisp focal falloff, zero plastic CGI sheen`,
+      `Textures & Color Grade: ${color_and_materials}`,
+      `Photographic Quality: natural authentic textures, micro-contrast, organic film grain, 8k resolution, zero plastic CGI sheen`,
     ];
 
-    const finalPrompt = parts.join(". ");
-    return {
-      finalPrompt,
-      negativePrompt: negative_constraints.length > 0 ? negative_constraints.join(", ") : undefined,
-      copyablePrompt: finalPrompt,
-    };
+    return parts.join(". ");
   }
 
-  private static formatForFluxSchnell(spec: PromptSpecification): FormattedModelOutput {
-    const { subject, environment, lighting, camera_and_optics, color_and_materials, negative_constraints } = spec;
+  // --------------------------------------------------------------------------
+  // Model-Specific Formatters
+  // --------------------------------------------------------------------------
 
-    const parts = [
-      `High-end commercial photograph of ${subject}`,
-      `in ${environment}`,
-      `illuminated by ${lighting}`,
-      `${camera_and_optics}`,
-      `${color_and_materials}`,
-      `hyper-detailed tactile textures, authentic editorial quality`,
-    ];
+  private static formatForIdeogram(spec: PromptSpecification): FormattedModelOutput {
+    const {
+      subject,
+      environment,
+      lighting,
+      camera_and_optics,
+      color_and_materials,
+      typography_layout,
+      brand_tokens,
+      aspect_ratio,
+      negative_constraints,
+    } = spec;
 
-    const finalPrompt = parts.join(", ");
+    const posterPrompt = [
+      `Commercial editorial social media poster design in ${aspect_ratio} ratio`,
+      `Hero Subject: ${subject} in ${environment}`,
+      `Lighting & Mood: ${lighting}, ${color_and_materials}`,
+      `Cinematography: ${camera_and_optics}`,
+      `In-Image Typography Layout:`,
+      typography_layout.kicker_badge ? `Eyebrow text badge reads "${typography_layout.kicker_badge}"` : "",
+      `Main bold headline text reads "${typography_layout.headline}" in elegant ${typography_layout.font_pairing_recommendation}`,
+      typography_layout.subheadline ? `Subheadline text reads "${typography_layout.subheadline}"` : "",
+      `Footer branding reads "${typography_layout.cta_text} | ${typography_layout.brand_watermark}"`,
+      `Layout: ${typography_layout.text_placement_zone.replace(/_/g, " ")}, 8% perimeter safe zone margins, perfect sharp typography, balanced graphic composition`,
+    ].filter(Boolean).join(". ");
+
     return {
-      finalPrompt,
+      finalPrompt: posterPrompt,
       negativePrompt: negative_constraints.length > 0 ? negative_constraints.join(", ") : undefined,
-      copyablePrompt: finalPrompt,
+      copyablePrompt: posterPrompt,
+      posterPrompt,
+      photographicPrompt: this.buildUniversalPhotographicPrompt(spec),
     };
   }
 
@@ -99,97 +148,148 @@ export class PromptFormattersService {
       lighting,
       camera_and_optics,
       color_and_materials,
+      typography_layout,
       negative_constraints,
       aspect_ratio,
     } = spec;
 
     const arFlag = aspect_ratio === "4:5" ? "--ar 4:5" : aspect_ratio === "1:1" ? "--ar 1:1" : `--ar ${aspect_ratio}`;
-    const parts = [
+    
+    // Poster with typography version
+    const posterParts = [
+      `commercial editorial magazine poster layout`,
+      `"${typography_layout.headline}" typography in top third`,
       subject,
       environment,
       lighting,
       camera_and_optics,
       color_and_materials,
-      "award-winning editorial composition, natural grain, cinematic lighting",
+      `footer text "${typography_layout.brand_watermark}"`,
+      `award-winning layout, balanced typography, authentic grain`,
       `${arFlag} --style raw --v 6.1 --s 250`,
     ].filter(Boolean);
 
-    let finalPrompt = parts.join(", ");
+    let posterPrompt = posterParts.join(", ");
     if (negative_constraints.length > 0) {
-      finalPrompt += ` --no ${negative_constraints.join(", ")}`;
+      posterPrompt += ` --no ${negative_constraints.join(", ")}`;
     }
 
+    const photoPrompt = `${this.buildUniversalPhotographicPrompt(spec)}, ${arFlag} --style raw --v 6.1 --s 250`;
+
     return {
-      finalPrompt,
+      finalPrompt: posterPrompt,
       negativePrompt: negative_constraints.length > 0 ? negative_constraints.join(", ") : undefined,
-      copyablePrompt: finalPrompt,
+      copyablePrompt: posterPrompt,
+      posterPrompt,
+      photographicPrompt: photoPrompt,
     };
   }
 
-  private static formatForIdeogram(spec: PromptSpecification): FormattedModelOutput {
+  private static formatForFluxDev(spec: PromptSpecification): FormattedModelOutput {
     const {
-      creative_concept,
       subject,
       environment,
       lighting,
       camera_and_optics,
       color_and_materials,
-      brand_tokens,
-      aspect_ratio,
+      typography_layout,
       negative_constraints,
+      brand_tokens,
     } = spec;
 
-    const parts = [
-      `Graphic editorial layout for ${brand_tokens.brand_name || "brand"}: ${creative_concept}`,
-      `Hero Subject: ${subject} situated in ${environment}`,
-      `Lighting & Mood: ${lighting}, ${color_and_materials}`,
-      `Layout Geometry: ${camera_and_optics}, 8% safe zone perimeter margins, ratio ${aspect_ratio}`,
-    ].filter(Boolean);
+    const photoPrompt = this.buildUniversalPhotographicPrompt(spec);
+    const posterPrompt = this.buildUniversalPosterPrompt(spec);
 
-    const finalPrompt = parts.join(". ");
     return {
-      finalPrompt,
+      finalPrompt: photoPrompt,
       negativePrompt: negative_constraints.length > 0 ? negative_constraints.join(", ") : undefined,
-      copyablePrompt: finalPrompt,
+      copyablePrompt: photoPrompt,
+      posterPrompt,
+      photographicPrompt: photoPrompt,
+    };
+  }
+
+  private static formatForFluxSchnell(spec: PromptSpecification): FormattedModelOutput {
+    const { subject, environment, lighting, camera_and_optics, color_and_materials, negative_constraints } = spec;
+
+    const photoPrompt = [
+      `High-end commercial photograph of ${subject}`,
+      `in ${environment}`,
+      `illuminated by ${lighting}`,
+      `${camera_and_optics}`,
+      `${color_and_materials}`,
+      `hyper-detailed tactile textures, authentic editorial quality`,
+    ].join(", ");
+
+    return {
+      finalPrompt: photoPrompt,
+      negativePrompt: negative_constraints.length > 0 ? negative_constraints.join(", ") : undefined,
+      copyablePrompt: photoPrompt,
+      posterPrompt: this.buildUniversalPosterPrompt(spec),
+      photographicPrompt: photoPrompt,
     };
   }
 
   private static formatForDalle3(spec: PromptSpecification): FormattedModelOutput {
-    const { subject, environment, lighting, camera_and_optics, color_and_materials, aspect_ratio } = spec;
+    const { subject, environment, lighting, camera_and_optics, color_and_materials, typography_layout, aspect_ratio } = spec;
 
-    const finalPrompt = `${subject}. The scene takes place in ${environment}. The atmosphere is illuminated with ${lighting}, captured via ${camera_and_optics}. The visual palette features ${color_and_materials}. Authentic high-resolution commercial photography, natural realistic grain, distinct texture, clean composition adhering strictly to an aspect ratio of ${aspect_ratio}. Exclude 3D plastic renders or floaty isometric clichés.`;
+    const posterPrompt = `A commercial editorial social media poster design in ${aspect_ratio} aspect ratio. The scene depicts ${subject} in ${environment}, captured with ${camera_and_optics} under ${lighting}. Across the top of the poster, the headline "${typography_layout.headline}" is clearly rendered in bold, sophisticated editorial typography. At the bottom, clean subtitle text reads "${typography_layout.subheadline || typography_layout.cta_text}" with brand signature "${typography_layout.brand_watermark}". The color palette highlights ${color_and_materials}. High aesthetic quality, sharp text rendering, zero plastic CGI artifacts.`;
 
     return {
-      finalPrompt,
-      copyablePrompt: finalPrompt,
+      finalPrompt: posterPrompt,
+      copyablePrompt: posterPrompt,
+      posterPrompt,
+      photographicPrompt: this.buildUniversalPhotographicPrompt(spec),
     };
   }
 
   private static formatForSDXL(spec: PromptSpecification): FormattedModelOutput {
     const { subject, environment, lighting, camera_and_optics, color_and_materials, negative_constraints } = spec;
 
-    const finalPrompt = `${subject}, ${environment}, ${lighting}, ${camera_and_optics}, ${color_and_materials}, 8k uhd, dslr, high quality, authentic film grain, photorealistic`;
+    const photoPrompt = `${subject}, ${environment}, ${lighting}, ${camera_and_optics}, ${color_and_materials}, 8k uhd, dslr, high quality, authentic film grain, photorealistic`;
     const defaultSDXLNegatives = "bad quality, blurry, 3d render, plastic skin, distorted anatomy, oversaturated, watermark, signature";
     const negativePrompt = negative_constraints.length > 0
       ? `${negative_constraints.join(", ")}, ${defaultSDXLNegatives}`
       : defaultSDXLNegatives;
 
     return {
-      finalPrompt,
+      finalPrompt: photoPrompt,
       negativePrompt,
-      copyablePrompt: `${finalPrompt}\n\nNegative Prompt:\n${negativePrompt}`,
+      copyablePrompt: `${photoPrompt}\n\nNegative Prompt:\n${negativePrompt}`,
+      posterPrompt: this.buildUniversalPosterPrompt(spec),
+      photographicPrompt: photoPrompt,
     };
   }
 
   private static extractSyntaxTokens(spec: PromptSpecification): PromptSyntaxToken[] {
     const tokens: PromptSyntaxToken[] = [
+      { category: "typography_headline", label: "Headline Text", value: `"${spec.typography_layout.headline}"` },
+    ];
+
+    if (spec.typography_layout.kicker_badge) {
+      tokens.push({
+        category: "typography_headline",
+        label: "Kicker Badge",
+        value: `[${spec.typography_layout.kicker_badge}]`,
+      });
+    }
+
+    if (spec.typography_layout.cta_text) {
+      tokens.push({
+        category: "typography_cta",
+        label: "Call to Action",
+        value: spec.typography_layout.cta_text,
+      });
+    }
+
+    tokens.push(
       { category: "subject", label: "Subject", value: spec.subject },
       { category: "environment", label: "Environment", value: spec.environment },
       { category: "lighting", label: "Lighting & Mood", value: spec.lighting },
       { category: "camera_optics", label: "Camera & Lens", value: spec.camera_and_optics },
       { category: "materials_texture", label: "Colors & Materials", value: spec.color_and_materials },
-      { category: "archetype", label: "Archetype", value: spec.archetype.replace(/_/g, " ") },
-    ];
+      { category: "archetype", label: "Archetype", value: spec.archetype.replace(/_/g, " ") }
+    );
 
     if (spec.brand_tokens.brand_name) {
       tokens.push({

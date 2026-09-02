@@ -66,9 +66,24 @@ const config: Config = {
         "text-sm": ["14px", { lineHeight: "1.4" }],
         "text-xs": ["12px", { lineHeight: "1.4" }],
       },
+      keyframes: {
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
+        "border-beam": {
+          "100%": {
+            "offset-distance": "100%",
+          },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 2s infinite",
+        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+      },
     },
   },
   plugins: [],
 };
+
 
 export default config;

@@ -4,6 +4,17 @@ import { DesignArchetypeSchema } from "@/lib/design-system/archetypes";
 import { SupportedModelFamilySchema } from "./model-strategy";
 import { ReferenceStrategySchema } from "./visual-strategy";
 
+export const TypographyLayoutSchema = z.object({
+  headline: z.string().describe("Impactful, scroll-stopping headline text"),
+  kicker_badge: z.string().optional().describe("Small category or status eyebrow badge"),
+  subheadline: z.string().optional().describe("Supporting contextual text"),
+  cta_text: z.string().describe("Clear social engagement or conversion call to action"),
+  brand_watermark: z.string().describe("Brand signature or handle"),
+  font_pairing_recommendation: z.string().describe("Suggested typography pairing (e.g. Playfair Display + Inter)"),
+  text_placement_zone: z.enum(["top_third", "bottom_third", "split_center", "sidebar_margin"]).default("top_third"),
+});
+export type TypographyLayout = z.infer<typeof TypographyLayoutSchema>;
+
 export const PromptSpecificationSchema = z.object({
   id: z.string().describe("Unique spec ID"),
   version: z.number().default(1),
@@ -23,6 +34,9 @@ export const PromptSpecificationSchema = z.object({
     tone: z.string().optional(),
     forbidden_motifs: z.array(z.string()).default([]),
   }),
+  typography_layout: TypographyLayoutSchema,
+  caption_text: z.string().describe("Engaging full social media caption tailored to the platform"),
+  hashtags: z.array(z.string()).default([]),
   target_model: SupportedModelFamilySchema,
   aspect_ratio: z.string().default("4:5"),
   reference_strategy: ReferenceStrategySchema,

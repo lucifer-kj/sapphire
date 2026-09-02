@@ -3,7 +3,7 @@ import { PlatformSchema, PostTypeSchema } from "./prompt-intent";
 import { DesignArchetypeSchema } from "@/lib/design-system/archetypes";
 import { ModelRecommendationSchema, SupportedModelFamilySchema } from "./model-strategy";
 import { ReferenceStrategySchema } from "./visual-strategy";
-import { PromptSpecificationSchema } from "./prompt-spec";
+import { PromptSpecificationSchema, TypographyLayoutSchema } from "./prompt-spec";
 
 export const PromptCriticRubricSchema = z.object({
   score: z.number().min(0).max(100),
@@ -39,6 +39,8 @@ export const PromptSyntaxTokenSchema = z.object({
     "materials_texture",
     "archetype",
     "brand_token",
+    "typography_headline",
+    "typography_cta",
     "negative_exclusion",
   ]),
   label: z.string(),
@@ -50,6 +52,8 @@ export const FormattedModelOutputSchema = z.object({
   finalPrompt: z.string(),
   negativePrompt: z.string().optional(),
   copyablePrompt: z.string(),
+  posterPrompt: z.string().optional().describe("Prompt specifically formatted with in-image typography for graphic models"),
+  photographicPrompt: z.string().optional().describe("Prompt formatted for pure background photography with negative space"),
 });
 export type FormattedModelOutput = z.infer<typeof FormattedModelOutputSchema>;
 
@@ -65,6 +69,11 @@ export const PromptResultSchema = z.object({
   reference_strategy: ReferenceStrategySchema,
   final_prompt: z.string().describe("The production-ready, model-tuned generation prompt"),
   negative_prompt: z.string().optional().describe("Exclusions / negative constraints where supported"),
+  poster_prompt: z.string().optional().describe("In-image graphic poster prompt with typography for Ideogram / Midjourney / DALL-E"),
+  photographic_prompt: z.string().optional().describe("Clean photographic background prompt with negative space for FLUX / compositing"),
+  typography_layout: TypographyLayoutSchema.optional(),
+  caption_text: z.string().optional(),
+  hashtags: z.array(z.string()).default([]),
   all_model_formats: z.record(FormattedModelOutputSchema).optional(),
   syntax_tokens: z.array(PromptSyntaxTokenSchema).optional(),
   specification: PromptSpecificationSchema,

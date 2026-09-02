@@ -45,7 +45,9 @@ import {
   ArrowLeft,
   Building2,
   Sliders,
+  BookOpen,
 } from "lucide-react";
+
 
 import { CreativeBrief, ResearchContext, UserIntent, ConceptItem } from "@/lib/schema/campaign";
 import { ReferenceImageAnalysis } from "@/lib/schema/reference";
@@ -57,8 +59,16 @@ import { PRECONFIGURED_BRANDS } from "@/lib/constants/brands";
 import { PromptResult } from "@/modules/prompt-intelligence/domain/prompt-result";
 import { PromptResultInspector } from "@/components/ui/prompt-result-inspector";
 import { GenerationMode } from "@/modules/prompt-intelligence/domain/prompt-intent";
+import { CommandPalette } from "@/components/navigation/command-palette";
+import { WorkflowNodeGraph } from "@/components/workflow/workflow-node-graph";
+import { KnowledgeBaseModal } from "@/components/settings/knowledge-base-modal";
+import { StudioComposer } from "@/components/ui/studio-composer";
+import { ReasoningAccordion } from "@/components/ui/reasoning-accordion";
+
+
 
 import { BrandBrainDrawer } from "@/components/settings/brand-brain-drawer";
+
 import { BrandProfile, LearnedPreferences } from "@/lib/schema/brand";
 
 import { AgentPlanning, PlanStep } from "@/components/ui/agent-planning";
@@ -202,7 +212,25 @@ export default function SapphireWorkspace() {
   const [workflowLogs, setWorkflowLogs] = useState<WorkflowLogEntry[]>([]);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
 
+  // Dedicated UX Optimization Modals State
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isNodeGraphOpen, setIsNodeGraphOpen] = useState(false);
+  const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K Keyboard Shortcut Listener
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
   // Image load error & retry states
+
   const [imageErrorA, setImageErrorA] = useState(false);
   const [imageErrorB, setImageErrorB] = useState(false);
   const [isRegeneratingA, setIsRegeneratingA] = useState(false);
@@ -573,9 +601,10 @@ export default function SapphireWorkspace() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!prompt.trim() || isLoading) return;
+
 
     const userMessage = prompt.trim();
     const currentRefImages = referenceImages;
@@ -697,7 +726,14 @@ export default function SapphireWorkspace() {
               );
 
               const pr: PromptResult = payload.promptResult;
-              const assistantMsg = `✨ **Prompt Intelligence Complete for ${pr.platform.toUpperCase()} (${pr.post_type.replace(/_/g, " ")})**\n\n- **Creative Concept:** ${pr.interpreted_direction}\n- **Recommended Model:** ${pr.model_recommendation.displayName} (${pr.aspect_ratio})\n- **Prompt Critic Score:** ${pr.critic_evaluation.score}/100 (Passed)\n\nThe production-ready prompt specification has been rendered in the Inspector Canvas on the right. You can copy it with 1-click or converse to refine specific visual elements.`;
+              const headline = pr.typography_layout?.headline || pr.specification?.typography_layout?.headline;
+              const cta = pr.typography_layout?.cta_text || pr.specification?.typography_layout?.cta_text;
+
+              let assistantMsg = `✨ **Social Post & Prompt Intelligence Complete for ${pr.platform.toUpperCase()} (${pr.post_type.replace(/_/g, " ")})**\n\n`;
+              if (headline) assistantMsg += `- **Headline:** "${headline}"\n`;
+              if (cta) assistantMsg += `- **Call To Action:** ${cta}\n`;
+              assistantMsg += `- **Creative Concept:** ${pr.interpreted_direction}\n- **Recommended Model:** ${pr.model_recommendation.displayName} (${pr.aspect_ratio})\n- **Prompt Critic Score:** ${pr.critic_evaluation.score}/100 (Passed)\n\nBoth the **Graphic Poster Prompt (In-Image Text)** and **Clean Photographic Canvas Prompt** plus the complete **Post Typography & Caption Blueprint** have been rendered in the Inspector Canvas on the right.`;
+
 
               setMessages((prev) => [
                 ...prev,
@@ -1411,29 +1447,80 @@ export default function SapphireWorkspace() {
 
         {/* CENTER PANEL: Conversational Workspace */}
         <main className="flex-1 flex flex-col bg-sapphire-bg overflow-hidden min-w-0 relative">
-          {/* Subtle panel toggle controls if sidebars are collapsed */}
-          <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-            {!isLeftOpen && (
+          {/* Top Global Navigation Bar & Command Palette Trigger */}
+          <div className="h-12 px-4 border-b border-white/5 bg-zinc-950/80 backdrop-blur flex items-center justify-between shrink-0 z-10">
+            <div className="flex items-center gap-2">
+              {!isLeftOpen && (
+                <button
+                  onClick={() => setIsLeftOpen(true)}
+                  title="Expand Left Panel (Ctrl+B)"
+                  className="p-1.5 rounded-lg text-text-xs text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-white/5 transition-colors shadow-sm"
+                >
+                  <PanelLeftOpen className="w-4 h-4" />
+                </button>
+              )}
+              <span className="text-[11px] font-medium text-zinc-400 hidden sm:inline">
+                Active Brand: <strong className="text-zinc-200">{activeBrandProfile.name}</strong>
+              </span>
+            </div>
+
+            {/* Center Command Palette Quick Search Button */}
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[11px] text-zinc-400 hover:text-zinc-200 transition-all shadow-xs"
+            >
+              <Search className="w-3.5 h-3.5 text-sapphire-terracotta" />
+              <span>Search commands & brands...</span>
+              <kbd className="hidden sm:inline-block px-1.5 py-0.2 rounded bg-zinc-950 text-[9px] font-mono text-zinc-400 border border-white/5">
+                ⌘K
+              </kbd>
+            </button>
+
+            {/* Right Tools: Node Graph, KB, Telemetry */}
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setIsLeftOpen(true)}
-                title="Expand Left Panel (Ctrl+B)"
-                className="p-1.5 rounded-md text-text-xs text-sapphire-muted hover:text-sapphire-dark bg-sapphire-surface/80 backdrop-blur hover:bg-sapphire-surface border border-sapphire-border transition-colors shadow-sm"
+                type="button"
+                onClick={() => setIsNodeGraphOpen(true)}
+                title="Open Visual Multi-Agent DAG Node Graph"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
               >
-                <PanelLeftOpen className="w-4 h-4" />
+                <Layers className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden md:inline">Node Graph</span>
               </button>
-            )}
-          </div>
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-            {!isRightOpen && (
+
               <button
-                onClick={() => setIsRightOpen(true)}
-                title="Expand Right Canvas (Ctrl+Alt+B)"
-                className="p-1.5 rounded-md text-text-xs text-sapphire-muted hover:text-sapphire-dark bg-sapphire-surface/80 backdrop-blur hover:bg-sapphire-surface border border-sapphire-border transition-colors shadow-sm"
+                type="button"
+                onClick={() => setIsKnowledgeBaseOpen(true)}
+                title="Open Knowledge Base & Strategy Rules"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
               >
-                <PanelRightOpen className="w-4 h-4" />
+                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden md:inline">Knowledge</span>
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setIsLogsOpen(true)}
+                title="Telemetry Traces"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+              >
+                <Activity className="w-3.5 h-3.5 text-sapphire-blue" />
+                <span className="hidden md:inline">Logs</span>
+              </button>
+
+              {!isRightOpen && (
+                <button
+                  onClick={() => setIsRightOpen(true)}
+                  title="Expand Right Canvas (Ctrl+Alt+B)"
+                  className="p-1.5 rounded-lg text-text-xs text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-white/5 transition-colors shadow-sm ml-1"
+                >
+                  <PanelRightOpen className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
+
 
           {/* Centered Conversation Area */}
           <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -1543,14 +1630,21 @@ export default function SapphireWorkspace() {
                 </div>
               )}
 
+              {/* Reasoning Accordion (Prompt-Kit / DeepSeek R1 UI) */}
+              {isLoading && (
+                <ReasoningAccordion
+                  isThinking={true}
+                  thoughtContent="Deconstructing brief into brand tokens, retrieving platform rules, formulating visual metaphor, and routing optimal model..."
+                  modelName="Gemini 2.5 Flash"
+                />
+              )}
+
               {/* Dynamic Live Multi-Agent Planning & Orchestration Timeline */}
               {(isLoading || brief || planningSteps.some((s) => s.status === "success" || s.status === "active" || s.status === "error")) && (
                 <AgentPlanning
                   title={
-                    isLoading
-                      ? "Multi-Agent Pipeline Active • Streaming Mastra Agents..."
-                      : brief
-                      ? "Multi-Agent Generation Complete • 1080×1350 Assets Ready"
+                    generationMode === "prompt_only"
+                      ? "Prompt Intelligence DAG Execution (Serverless)"
                       : "Multi-Agent Pipeline Step Traces"
                   }
                   steps={planningSteps}
@@ -1560,164 +1654,34 @@ export default function SapphireWorkspace() {
             </div>
           </div>
 
-          {/* Centered Composer Input (Claude Minimalist Elevated Style) */}
+
+          {/* Centered Composer Input (21st.dev / Claude Elevated Studio Composer) */}
           <div className="p-4 border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
             <div className="max-w-3xl lg:max-w-4xl w-full mx-auto">
-              {/* Mode & Platform Selector Bar */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-1">
-                {/* Generation Mode Selector */}
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-900 border border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGenerationMode("prompt_only");
-                      setPlanningSteps(createInitialPlanningSteps("prompt_only"));
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-text-xs font-semibold transition-all ${
-                      generationMode === "prompt_only"
-                        ? "bg-sapphire-terracotta text-white shadow-sm"
-                        : "text-zinc-400 hover:text-zinc-200"
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Prompt Intelligence</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLearningToast("Creative image generation is quarantined in V1. Use Prompt Intelligence mode.");
-                      setTimeout(() => setLearningToast(null), 4000);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-text-xs font-medium text-zinc-500 hover:text-zinc-400 opacity-60 cursor-not-allowed"
-                    title="Image generation is quarantined in V1. Output is model-ready prompt specifications."
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Creative Generation</span>
-                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                      V1 Paused
-                    </span>
-                  </button>
-                </div>
-
-                {/* Platform Selector */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => setActivePlatform("instagram")}
-                    className={`px-3 py-1 rounded-lg text-text-xs font-medium transition-all ${
-                      activePlatform === "instagram"
-                        ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
-                        : "text-zinc-400 hover:text-zinc-200"
-                    }`}
-                  >
-                    📸 Instagram (4:5)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivePlatform("linkedin")}
-                    className={`px-3 py-1 rounded-lg text-text-xs font-medium transition-all ${
-                      activePlatform === "linkedin"
-                        ? "bg-zinc-800 text-zinc-100 font-semibold shadow-xs"
-                        : "text-zinc-400 hover:text-zinc-200"
-                    }`}
-                  >
-                    💼 LinkedIn (4:5 / 1:1)
-                  </button>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-2.5">
-                {/* Multi-Asset Visual Ingredients Manifest Bar */}
-                {referenceImages.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-zinc-900 border border-white/5 animate-fade-in shadow-sm">
-                    <span className="text-[10px] font-mono font-semibold uppercase text-zinc-400 px-1">
-                      Visual Ingredients ({referenceImages.length}/3):
-                    </span>
-                    {referenceImages.map((img, idx) => {
-                      const ingredientTag =
-                        idx === 0
-                          ? "📦 Hero Subject"
-                          : idx === 1
-                          ? "🌅 Lighting / Mood"
-                          : "📐 Composition";
-                      return (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-1.5 bg-zinc-950 border border-white/5 rounded-xl p-1 pr-2 shadow-xs group"
-                        >
-                          <img
-                            src={img}
-                            alt=""
-                            className="w-6 h-6 rounded-lg object-cover border border-white/10 shrink-0"
-                          />
-                          <span className="text-[11px] font-medium text-zinc-200">
-                            {ingredientTag}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeReferenceImage(idx)}
-                            className="p-0.5 text-zinc-500 hover:text-zinc-200 rounded hover:bg-zinc-800 ml-0.5"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="relative rounded-2xl bg-zinc-900 shadow-[0_0_25px_rgba(0,0,0,0.5)] border border-white/10 focus-within:border-white/20 transition-all p-3.5">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={
-                      generationMode === "prompt_only"
-                        ? `Describe your ${activePlatform === "instagram" ? "Instagram" : "LinkedIn"} post topic (e.g. "Luxury train journeys through the Swiss Alps" or "3 counter-intuitive lessons scaling B2B SaaS")...`
-                        : "Describe your post direction or stack visual ingredients..."
-                    }
-                    rows={3}
-                    className="w-full bg-transparent border-none outline-none resize-none text-text-sm text-zinc-100 placeholder:text-zinc-500 font-sans"
-                  />
-                  <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
-                    <button
-                      type="button"
-                      disabled={referenceImages.length >= 3}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`p-1.5 rounded-xl transition-colors flex items-center gap-1.5 text-text-xs ${
-                        referenceImages.length > 0
-                          ? "bg-sapphire-terracotta/20 text-sapphire-terracotta border border-sapphire-terracotta/30"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
-                      } disabled:opacity-40`}
-                      title={referenceImages.length >= 3 ? "Maximum 3 visual ingredients attached" : "Attach visual ingredient (Subject, Mood, or Composition)"}
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline font-medium">
-                        {referenceImages.length > 0
-                          ? `${referenceImages.length}/3 Visuals Attached`
-                          : "Add Visual"}
-                      </span>
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={!prompt.trim() || isLoading}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-sapphire-terracotta text-white font-medium text-text-xs hover:bg-opacity-90 disabled:opacity-40 transition-all shadow-sm"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <>
-                          <span>
-                            {generationMode === "prompt_only" ? "Engineer Prompt" : "Generate"}
-                          </span>
-                          <Send className="w-3 h-3" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </form>
+              <StudioComposer
+                prompt={prompt}
+                onChangePrompt={setPrompt}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                platform={activePlatform}
+                onChangePlatform={(p) => {
+                  setActivePlatform(p);
+                  setLearningToast(`Platform target set to ${p.toUpperCase()}`);
+                  setTimeout(() => setLearningToast(null), 3000);
+                }}
+                generationMode={generationMode}
+                onChangeGenerationMode={(m) => {
+                  setGenerationMode(m);
+                  setPlanningSteps(createInitialPlanningSteps(m));
+                }}
+                referenceImages={referenceImages}
+                onAddReferenceImage={(base64) => {
+                  setReferenceImages((prev) => [...prev, base64].slice(0, 3));
+                }}
+                onRemoveReferenceImage={(idx) => {
+                  removeReferenceImage(idx);
+                }}
+              />
             </div>
           </div>
         </main>
@@ -1781,7 +1745,9 @@ export default function SapphireWorkspace() {
                       isRefining={isRefiningPrompt}
                       versionHistory={promptVersionHistory}
                       onSelectVersion={(v) => setPromptResult(v)}
+                      onUpdateResult={(updated) => setPromptResult(updated)}
                     />
+
                   ) : (
 
                     <div className="p-8 rounded-3xl bg-zinc-900/60 border border-white/5 text-center space-y-4">
@@ -2589,9 +2555,62 @@ export default function SapphireWorkspace() {
         onClose={() => setIsLogsOpen(false)}
         logs={workflowLogs}
       />
+
+      {/* Global Command Palette (Ctrl+K / Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        activeBrand={activeBrand}
+        onSelectBrand={(newBrand) => {
+          setActiveBrandProfile(newBrand);
+          setActiveBrand(newBrand.name);
+          setLearningToast(`Switched brand to "${newBrand.name}"`);
+          setTimeout(() => setLearningToast(null), 3000);
+        }}
+        generationMode={generationMode}
+        onSetGenerationMode={(newMode) => {
+          setGenerationMode(newMode);
+          setPlanningSteps(createInitialPlanningSteps(newMode));
+          setLearningToast(`Switched mode to ${newMode === "prompt_only" ? "Prompt Intelligence" : "Campaign Generation"}`);
+          setTimeout(() => setLearningToast(null), 3000);
+        }}
+        activePlatform={activePlatform}
+        onSetPlatform={(newPlatform) => {
+          setActivePlatform(newPlatform);
+          setLearningToast(`Platform target set to ${newPlatform.toUpperCase()}`);
+          setTimeout(() => setLearningToast(null), 3000);
+        }}
+        onOpenNodeGraph={() => setIsNodeGraphOpen(true)}
+        onOpenKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+        onOpenBrandBrain={() => setIsSettingsOpen(true)}
+        onOpenTelemetry={() => setIsLogsOpen(true)}
+        onOpenOnboarding={() => setIsOnboardingModalOpen(true)}
+        onSelectTemplate={(templateText) => {
+          setPrompt(templateText);
+          setLearningToast("Template brief loaded into composer");
+          setTimeout(() => setLearningToast(null), 3000);
+        }}
+      />
+
+      {/* Visual Multi-Agent DAG Execution Graph Modal */}
+      <WorkflowNodeGraph
+        isOpen={isNodeGraphOpen}
+        onClose={() => setIsNodeGraphOpen(false)}
+        steps={planningSteps}
+        logs={workflowLogs}
+        activeBrandName={activeBrandProfile.name}
+        platform={activePlatform}
+      />
+
+      {/* Knowledge Base & Strategy Strategy Rules Modal */}
+      <KnowledgeBaseModal
+        isOpen={isKnowledgeBaseOpen}
+        onClose={() => setIsKnowledgeBaseOpen(false)}
+      />
     </div>
   );
 }
+
 
 // Helper to resolve hero critique in Focus View
 function selectedHeroKey(
